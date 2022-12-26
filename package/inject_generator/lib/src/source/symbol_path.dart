@@ -15,35 +15,35 @@ import 'package:quiver/core.dart';
 ///     new SymbolPath.dartSdk('core', 'List')
 class SymbolPath implements Comparable<SymbolPath> {
   /// Path to the `@Qualifier` annotation.
-  static const qualifier = const SymbolPath._standard('Qualifier');
+  static const SymbolPath qualifier = SymbolPath._standard('Qualifier');
 
   /// Path to the `@Module` annotation.
-  static const module = const SymbolPath._standard('Module');
+  static const SymbolPath module = SymbolPath._standard('Module');
 
   /// Path to the `@Provide` annotation.
-  static const provide = const SymbolPath._standard('Provide');
+  static const SymbolPath provide = SymbolPath._standard('Provide');
 
   /// Path to the `@Singleton` annotation.
-  static const singleton = const SymbolPath._standard('Singleton');
+  static const SymbolPath singleton = SymbolPath._standard('Singleton');
 
   /// Path to the `@Asynchronous` annotation.
-  static const asynchronous = const SymbolPath._standard('Asynchronous');
+  static const SymbolPath asynchronous = SymbolPath._standard('Asynchronous');
 
   /// Path to the `@Injector` annotation.
-  static const injector = const SymbolPath._standard('Injector');
+  static const SymbolPath injector = SymbolPath._standard('Injector');
 
   static const String _dartExtension = '.dart';
   static const String _dartPackage = 'dart';
 
   /// An alias to `new SymbolPath.fromAbsoluteUri(Uri.parse(...))`.
-  static SymbolPath parseAbsoluteUri(String assetUri, [String symbolName]) {
-    return new SymbolPath.fromAbsoluteUri(Uri.parse(assetUri), symbolName);
+  static SymbolPath parseAbsoluteUri(String assetUri, [String? symbolName]) {
+    return SymbolPath.fromAbsoluteUri(Uri.parse(assetUri), symbolName);
   }
 
   /// Name of the package containing the Dart source code.
   ///
   /// If 'dart', is special cased to the Dart SDK. See [isDartSdk].
-  final String package;
+  final String? package;
 
   /// Location relative to the package root.
   ///
@@ -51,7 +51,7 @@ class SymbolPath implements Comparable<SymbolPath> {
   ///   - 'lib/foo.dart'
   ///   - 'bin/bar.dart'
   ///   - 'test/some/file.dart'
-  final String path;
+  final String? path;
 
   /// Name of the top-level symbol within the Dart source code referenced.
   final String symbol;
@@ -71,26 +71,34 @@ class SymbolPath implements Comparable<SymbolPath> {
   ///
   /// [package], [path] and [symbol] must not be `null` or empty.
   factory SymbolPath(String package, String path, String symbol) {
-    if (package == null || package.isEmpty) {
-      throw new ArgumentError.value(
-          package, 'package', 'Non-empty value required');
+    if (package.isEmpty) {
+      throw ArgumentError.value(
+        package,
+        'package',
+        'Non-empty value required',
+      );
     }
-    if (path == null ||
-        path.isEmpty ||
+    if (path.isEmpty ||
         package != _dartPackage && !path.endsWith(_dartExtension)) {
-      throw new ArgumentError.value(
-          path, 'path', 'Must have a .dart extension');
+      throw ArgumentError.value(
+        path,
+        'path',
+        'Must have a .dart extension',
+      );
     }
-    if (symbol == null || symbol.isEmpty) {
-      throw new ArgumentError.value(
-          symbol, 'symbol', 'Non-empty value required');
+    if (symbol.isEmpty) {
+      throw ArgumentError.value(
+        symbol,
+        'symbol',
+        'Non-empty value required',
+      );
     }
-    return new SymbolPath._(package, path, symbol);
+    return SymbolPath._(package, path, symbol);
   }
 
   /// Within the dart SDK, reference [symbol] found at [path].
   factory SymbolPath.dartSdk(String path, String symbol) {
-    return new SymbolPath(_dartPackage, path, symbol);
+    return SymbolPath(_dartPackage, path, symbol);
   }
 
   /// Defines a global symbol that is not scoped to a package/path.
@@ -99,19 +107,19 @@ class SymbolPath implements Comparable<SymbolPath> {
         path = null;
 
   /// Create a [SymbolPath] using [assetUri].
-  factory SymbolPath.fromAbsoluteUri(Uri assetUri, [String symbolName]) {
+  factory SymbolPath.fromAbsoluteUri(Uri assetUri, [String? symbolName]) {
     assetUri = toAssetUri(assetUri);
     symbolName ??= assetUri.fragment;
     if (assetUri.scheme == _dartPackage) {
-      return new SymbolPath.dartSdk(assetUri.path, symbolName);
+      return SymbolPath.dartSdk(assetUri.path, symbolName);
     }
     if (assetUri.scheme == 'global') {
-      return new SymbolPath.global(symbolName);
+      return SymbolPath.global(symbolName);
     }
-    var paths = assetUri.path.split('/');
-    var package = paths.first;
-    var path = paths.skip(1).join('/');
-    return new SymbolPath(package, path, symbolName);
+    final paths = assetUri.path.split('/');
+    final package = paths.first;
+    final path = paths.skip(1).join('/');
+    return SymbolPath(package, path, symbolName);
   }
 
   /// Converts [libUri] to an absolute "asset:" [Uri].
@@ -120,25 +128,28 @@ class SymbolPath implements Comparable<SymbolPath> {
   ///
   /// Relative URI are rejected with an exception.
   static Uri toAssetUri(Uri libUri) {
-    if (libUri.scheme == null || libUri.scheme.isEmpty) {
-      throw 'Relative library URI not supported: ${libUri}';
+    if (libUri.scheme.isEmpty) {
+      throw 'Relative library URI not supported: $libUri';
     }
 
     if (libUri.scheme != 'package') {
       return libUri;
     }
 
-    var inSegments = libUri.path.split('/');
-    var outSegments = <String>[inSegments.first, 'lib']
-      ..addAll(inSegments.skip(1));
+    final inSegments = libUri.path.split('/');
+    final outSegments = <String>[
+      inSegments.first,
+      'lib',
+      ...inSegments.skip(1)
+    ];
 
-    return libUri.fragment != null && libUri.fragment.isNotEmpty
-        ? new Uri(
+    return libUri.fragment.isNotEmpty
+        ? Uri(
             scheme: 'asset',
             pathSegments: outSegments,
             fragment: libUri.fragment,
           )
-        : new Uri(
+        : Uri(
             scheme: 'asset',
             pathSegments: outSegments,
           );
@@ -171,9 +182,12 @@ class SymbolPath implements Comparable<SymbolPath> {
 
   @override
   int compareTo(SymbolPath symbolPath) {
-    var order = package.compareTo(symbolPath.package);
+    var order = symbolPath.package == null
+        ? 0
+        : package?.compareTo(symbolPath.package!) ?? 0;
     if (order == 0) {
-      order = path.compareTo(symbolPath.path);
+      order =
+          symbolPath.path == null ? 0 : path?.compareTo(symbolPath.path!) ?? 0;
     }
     if (order == 0) {
       order = symbol.compareTo(symbolPath.symbol);
@@ -184,9 +198,9 @@ class SymbolPath implements Comparable<SymbolPath> {
   /// Returns a new absolute 'dart:', 'asset:', or 'global:' [Uri].
   Uri toAbsoluteUri() {
     if (isGlobal) {
-      return new Uri(scheme: 'global', fragment: symbol);
+      return Uri(scheme: 'global', fragment: symbol);
     }
-    return new Uri(
+    return Uri(
       scheme: isDartSdk ? _dartPackage : 'asset',
       path: isDartSdk ? path : '$package/$path',
       fragment: symbol,
@@ -194,46 +208,47 @@ class SymbolPath implements Comparable<SymbolPath> {
   }
 
   /// Returns a [Uri] for this path that can be used in a Dart import statement.
-  Uri toDartUri({Uri relativeTo}) {
+  Uri toDartUri({Uri? relativeTo}) {
     if (isGlobal) {
-      throw new UnsupportedError('Global keys do not map to Dart source.');
+      throw UnsupportedError('Global keys do not map to Dart source.');
     }
 
     if (isDartSdk) {
-      return new Uri(scheme: 'dart', path: path);
+      return Uri(scheme: 'dart', path: path);
     }
 
+    // Attempt to construct relative import.
     if (relativeTo != null) {
-      // Attempt to construct relative import.
-      Uri normalizedBase = relativeTo.normalizePath();
-      List<String> baseSegments = normalizedBase.path.split('/')..removeLast();
-      List<String> targetSegments = toAbsoluteUri().path.split('/');
+      final normalizedBase = relativeTo.normalizePath();
+      final baseSegments = normalizedBase.path.split('/')..removeLast();
+      final targetSegments = toAbsoluteUri().path.split('/');
       if (baseSegments.first == targetSegments.first &&
           baseSegments[1] == targetSegments[1]) {
         // Ok, we're in the same package and in the same top-level directory.
-        String relativePath = pkg_path.relative(
-            targetSegments.skip(2).join('/'),
-            from: baseSegments.skip(2).join('/'));
-        return new Uri(path: pkg_path.split(relativePath).join('/'));
+        final relativePath = pkg_path.relative(
+          targetSegments.skip(2).join('/'),
+          from: baseSegments.skip(2).join('/'),
+        );
+        return Uri(path: pkg_path.split(relativePath).join('/'));
       }
     }
 
-    var pathSegments = path.split('/');
+    final pathSegments = path?.split('/') ?? [];
 
     if (pathSegments.first != 'lib') {
-      throw new StateError(
-          'Cannot construct absolute import URI from ${relativeTo} '
+      throw StateError('Cannot construct absolute import URI from $relativeTo '
           'to a non-lib Dart file: ${toAbsoluteUri()}');
     }
 
-    var packagePath = pathSegments.sublist(1).join('/');
-    return new Uri(
-        scheme: isDartSdk ? _dartPackage : 'package',
-        path: isDartSdk ? path : '$package/$packagePath');
+    final packagePath = pathSegments.sublist(1).join('/');
+    return Uri(
+      scheme: isDartSdk ? _dartPackage : 'package',
+      path: isDartSdk ? path : '$package/$packagePath',
+    );
   }
 
   /// Absolute path to this symbol for use in log messages.
-  String toHumanReadableString() => '${toDartUri()}#${symbol}';
+  String toHumanReadableString() => '${toDartUri()}#$symbol';
 
   @override
   String toString() => '$SymbolPath {${toAbsoluteUri()}}';

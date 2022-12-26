@@ -4,24 +4,19 @@ import 'package:test/test.dart';
 void main() {
   group('$SymbolPath', () {
     group('should prevent construction when', () {
-      void assertThrowsArgumentError(
-          {String package: 'test',
-          String path: 'test.dart',
-          String symbol: 'Test'}) {
+      void assertThrowsArgumentError({
+        String package = 'test',
+        String path = 'test.dart',
+        String symbol = 'Test',
+      }) {
         expect(
-            () => new SymbolPath(package, path, symbol), throwsArgumentError);
+          () => SymbolPath(package, path, symbol),
+          throwsArgumentError,
+        );
       }
-
-      test('package is null', () {
-        assertThrowsArgumentError(package: null);
-      });
 
       test('package is empty', () {
         assertThrowsArgumentError(package: '');
-      });
-
-      test('path is null', () {
-        assertThrowsArgumentError(path: null);
       });
 
       test('path does not end with ".dart"', () {
@@ -32,10 +27,6 @@ void main() {
         assertThrowsArgumentError(package: 'dart', path: '');
       });
 
-      test('symbol is null', () {
-        assertThrowsArgumentError(symbol: null);
-      });
-
       test('symbol is empty', () {
         assertThrowsArgumentError(symbol: '');
       });
@@ -43,14 +34,14 @@ void main() {
 
     test('should set the package as "dart" with the dartSdk factory', () {
       expect(
-        new SymbolPath.dartSdk('core', 'List'),
-        new SymbolPath('dart', 'core', 'List'),
+        SymbolPath.dartSdk('core', 'List'),
+        SymbolPath('dart', 'core', 'List'),
       );
     });
 
     test('should generate a valid asset URI for a Dart package', () {
       expect(
-        new SymbolPath('collection', 'lib/collection.dart', 'MapEquality')
+        SymbolPath('collection', 'lib/collection.dart', 'MapEquality')
             .toAbsoluteUri()
             .toString(),
         'asset:collection/lib/collection.dart#MapEquality',
@@ -59,14 +50,14 @@ void main() {
 
     test('should generate a valid asset URI for a Dart SDK package', () {
       expect(
-        new SymbolPath.dartSdk('core', 'List').toAbsoluteUri().toString(),
+        SymbolPath.dartSdk('core', 'List').toAbsoluteUri().toString(),
         'dart:core#List',
       );
     });
 
     test('should generate a valid import URI for a Dart SDK package', () {
       expect(
-        new SymbolPath.dartSdk('core', 'DateTime').toDartUri().toString(),
+        SymbolPath.dartSdk('core', 'DateTime').toDartUri().toString(),
         'dart:core',
       );
     });

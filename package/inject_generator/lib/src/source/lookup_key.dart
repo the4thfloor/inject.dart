@@ -2,8 +2,9 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:inject_generator/src/source/symbol_path.dart';
 import 'package:quiver/core.dart';
+
+import 'symbol_path.dart';
 
 /// A representation of a key in the dependency injection graph.
 ///
@@ -17,18 +18,19 @@ class LookupKey {
   /// Optional qualifier for the type.
   final Optional<SymbolPath> qualifier;
 
-  LookupKey(this.root, {SymbolPath qualifier})
-      : this.qualifier = new Optional.fromNullable(qualifier);
+  LookupKey(this.root, {SymbolPath? qualifier})
+      : qualifier = Optional.fromNullable(qualifier);
 
   /// Returns a new instance from the JSON encoding of an instance.
   ///
   /// See also [LookupKey.toJson].
   factory LookupKey.fromJson(Map<String, dynamic> json) {
-    return new LookupKey(
-        new SymbolPath.fromAbsoluteUri(Uri.parse(json['root'])),
-        qualifier: json['qualifier'] == null
-            ? null
-            : new SymbolPath.fromAbsoluteUri(Uri.parse(json['qualifier'])));
+    return LookupKey(
+      SymbolPath.fromAbsoluteUri(Uri.parse(json['root'])),
+      qualifier: json['qualifier'] == null
+          ? null
+          : SymbolPath.fromAbsoluteUri(Uri.parse(json['qualifier'])),
+    );
   }
 
   /// A human-readable representation of the dart Symbol of this type.

@@ -4,11 +4,11 @@
 
 import 'dart:async';
 
-import 'package:third_party.dart.inject.example.coffee/coffee_app.dart';
-import 'package:third_party.dart.inject.example.coffee/src/drip_coffee_module.dart';
+import 'package:inject_example_coffee/coffee_app.dart';
+import 'package:inject_example_coffee/src/drip_coffee_module.dart';
 
 /// An example application that simulates running the `Coffee` application.
-Future<Null> main() async {
-  var coffee = await Coffee.create(new DripCoffeeModule());
+Future<void> main() async {
+  final coffee = await Coffee.create(DripCoffeeModule());
   coffee.getCoffeeMaker().brew();
 }

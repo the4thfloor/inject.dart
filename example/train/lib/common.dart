@@ -4,7 +4,7 @@ import 'package:inject/inject.dart';
 @module
 class CommonServices {
   @provide
-  CarMaintenance maintenance() => new CarMaintenance();
+  CarMaintenance maintenance() => CarMaintenance();
 }
 
 /// Fixes train cars of all kinds.

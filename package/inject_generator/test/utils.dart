@@ -6,8 +6,6 @@ import 'package:build_test/build_test.dart';
 import 'package:inject_generator/src/build/summary_builder.dart';
 import 'package:inject_generator/src/summary.dart';
 import 'package:logging/logging.dart';
-import 'package:matcher/matcher.dart';
-import 'package:meta/meta.dart';
 import 'package:test/test.dart';
 
 /// Tests that [buggyCode] produces the [expectedWarning].
@@ -23,13 +21,16 @@ import 'package:test/test.dart';
 ///     )
 void testShouldWarn(
   String description, {
-  @required String buggyCode,
-  @required String expectedWarning,
+  required String buggyCode,
+  required String expectedWarning,
 }) {
-  test('should warn ${description}', () async {
-    var tb = new SummaryTestBed(pkg: 'a', inputs: {
-      'a|lib/buggy_code.dart': buggyCode,
-    });
+  test('should warn $description', () async {
+    final tb = SummaryTestBed(
+      pkg: 'a',
+      inputs: {
+        'a|lib/buggy_code.dart': buggyCode,
+      },
+    );
     await tb.run();
 
     tb.expectLogRecord(Level.WARNING, expectedWarning);
@@ -37,8 +38,8 @@ void testShouldWarn(
 }
 
 /// Matches a [LogRecord] on its [level] and [message].
-Matcher logRecord(Level level, Pattern message) {
-  return new _LogRecordMatcher(level, message);
+Matcher logRecord(Level level, String message) {
+  return _LogRecordMatcher(level, message);
 }
 
 /// Makes testing the [InjectSummaryBuilder] convenient.
@@ -50,12 +51,12 @@ class SummaryTestBed {
   final Map<String, String> inputs;
 
   /// Log records written by the builder.
-  final logRecords = <LogRecord>[];
+  final List<LogRecord> logRecords = <LogRecord>[];
 
-  final _writer = new TestingAssetWriter();
+  final TestingAssetWriter _writer = TestingAssetWriter();
 
   /// Constructor.
-  SummaryTestBed({this.pkg, this.inputs});
+  SummaryTestBed({required this.pkg, required this.inputs});
 
   /// Generated library summaries keyed by their paths.
   Map<String, LibrarySummary> get summaries => _writer.summaries;
@@ -69,16 +70,16 @@ class SummaryTestBed {
   /// Verifies that [logRecords] contains [expectedCount] number of messages
   /// that match [message].
   void expectLogRecordCount(Level level, String message, int expectedCount) {
-    var matcher = logRecord(level, message);
-    int count = logRecords
+    final matcher = logRecord(level, message);
+    final count = logRecords
         .map((record) => matcher.matches(record, {}))
         .where((matches) => matches)
         .length;
     expect(
       count,
       expectedCount,
-      reason: 'Expected the log to ${expectedCount} messages with "${message}" '
-          'but found ${count}. The log contains:\n${logRecords.join('\n')}',
+      reason: 'Expected the log to $expectedCount messages with "$message" '
+          'but found $count. The log contains:\n${logRecords.join('\n')}',
     );
   }
 
@@ -86,26 +87,29 @@ class SummaryTestBed {
   ///
   /// This method is meant to be used for debugging tests.
   void printLog() {
-    for (var record in logRecords) {
+    for (final record in logRecords) {
       print(record);
     }
   }
 
   /// Runs the [InjectSummaryBuilder].
-  Future<Null> run() async {
+  Future<void> run() async {
     final reader = await PackageAssetReader.currentIsolate();
     final metadata = await reader.readAsString(
-      new AssetId('inject', 'lib/inject.dart'),
+      AssetId('inject', 'lib/inject.dart'),
     );
     inputs.addAll({
       'inject|lib/inject.dart': metadata,
     });
-    var builder = new InjectSummaryBuilder();
-    await testBuilder(builder, inputs,
-        rootPackage: pkg,
-        isInput: (assetId) => assetId.startsWith(pkg),
-        onLog: logRecords.add,
-        writer: _writer);
+    const builder = InjectSummaryBuilder();
+    await testBuilder(
+      builder,
+      inputs,
+      rootPackage: pkg,
+      isInput: (assetId) => assetId.startsWith(pkg),
+      onLog: logRecords.add,
+      writer: _writer,
+    );
   }
 }
 
@@ -117,7 +121,7 @@ class _LogRecordMatcher extends Matcher {
 
   @override
   Description describe(Description description) {
-    description.add('log record of level ${level} with message "${message}".');
+    description.add('log record of level $level with message "$message".');
     return description;
   }
 
@@ -130,15 +134,18 @@ class _LogRecordMatcher extends Matcher {
 }
 
 class TestingAssetWriter extends InMemoryAssetWriter {
-  final summaries = <String, LibrarySummary>{};
-  final genfiles = <String, String>{};
+  final Map<String, LibrarySummary> summaries = <String, LibrarySummary>{};
+  final Map<String, String> genfiles = <String, String>{};
 
   TestingAssetWriter();
 
   @override
-  Future writeAsString(AssetId id, String contents,
-      {Encoding encoding: utf8}) async {
-    super.writeAsString(id, contents, encoding: encoding);
+  Future writeAsString(
+    AssetId id,
+    String contents, {
+    Encoding encoding = utf8,
+  }) async {
+    await super.writeAsString(id, contents, encoding: encoding);
     if (id.path.endsWith('.inject.summary')) {
       summaries[id.toString()] =
           LibrarySummary.parseJson(json.decode(contents));

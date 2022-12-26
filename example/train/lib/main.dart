@@ -5,11 +5,11 @@ import 'common.dart';
 import 'food.dart';
 import 'locomotive.dart';
 
-Future<Null> main() async {
+Future<void> main() async {
   final services = await TrainServices.create(
-    new BikeServices(),
-    new FoodServices(),
-    new CommonServices(),
+    BikeServices(),
+    FoodServices(),
+    CommonServices(),
   );
   print(services.bikeRack.pleaseFix());
 }

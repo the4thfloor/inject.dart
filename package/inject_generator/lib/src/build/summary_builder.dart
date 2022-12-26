@@ -8,12 +8,14 @@ import 'dart:convert';
 import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/dart/element/type.dart';
 import 'package:build/build.dart';
-import 'package:inject_generator/src/analyzer/utils.dart';
-import 'package:inject_generator/src/analyzer/visitors.dart';
-import 'package:inject_generator/src/build/abstract_builder.dart';
-import 'package:inject_generator/src/context.dart';
-import 'package:inject_generator/src/source/symbol_path.dart';
-import 'package:inject_generator/src/summary.dart';
+import 'package:collection/collection.dart';
+
+import '../analyzer/utils.dart';
+import '../analyzer/visitors.dart';
+import '../context.dart';
+import '../source/symbol_path.dart';
+import '../summary.dart';
+import 'abstract_builder.dart';
 
 /// Extracts metadata about modules and injectors from Dart libraries.
 class InjectSummaryBuilder extends AbstractInjectBuilder {
@@ -31,12 +33,11 @@ class InjectSummaryBuilder extends AbstractInjectBuilder {
     log.info('After resolve');
     LibrarySummary summary;
     if (await resolver.isLibrary(buildStep.inputId)) {
-      var lib = await buildStep.inputLibrary;
-      var injectors = <InjectorSummary>[];
-      var modules = <ModuleSummary>[];
-      var injectables = <InjectableSummary>[];
-      new _SummaryBuilderVisitor(injectors, modules, injectables)
-          .visitLibrary(lib);
+      final lib = await buildStep.inputLibrary;
+      final injectors = <InjectorSummary>[];
+      final modules = <ModuleSummary>[];
+      final injectables = <InjectableSummary>[];
+      _SummaryBuilderVisitor(injectors, modules, injectables).visitLibrary(lib);
       if (injectors.isEmpty && modules.isEmpty && injectables.isEmpty) {
         // We are going to be outputting an empty file, which is not ideal.
         // Users should take steps to make sure summary building steps only
@@ -49,28 +50,30 @@ class InjectSummaryBuilder extends AbstractInjectBuilder {
             'no @module, @injector or @provide annotated classes '
             'found in library');
       }
-      summary = new LibrarySummary(
+      summary = LibrarySummary(
         SymbolPath.toAssetUri(lib.source.uri),
         injectors: injectors,
         modules: modules,
         injectables: injectables,
       );
     } else {
-      var contents = await buildStep.readAsString(buildStep.inputId);
-      if (contents.contains(new RegExp(r'part\s+of'))) {
+      final contents = await buildStep.readAsString(buildStep.inputId);
+      if (contents.contains(RegExp(r'part\s+of'))) {
         builderContext.rawLogger.info(
           'Skipping ${buildStep.inputId} because it is a part file.',
         );
       } else {
         builderContext.rawLogger.severe(
           'Failed to analyze ${buildStep.inputId}. Please check that the '
-              'file is a valid Dart library.',
+          'file is a valid Dart library.',
         );
       }
-      summary = new LibrarySummary(new Uri(
-        scheme: 'asset',
-        path: '${buildStep.inputId.package}/${buildStep.inputId.path}',
-      ));
+      summary = LibrarySummary(
+        Uri(
+          scheme: 'asset',
+          path: '${buildStep.inputId.package}/${buildStep.inputId.path}',
+        ),
+      );
     }
     return _librarySummaryToJson(summary);
   }
@@ -91,16 +94,16 @@ class _SummaryBuilderVisitor extends InjectLibraryVisitor {
 
   @override
   void visitInjectable(ClassElement clazz, bool singleton) {
-    bool classIsAnnotated = hasProvideAnnotation(clazz);
-    List<ConstructorElement> annotatedConstructors =
+    final classIsAnnotated = hasProvideAnnotation(clazz);
+    final annotatedConstructors =
         clazz.constructors.where(hasProvideAnnotation).toList();
 
     if (classIsAnnotated && annotatedConstructors.isNotEmpty) {
       builderContext.log.severe(
         clazz,
         'has @provide annotation on both the class and on one of the '
-            'constructors or factories. Please annotate one or the other, '
-            'but not both.',
+        'constructors or factories. Please annotate one or the other, '
+        'but not both.',
       );
     }
 
@@ -108,7 +111,7 @@ class _SummaryBuilderVisitor extends InjectLibraryVisitor {
       builderContext.log.severe(
         clazz,
         'has more than one constructor. Please annotate one of the '
-            'constructors instead of the class.',
+        'constructors instead of the class.',
       );
     }
 
@@ -119,33 +122,37 @@ class _SummaryBuilderVisitor extends InjectLibraryVisitor {
       );
     }
 
-    ProviderSummary constructorSummary;
+    ProviderSummary? constructorSummary;
     if (annotatedConstructors.length == 1) {
       // Use the explicitly annotated constructor.
       constructorSummary = _createConstructorProviderSummary(
-          annotatedConstructors.single, singleton);
+        annotatedConstructors.single,
+        singleton,
+      );
     } else if (classIsAnnotated) {
       if (clazz.constructors.length <= 1) {
         // This is the case of a default or an only constructor.
         constructorSummary = _createConstructorProviderSummary(
-            clazz.constructors.single, singleton);
+          clazz.constructors.single,
+          singleton,
+        );
       }
     }
 
     if (constructorSummary != null) {
       _injectables
-          .add(new InjectableSummary(getSymbolPath(clazz), constructorSummary));
+          .add(InjectableSummary(getSymbolPath(clazz), constructorSummary));
     }
   }
 
   @override
   void visitInjector(ClassElement clazz, List<SymbolPath> modules) {
-    var visitor = new _ProviderSummaryVisitor(true)..visitClass(clazz);
+    final visitor = _ProviderSummaryVisitor(true)..visitClass(clazz);
     if (visitor._providers.isEmpty) {
       builderContext.log
           .severe(clazz, 'injector class must declare at least one provider');
     }
-    var providers = visitor._providers.where((ProviderSummary ps) {
+    final providers = visitor._providers.where((ps) {
       if (ps.isAsynchronous) {
         builderContext.log.severe(
           clazz,
@@ -155,19 +162,19 @@ class _SummaryBuilderVisitor extends InjectLibraryVisitor {
       }
       return true;
     }).toList();
-    var summary = new InjectorSummary(getSymbolPath(clazz), modules, providers);
+    final summary = InjectorSummary(getSymbolPath(clazz), modules, providers);
     _injectors.add(summary);
   }
 
   @override
   void visitModule(ClassElement clazz) {
-    var visitor = new _ProviderSummaryVisitor(false)..visitClass(clazz);
-    var providers = visitor._providers.where((ProviderSummary ps) {
+    final visitor = _ProviderSummaryVisitor(false)..visitClass(clazz);
+    final providers = visitor._providers.where((ps) {
       if (ps.kind == ProviderKind.getter) {
         builderContext.log.severe(
           clazz,
           'module class must not declare providers as getters, '
-              'but only as methods.',
+          'but only as methods.',
         );
         return false;
       }
@@ -178,7 +185,7 @@ class _SummaryBuilderVisitor extends InjectLibraryVisitor {
           .warning(clazz, 'module class must declare at least one provider');
       return;
     }
-    var summary = new ModuleSummary(getSymbolPath(clazz), providers);
+    final summary = ModuleSummary(getSymbolPath(clazz), providers);
     _modules.add(summary);
   }
 }
@@ -193,7 +200,7 @@ class _ProviderSummaryVisitor extends InjectClassVisitor {
     MethodElement method,
     bool singleton,
     bool asynchronous, {
-    SymbolPath qualifier,
+    SymbolPath? qualifier,
   }) {
     if (isForInjector && !method.isAbstract) {
       builderContext.log.severe(
@@ -210,11 +217,11 @@ class _ProviderSummaryVisitor extends InjectClassVisitor {
       return;
     }
 
-    DartType returnType = asynchronous
+    final returnType = asynchronous
         ? (method.returnType as ParameterizedType).typeArguments.single
         : method.returnType;
 
-    if (!_checkReturnType(method, returnType.element)) {
+    if (!_checkReturnType(method, returnType.element!)) {
       return;
     }
 
@@ -228,7 +235,7 @@ class _ProviderSummaryVisitor extends InjectClassVisitor {
       return;
     }
 
-    var summary = new ProviderSummary(
+    final summary = ProviderSummary(
       getInjectedType(returnType, qualifier: qualifier),
       method.name,
       ProviderKind.method,
@@ -257,10 +264,12 @@ class _ProviderSummaryVisitor extends InjectClassVisitor {
                   'code.');
               return null;
             }
-            return getInjectedType(p.type,
-                qualifier: hasQualifier(p) ? extractQualifier(p) : null);
+            return getInjectedType(
+              p.type,
+              qualifier: hasQualifier(p) ? extractQualifier(p) : null,
+            );
           })
-          .where((d) => d != null)
+          .whereNotNull()
           .toList(),
     );
     _providers.add(summary);
@@ -268,11 +277,11 @@ class _ProviderSummaryVisitor extends InjectClassVisitor {
 
   @override
   void visitProvideGetter(FieldElement field, bool singleton) {
-    if (!_checkReturnType(field.getter, field.getter.returnType.element)) {
+    if (!_checkReturnType(field.getter!, field.getter!.returnType.element!)) {
       return;
     }
-    var returnType = field.getter.returnType;
-    var summary = new ProviderSummary(
+    final returnType = field.getter!.returnType;
+    final summary = ProviderSummary(
       getInjectedType(returnType),
       field.name,
       ProviderKind.getter,
@@ -283,17 +292,19 @@ class _ProviderSummaryVisitor extends InjectClassVisitor {
   }
 
   bool _checkReturnType(
-      ExecutableElement executableElement, Element returnTypeElement) {
+    ExecutableElement executableElement,
+    Element returnTypeElement,
+  ) {
     if (returnTypeElement.kind == ElementKind.DYNAMIC ||
         returnTypeElement is TypeDefiningElement &&
-            returnTypeElement.type.isDynamic) {
+            returnTypeElement.kind == ElementKind.DYNAMIC) {
       builderContext.log.severe(
         executableElement,
         'provider return type resolved to dynamic. This can happen when the '
-            'return type is not specified, when it is specified as `dynamic`, or '
-            'when the return type failed to resolve to a proper type due to a '
-            'bad import or a typo. Do make sure that there are no analyzer '
-            'warnings in your code.',
+        'return type is not specified, when it is specified as `dynamic`, or '
+        'when the return type failed to resolve to a proper type due to a '
+        'bad import or a typo. Do make sure that there are no analyzer '
+        'warnings in your code.',
       );
       return false;
     }
@@ -302,55 +313,60 @@ class _ProviderSummaryVisitor extends InjectClassVisitor {
 }
 
 ProviderSummary _createConstructorProviderSummary(
-    ConstructorElement element, bool isSingleton) {
-  var returnType = element.enclosingElement.type;
-  return new ProviderSummary(
-      getInjectedType(returnType), element.name, ProviderKind.constructor,
-      singleton: isSingleton,
-      dependencies: element.parameters
-          .map((p) {
-            var qualifier;
-            if (hasQualifier(p)) {
-              qualifier = extractQualifier(p);
-            } else if (p.isInitializingFormal) {
-              // In the example of:
-              //
-              // @someQualifier
-              // final String _some;
-              //
-              // Clazz(this._some);
-              //
-              // Extract @someQualifier as the qualifier.
-              final clazz = element.enclosingElement;
-              final formal = clazz.getField(p.name);
-              if (hasQualifier(formal)) {
-                qualifier = extractQualifier(formal);
-              }
+  ConstructorElement element,
+  bool isSingleton,
+) {
+  final returnType = element.enclosingElement.thisType;
+  return ProviderSummary(
+    getInjectedType(returnType),
+    element.name,
+    ProviderKind.constructor,
+    singleton: isSingleton,
+    dependencies: element.parameters
+        .map((p) {
+          SymbolPath? qualifier;
+          if (hasQualifier(p)) {
+            qualifier = extractQualifier(p);
+          } else if (p.isInitializingFormal) {
+            // In the example of:
+            //
+            // @someQualifier
+            // final String _some;
+            //
+            // Clazz(this._some);
+            //
+            // Extract @someQualifier as the qualifier.
+            final clazz = element.enclosingElement;
+            final formal = clazz.getField(p.name)!;
+            if (hasQualifier(formal)) {
+              qualifier = extractQualifier(formal);
             }
+          }
 
-            if (p.type.isDynamic) {
-              builderContext.log.severe(
-                p,
-                'a constructor argument type resolved to dynamic. This can '
-                    'happen when the return type is not specified, when it is '
-                    'specified as `dynamic`, or when the return type failed '
-                    'to resolve to a proper type due to a bad import or a '
-                    'typo. Do make sure that there are no analyzer warnings '
-                    'in your code.',
-              );
-              return null;
-            }
+          if (p.type.isDynamic) {
+            builderContext.log.severe(
+              p,
+              'a constructor argument type resolved to dynamic. This can '
+              'happen when the return type is not specified, when it is '
+              'specified as `dynamic`, or when the return type failed '
+              'to resolve to a proper type due to a bad import or a '
+              'typo. Do make sure that there are no analyzer warnings '
+              'in your code.',
+            );
+            return null;
+          }
 
-            if (p.isNamed) {
-              builderContext.log
-                  .severe(p, 'named constructor parameters are unsupported');
-              return null;
-            }
+          if (p.isNamed) {
+            builderContext.log
+                .severe(p, 'named constructor parameters are unsupported');
+            return null;
+          }
 
-            return getInjectedType(p.type, qualifier: qualifier);
-          })
-          .where((d) => d != null)
-          .toList());
+          return getInjectedType(p.type, qualifier: qualifier);
+        })
+        .whereNotNull()
+        .toList(),
+  );
 }
 
 String _librarySummaryToJson(LibrarySummary library) {

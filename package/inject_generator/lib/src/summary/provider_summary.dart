@@ -17,17 +17,18 @@ enum ProviderKind {
 }
 
 /// Maps between [ProviderKind] enum values and their names.
-final _providerKindNames = new BiMap<ProviderKind, String>()
-  ..[ProviderKind.constructor] = 'constructor'
-  ..[ProviderKind.method] = 'method'
-  ..[ProviderKind.getter] = 'getter';
+final BiMap<ProviderKind, String> _providerKindNames =
+    BiMap<ProviderKind, String>()
+      ..[ProviderKind.constructor] = 'constructor'
+      ..[ProviderKind.method] = 'method'
+      ..[ProviderKind.getter] = 'getter';
 
 /// Converts provider [name] to the corresponding `enum` reference.
 ProviderKind providerKindFromName(String name) {
-  ProviderKind kind = _providerKindNames.inverse[name];
+  final kind = _providerKindNames.inverse[name];
 
   if (kind == null) {
-    throw new ArgumentError.value(name, 'name', 'Invalid provider kind name');
+    throw ArgumentError.value(name, 'name', 'Invalid provider kind name');
   }
 
   return kind;
@@ -37,10 +38,10 @@ ProviderKind providerKindFromName(String name) {
 ///
 /// See also [providerKindFromName].
 String provideKindName(ProviderKind kind) {
-  String name = _providerKindNames[kind];
+  final name = _providerKindNames[kind];
 
   if (name == null) {
-    throw new ArgumentError.value(kind, 'kind', 'Unrecognized provider kind');
+    throw ArgumentError.value(kind, 'kind', 'Unrecognized provider kind');
   }
 
   return name;
@@ -73,36 +74,17 @@ class ProviderSummary {
     InjectedType injectedType,
     String name,
     ProviderKind kind, {
-    List<InjectedType> dependencies: const [],
-    bool singleton: false,
-    bool asynchronous: false,
+    List<InjectedType> dependencies = const [],
+    bool singleton = false,
+    bool asynchronous = false,
   }) {
-    if (injectedType == null) {
-      throw new ArgumentError.notNull('lookupKey');
-    }
-    if (name == null) {
-      throw new ArgumentError.notNull('name');
-    }
-    if (kind == null) {
-      throw new ArgumentError.notNull('providerKind');
-    }
-    if (dependencies == null) {
-      throw new ArgumentError.notNull('dependencies');
-    }
-    if (singleton == null) {
-      throw new ArgumentError.notNull('singleton');
-    }
-    if (asynchronous && kind != ProviderKind.method) {
-      throw new ArgumentError(
-          'Only methods can be asynchronous providers but found $kind $name.');
-    }
-    return new ProviderSummary._(
+    return ProviderSummary._(
       name,
       kind,
       injectedType,
       singleton,
       asynchronous,
-      new List<InjectedType>.unmodifiable(dependencies),
+      List<InjectedType>.unmodifiable(dependencies),
     );
   }
 
@@ -128,14 +110,12 @@ class ProviderSummary {
   }
 
   @override
-  String toString() =>
-      '$ProviderSummary ' +
-      {
+  String toString() => '$ProviderSummary ${{
         'name': name,
         'kind': kind,
         'injectedType': injectedType,
         'singleton': isSingleton,
         'asynchronous': isAsynchronous,
         'dependencies': dependencies
-      }.toString();
+      }}';
 }

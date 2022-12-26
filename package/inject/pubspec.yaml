@@ -1,13 +1,13 @@
 name: inject
 version: 1.0.0-alpha
 description: Compile-time dependency injection for Dart
-authors:
-  - Matan Lurey <matanl@google.com>
-  - Yegor Jbanov <yjbanov@google.com>
 homepage: https://pub.dartlang.org/packages/inject
 
 environment:
-  sdk: '>=2.0.0 <3.0.0'
+  sdk: '>=2.18.6 <3.0.0'
 
 dependencies:
-  meta: ^1.1.2
+  meta: ^1.8.0
+
+dev_dependencies:
+  lints: ^2.0.1

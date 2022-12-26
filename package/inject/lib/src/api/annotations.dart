@@ -52,7 +52,7 @@ class Qualifier {
 /// In this instance, an injector that includes `CarModule` will know how to
 /// provide an instance of `Car`, given that all parameters of `provideCar` are
 /// satisfied in the final object graph.
-const module = const Module._();
+const module = Module._();
 
 /// **INTERNAL ONLY**: Might be exposed if we add flags or other properties.
 @visibleForTesting
@@ -74,7 +74,7 @@ class Module {
 ///
 /// The type provided by this annotation can be further specified by including a
 /// [Qualifier] annotation.
-const provide = const Provide._();
+const provide = Provide._();
 
 /// **INTERNAL ONLY**: Might be exposed if we add flags or other properties.
 @visibleForTesting
@@ -99,7 +99,7 @@ class Provide {
 ///       // identical(getFoo(), getFoo()) is guaranteed to be true.
 ///       Foo getFoo();
 ///     }
-const singleton = const Singleton._();
+const singleton = Singleton._();
 
 /// **INTERNAL ONLY**: Might be exposed if we add flags or other properties.
 @visibleForTesting
@@ -146,7 +146,7 @@ class Singleton {
 ///       @provide
 ///       Dealership(Future<Car> car);
 ///     }
-const asynchronous = const Asynchronous._();
+const asynchronous = Asynchronous._();
 
 /// **INTERNAL ONLY**: Might be exposed if we add flags or other properties.
 @visibleForTesting
@@ -195,4 +195,4 @@ class Injector {
 }
 
 /// An annotation to mark something as an [Injector] with no included modules.
-const injector = const Injector();
+const injector = Injector();

@@ -3,7 +3,7 @@ import 'package:inject/inject.dart';
 import 'common.dart';
 
 /// Provides service locator for food car feature code.
-FoodServiceLocator foodServices;
+FoodServiceLocator? foodServices;
 
 /// Declares dependencies used by the food car.
 abstract class FoodServiceLocator {
@@ -15,7 +15,7 @@ abstract class FoodServiceLocator {
 @module
 class FoodServices {
   @provide
-  Kitchen kitchen(CarMaintenance cm) => new Kitchen(cm);
+  Kitchen kitchen(CarMaintenance cm) => Kitchen(cm);
 }
 
 class Kitchen {

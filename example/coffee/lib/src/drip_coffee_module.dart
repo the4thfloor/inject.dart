@@ -12,8 +12,8 @@ import 'pump.dart';
 import 'thermosiphon.dart';
 
 // Examples of a named/qualified globally scoped token for injection.
-const brandName = const Qualifier(#brandName);
-const modelName = const Qualifier(#modelName);
+const brandName = Qualifier(#brandName);
+const modelName = Qualifier(#modelName);
 
 /// Provides various objects to create a drip coffee brewer.
 @module
@@ -45,14 +45,14 @@ class DripCoffeeModule {
   /// downstream.
   @provide
   @asynchronous
-  Future<PowerOutlet> providePowerOutlet() async => new PowerOutlet();
+  Future<PowerOutlet> providePowerOutlet() async => PowerOutlet();
 
   /// An example of a singleton provider.
   ///
   /// Calling it multiple times will return the same instance.
   @provide
   @singleton
-  Electricity provideElectricity(PowerOutlet outlet) => new Electricity(outlet);
+  Electricity provideElectricity(PowerOutlet outlet) => Electricity(outlet);
 
   /// Another example of an asynchronous dependency.
   ///
@@ -62,10 +62,10 @@ class DripCoffeeModule {
   /// aware of how its dependencies are resolved_.
   @provide
   @asynchronous
-  Future<Heater> provideHeater(Electricity e) async => new ElectricHeater(e);
+  Future<Heater> provideHeater(Electricity e) async => ElectricHeater(e);
 
   /// A most basic provider that provides synchronously instantiated
   /// non-singleton [Heater] objects.
   @provide
-  Pump providePump(Heater heater) => new Thermosiphon(heater);
+  Pump providePump(Heater heater) => Thermosiphon(heater);
 }

@@ -5,20 +5,20 @@ import 'package:inject_generator/src/source/symbol_path.dart';
 import 'package:quiver/testing/equality.dart';
 import 'package:test/test.dart';
 
-final typeName1 = 'TypeName1';
-final typeSymbolPath1 = new SymbolPath.global(typeName1);
+const String typeName1 = 'TypeName1';
+const SymbolPath typeSymbolPath1 = SymbolPath.global(typeName1);
 
-final typeName2 = 'TypeName2';
-final typeSymbolPath2 = new SymbolPath.global(typeName2);
+const String typeName2 = 'TypeName2';
+const SymbolPath typeSymbolPath2 = SymbolPath.global(typeName2);
 
-final qualifierName = 'fakeQualifier';
-final qualifier = new SymbolPath.global(qualifierName);
+const String qualifierName = 'fakeQualifier';
+const SymbolPath qualifier = SymbolPath.global(qualifierName);
 
 void main() {
   group(LookupKey, () {
     group('toPrettyString', () {
       test('only root', () {
-        final type = new LookupKey(typeSymbolPath1);
+        final type = LookupKey(typeSymbolPath1);
 
         final prettyString = type.toPrettyString();
 
@@ -26,7 +26,7 @@ void main() {
       });
 
       test('qualified type', () {
-        final type = new LookupKey(typeSymbolPath1, qualifier: qualifier);
+        final type = LookupKey(typeSymbolPath1, qualifier: qualifier);
 
         final prettyString = type.toPrettyString();
 
@@ -36,7 +36,7 @@ void main() {
 
     group('serialization', () {
       test('with all fields', () {
-        final type = new LookupKey(typeSymbolPath1, qualifier: qualifier);
+        final type = LookupKey(typeSymbolPath1, qualifier: qualifier);
 
         final deserialized = deserialize(type);
 
@@ -44,7 +44,7 @@ void main() {
       });
 
       test('without qualifier', () {
-        final type = new LookupKey(typeSymbolPath1);
+        final type = LookupKey(typeSymbolPath1);
 
         final deserialized = deserialize(type);
 
@@ -53,21 +53,21 @@ void main() {
     });
 
     test('equality', () {
-      expect({
-        'only root': [
-          new LookupKey(typeSymbolPath1),
-          new LookupKey(typeSymbolPath1)
-        ],
-        'with qualifier': [
-          new LookupKey(typeSymbolPath1, qualifier: qualifier),
-          new LookupKey(typeSymbolPath1, qualifier: qualifier)
-        ],
-      }, areEqualityGroups);
+      expect(
+        {
+          'only root': [LookupKey(typeSymbolPath1), LookupKey(typeSymbolPath1)],
+          'with qualifier': [
+            LookupKey(typeSymbolPath1, qualifier: qualifier),
+            LookupKey(typeSymbolPath1, qualifier: qualifier)
+          ],
+        },
+        areEqualityGroups,
+      );
     });
   });
 }
 
 LookupKey deserialize(LookupKey type) {
   final json = const JsonEncoder().convert(type);
-  return new LookupKey.fromJson(const JsonDecoder().convert(json));
+  return LookupKey.fromJson(const JsonDecoder().convert(json));
 }

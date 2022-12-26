@@ -4,72 +4,79 @@
 
 import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/dart/element/type.dart';
-import 'package:inject_generator/src/context.dart';
-import 'package:inject_generator/src/source/injected_type.dart';
-import 'package:inject_generator/src/source/lookup_key.dart';
-import 'package:inject_generator/src/source/symbol_path.dart';
+
+import '../context.dart';
+import '../source/injected_type.dart';
+import '../source/lookup_key.dart';
+import '../source/symbol_path.dart';
 
 /// Constructs a serializable path to [element].
 SymbolPath getSymbolPath(Element element) {
-  if (element is TypeDefiningElement && element.type.isDynamic) {
-    throw new ArgumentError('Dynamic element type not supported. This is a '
+  if (element is TypeDefiningElement && element.kind == ElementKind.DYNAMIC) {
+    throw ArgumentError('Dynamic element type not supported. This is a '
         'package:inject bug. Please report it.');
   }
-  return new SymbolPath.fromAbsoluteUri(
-    element.library.source.uri,
+  return SymbolPath.fromAbsoluteUri(
+    element.library!.source.uri,
     element.name,
   );
 }
 
 /// Constructs a [InjectedType] from a [DartType].
-InjectedType getInjectedType(DartType type, {SymbolPath qualifier}) {
+InjectedType getInjectedType(DartType type, {SymbolPath? qualifier}) {
   if (type is FunctionType) {
     if (type.parameters.isNotEmpty) {
       builderContext.log.severe(
           type.element,
           'Only no-arg typedefs are supported, '
           'and no-arg typedefs are treated as providers of the return type. ');
-      throw new ArgumentError();
+      throw ArgumentError();
     }
     if (type.returnType.isDynamic) {
       builderContext.log.severe(
           type.element,
           'Cannot create a provider of type dynamic. '
           'Your function type did not include a return type.');
-      throw new ArgumentError();
+      throw ArgumentError();
     }
-    return new InjectedType(
-        _getLookupKey(type.returnType, qualifier: qualifier),
-        isProvider: true);
+    return InjectedType(
+      _getLookupKey(type.returnType, qualifier: qualifier),
+      isProvider: true,
+    );
   }
 
-  return new InjectedType(_getLookupKey(type, qualifier: qualifier),
-      isProvider: false);
+  return InjectedType(
+    _getLookupKey(type, qualifier: qualifier),
+    isProvider: false,
+  );
 }
 
-LookupKey _getLookupKey(DartType type, {SymbolPath qualifier}) =>
-    new LookupKey(getSymbolPath(type.element), qualifier: qualifier);
+LookupKey _getLookupKey(DartType type, {SymbolPath? qualifier}) =>
+    LookupKey(getSymbolPath(type.element!), qualifier: qualifier);
 
 bool _hasAnnotation(Element element, SymbolPath annotationSymbol) {
   return _getAnnotation(element, annotationSymbol, orElse: () => null) != null;
 }
 
-ElementAnnotation _getAnnotation(Element element, SymbolPath annotationSymbol,
-    {ElementAnnotation orElse()}) {
-  List<ElementAnnotation> resolvedMetadata = element.metadata;
+ElementAnnotation? _getAnnotation(
+  Element element,
+  SymbolPath annotationSymbol, {
+  ElementAnnotation? Function()? orElse,
+}) {
+  final resolvedMetadata = element.metadata;
 
-  for (int i = 0; i < resolvedMetadata.length; i++) {
-    ElementAnnotation annotation = resolvedMetadata[i];
-    Element valueElement = annotation.computeConstantValue()?.type?.element;
+  for (var i = 0; i < resolvedMetadata.length; i++) {
+    final annotation = resolvedMetadata[i];
+    final valueElement = annotation.computeConstantValue()?.type?.element;
 
     if (valueElement == null) {
-      String pathToAnnotation = annotationSymbol.toHumanReadableString();
+      final pathToAnnotation = annotationSymbol.toHumanReadableString();
       builderContext.log.severe(
         annotation.element ?? element,
-        'While looking for annotation ${pathToAnnotation} on "${element}", '
-            'failed to resolve annotation value. A common cause of this error is '
-            'a misspelling or a failure to resolve the import where the '
-            'annotation comes from.',
+        'While looking for annotation $pathToAnnotation on "$element", '
+        'failed to resolve annotation value. A common cause of this error is '
+        'a misspelling or a failure to resolve the import where the '
+        'annotation comes from.',
       );
     } else if (getSymbolPath(valueElement) == annotationSymbol) {
       return annotation;
@@ -99,7 +106,7 @@ bool isInjectableClass(ClassElement clazz) =>
 /// It is a warning to have an `@Singleton()` annotation without an `@Provide()`
 /// annotation.
 bool isSingletonClass(ClassElement clazz) {
-  bool isSingleton = false;
+  var isSingleton = false;
   if (hasSingletonAnnotation(clazz)) {
     if (hasProvideAnnotation(clazz)) {
       isSingleton = true;
@@ -112,7 +119,7 @@ bool isSingletonClass(ClassElement clazz) {
           'to class ${clazz.name}?');
     }
   }
-  for (var constructor in clazz.constructors) {
+  for (final constructor in clazz.constructors) {
     if (hasSingletonAnnotation(constructor)) {
       if (hasProvideAnnotation(constructor)) {
         isSingleton = true;
@@ -153,8 +160,9 @@ bool hasQualifier(Element e) => _hasAnnotation(e, SymbolPath.qualifier);
 /// Returns a global key for the `@Qualifier` annotated method.
 SymbolPath extractQualifier(Element e) {
   final metadata = _getAnnotation(e, SymbolPath.qualifier);
-  final key = metadata.computeConstantValue().getField('name').toSymbolValue();
-  return new SymbolPath.global(key);
+  final key =
+      metadata!.computeConstantValue()!.getField('name')!.toSymbolValue();
+  return SymbolPath.global(key!);
 }
 
 /// Whether [e] is annotated with `@Injector()`.
@@ -165,5 +173,5 @@ bool hasInjectorAnnotation(Element e) => _hasAnnotation(e, SymbolPath.injector);
 /// Throws if the annotation is missing. It is assumed that the calling code
 /// already verified the existence of the annotation using
 /// [hasInjectorAnnotation].
-ElementAnnotation getInjectorAnnotation(Element e) =>
+ElementAnnotation? getInjectorAnnotation(Element e) =>
     _getAnnotation(e, SymbolPath.injector);

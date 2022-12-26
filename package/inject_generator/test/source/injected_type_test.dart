@@ -6,13 +6,13 @@ import 'package:inject_generator/src/source/symbol_path.dart';
 import 'package:quiver/testing/equality.dart';
 import 'package:test/test.dart';
 
-final lookupKey1 = new LookupKey(new SymbolPath.global('1'));
-final lookupKey2 = new LookupKey(new SymbolPath.global('2'));
+final LookupKey lookupKey1 = LookupKey(const SymbolPath.global('1'));
+final LookupKey lookupKey2 = LookupKey(const SymbolPath.global('2'));
 
 void main() {
   group(LookupKey, () {
     test('serialization', () {
-      final type = new InjectedType(lookupKey1, isProvider: true);
+      final type = InjectedType(lookupKey1, isProvider: true);
 
       final deserialized = deserialize(type);
 
@@ -20,25 +20,28 @@ void main() {
     });
 
     test('equality', () {
-      expect({
-        'only lookupKey': [
-          new InjectedType(lookupKey1),
-          new InjectedType(lookupKey1)
-        ],
-        'different lookupKey': [
-          new InjectedType(lookupKey2),
-          new InjectedType(lookupKey2)
-        ],
-        'with isProvider': [
-          new InjectedType(lookupKey1, isProvider: true),
-          new InjectedType(lookupKey1, isProvider: true)
-        ],
-      }, areEqualityGroups);
+      expect(
+        {
+          'only lookupKey': [
+            InjectedType(lookupKey1),
+            InjectedType(lookupKey1)
+          ],
+          'different lookupKey': [
+            InjectedType(lookupKey2),
+            InjectedType(lookupKey2)
+          ],
+          'with isProvider': [
+            InjectedType(lookupKey1, isProvider: true),
+            InjectedType(lookupKey1, isProvider: true)
+          ],
+        },
+        areEqualityGroups,
+      );
     });
   });
 }
 
 InjectedType deserialize(InjectedType type) {
   final json = const JsonEncoder().convert(type);
-  return new InjectedType.fromJson(const JsonDecoder().convert(json));
+  return InjectedType.fromJson(const JsonDecoder().convert(json));
 }

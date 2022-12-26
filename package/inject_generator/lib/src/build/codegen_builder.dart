@@ -8,20 +8,20 @@ import 'dart:convert';
 import 'package:build/build.dart';
 import 'package:code_builder/code_builder.dart';
 import 'package:dart_style/dart_style.dart';
-import 'package:inject_generator/src/build/abstract_builder.dart';
-import 'package:inject_generator/src/context.dart';
-import 'package:inject_generator/src/graph.dart';
-import 'package:inject_generator/src/source/injected_type.dart';
-import 'package:inject_generator/src/source/lookup_key.dart';
-import 'package:inject_generator/src/source/symbol_path.dart';
-import 'package:inject_generator/src/summary.dart';
-import 'package:meta/meta.dart' hide literal;
+
+import '../context.dart';
+import '../graph.dart';
+import '../source/injected_type.dart';
+import '../source/lookup_key.dart';
+import '../source/symbol_path.dart';
+import '../summary.dart';
+import 'abstract_builder.dart';
 
 /// Generates code for a dependency injection-aware library.
 class InjectCodegenBuilder extends AbstractInjectBuilder {
   final bool _useScoping;
 
-  const InjectCodegenBuilder({bool useScoping: true})
+  const InjectCodegenBuilder({bool useScoping = true})
       : _useScoping = useScoping;
 
   @override
@@ -39,9 +39,11 @@ class InjectCodegenBuilder extends AbstractInjectBuilder {
     // We initially read in our <name>.inject.summary JSON blob, parse it, and
     // use it to generate a "{className}$Injector" Dart class for each @injector
     // annotation that was processed and put in the summary.
-    final summary = LibrarySummary.parseJson(jsonDecode(
-      await buildStep.readAsString(buildStep.inputId),
-    ));
+    final summary = LibrarySummary.parseJson(
+      jsonDecode(
+        await buildStep.readAsString(buildStep.inputId),
+      ),
+    );
 
     if (summary.injectors.isEmpty) {
       return '';
@@ -49,26 +51,28 @@ class InjectCodegenBuilder extends AbstractInjectBuilder {
 
     // If we require additional summaries (modules, etc) in other libraries we
     // setup an asset reader that knows how to get the dependencies we need.
-    final reader = new _AssetSummaryReader(buildStep);
+    final reader = _AssetSummaryReader(buildStep);
 
     // This is the library that will be output when done.
-    final target = new LibraryBuilder();
+    final target = LibraryBuilder();
 
     for (final injector in summary.injectors) {
       // Based on this summary, we might need knowledge of other summaries for
       // modules we include, providers we want to generate, etc. Pre-process the
       // summary and get back an object graph.
-      final resolver = new InjectorGraphResolver(reader, injector);
+      final resolver = InjectorGraphResolver(reader, injector);
       final graph = await resolver.resolve();
 
       // Add to the file.
       target.body.add(
-        new _InjectorBuilder(summary.assetUri, injector, graph).build(),
+        _InjectorBuilder(summary.assetUri, injector, graph).build(),
       );
     }
 
-    final emitter = _useScoping ? new DartEmitter.scoped() : new DartEmitter();
-    return new DartFormatter().format(
+    final emitter = _useScoping
+        ? DartEmitter.scoped(useNullSafetySyntax: true)
+        : DartEmitter(useNullSafetySyntax: true);
+    return DartFormatter().format(
       target.build().accept(emitter).toString(),
     );
   }
@@ -83,7 +87,7 @@ class _AssetSummaryReader implements SummaryReader {
   @override
   Future<LibrarySummary> read(String package, String path) {
     return _buildStep
-        .readAsString(new AssetId(package, path))
+        .readAsString(AssetId(package, path))
         .then(jsonDecode)
         .then((json) => LibrarySummary.parseJson(json));
   }
@@ -94,8 +98,8 @@ class _Variable {
   final Reference type;
 
   const _Variable({
-    @required this.name,
-    @required this.type,
+    required this.name,
+    required this.type,
   });
 }
 
@@ -121,26 +125,27 @@ class _InjectorBuilder {
   final Reference concreteInjectorType;
 
   /// Dependencies instantiated eagerly during initialization of the injector.
-  final preInstantiations = new BlockBuilder();
+  final BlockBuilder preInstantiations = BlockBuilder();
 
   /// Dependencies already visited during graph traversal.
-  final _visitedPreInstantiations = new Set<LookupKey>();
+  final Set<LookupKey> _visitedPreInstantiations = <LookupKey>{};
 
-  final creatorMethods = <LookupKey, MethodBuilder>{};
-  final moduleVariables = <SymbolPath, _Variable>{};
+  final Map<LookupKey, MethodBuilder> creatorMethods =
+      <LookupKey, MethodBuilder>{};
+  final Map<SymbolPath, _Variable> moduleVariables = <SymbolPath, _Variable>{};
 
   /// Provider methods on the generated injector class.
-  final injectorProviders = <MethodBuilder>[];
+  final List<MethodBuilder> injectorProviders = <MethodBuilder>[];
 
   /// Fields (modules, singletons) on the injector class.
-  final fields = <FieldBuilder>[];
+  final List<FieldBuilder> fields = <FieldBuilder>[];
 
   /// The constructor of the generated injector class.
   ///
   /// We create a single constructor that will be used by the source class'
   /// factory constructor. It has a single parameter for _each_ module that
   /// the injector uses.
-  final constructor = new ConstructorBuilder()..name = '_';
+  final ConstructorBuilder constructor = ConstructorBuilder()..name = '_';
 
   /// Used to distinguish the names of unused modules.
   int _unusedCounter = 1;
@@ -156,7 +161,7 @@ class _InjectorBuilder {
       summary.clazz.toDartUri(relativeTo: libraryUri).toString(),
     );
     final concreteInjectorType = refer(concreteName);
-    return new _InjectorBuilder._(
+    return _InjectorBuilder._(
       libraryUri,
       summary,
       graph,
@@ -178,73 +183,84 @@ class _InjectorBuilder {
   /// Builds a concrete implementation of the given injector interface.
   Class build() {
     _generateInjectorProviders();
-    return new Class((b) => b
-      ..name = concreteName
-      ..implements.add(injectorType)
-      ..fields.addAll(fields.map((b) => b.build()))
-      ..constructors.add(constructor.build())
-      ..methods.add(_generateInjectorCreatorMethod())
-      ..methods.addAll(creatorMethods.values.map((b) => b.build()))
-      ..methods.addAll(injectorProviders.map((b) => b.build())));
+    return Class(
+      (b) => b
+        ..name = concreteName
+        ..implements.add(injectorType)
+        ..fields.addAll(fields.map((b) => b.build()))
+        ..constructors.add(constructor.build())
+        ..methods.add(_generateInjectorCreatorMethod())
+        ..methods.addAll(creatorMethods.values.map((b) => b.build()))
+        ..methods.addAll(injectorProviders.map((b) => b.build())),
+    );
   }
 
   Method _generateInjectorCreatorMethod() {
-    final returnType = new TypeReference((b) => b
-      ..symbol = 'Future'
-      ..url = 'dart:async'
-      ..types.add(injectorType));
-    final injectorCreator = new MethodBuilder()
+    final returnType = TypeReference(
+      (b) => b
+        ..symbol = 'Future'
+        ..url = 'dart:async'
+        ..types.add(injectorType),
+    );
+    final injectorCreator = MethodBuilder()
       ..name = 'create'
       ..returns = returnType
       ..static = true
       ..modifier = MethodModifier.async;
     for (final moduleSymbol in graph.includeModules) {
       if (moduleVariables.containsKey(moduleSymbol)) {
-        final moduleVariable = moduleVariables[moduleSymbol];
-        injectorCreator.requiredParameters.add(new Parameter(
-          (b) => b
-            ..name = moduleVariable.name
-            ..type = moduleVariable.type,
-        ));
+        final moduleVariable = moduleVariables[moduleSymbol]!;
+        injectorCreator.requiredParameters.add(
+          Parameter(
+            (b) => b
+              ..name = moduleVariable.name
+              ..type = moduleVariable.type,
+          ),
+        );
       } else {
         final moduleType = _reference(moduleSymbol);
         builderContext.rawLogger.warning(
           'Unused module in ${summary.clazz.symbol}: ${moduleSymbol.symbol}',
         );
-        injectorCreator.requiredParameters.add(new Parameter((b) => b
-          ..name = '_' * _unusedCounter++
-          ..type = moduleType));
+        injectorCreator.requiredParameters.add(
+          Parameter(
+            (b) => b
+              ..name = '_' * _unusedCounter++
+              ..type = moduleType,
+          ),
+        );
       }
     }
     final initExpression = concreteInjectorType.newInstanceNamed(
       '_',
       moduleVariables.values.map((v) => refer(v.name).expression).toList(),
     );
-    injectorCreator.body = new Block((b) => b.statements
-      ..add(initExpression.assignFinal('injector').statement)
-      ..add(preInstantiations.build())
-      ..add(refer('injector').returned.statement));
+    injectorCreator.body = Block(
+      (b) => b.statements
+        ..add(declareFinal('injector').assign(initExpression).statement)
+        ..add(preInstantiations.build())
+        ..add(refer('injector').returned.statement),
+    );
     return injectorCreator.build();
   }
 
   void _generateInjectorProviders() {
     // Generate injector providers.
-    graph.providers.forEach((provider) {
+    for (final provider in graph.providers) {
       final returnType = _referenceForType(provider.injectedType);
-      final method = new MethodBuilder()
+      final method = MethodBuilder()
         ..name = provider.methodName
         ..returns = returnType
         ..type = provider.isGetter ? MethodType.getter : null
         ..lambda = true
         ..body = _invokeCreateMethod(
-                dependency: provider.injectedType,
-                scope: 'this',
-                requestedBy: summary.clazz)
-            .expression
-            .code
+          dependency: provider.injectedType,
+          scope: 'this',
+          requestedBy: summary.clazz,
+        ).code
         ..annotations.add(refer('override'));
       injectorProviders.add(method);
-    });
+    }
   }
 
   void _generateModuleField(SymbolPath m) {
@@ -255,34 +271,39 @@ class _InjectorBuilder {
     final paramName = _decapitalize(m.symbol);
     final fieldName = '_$paramName';
     final moduleType = _reference(m);
-    fields.add(new FieldBuilder()
-      ..name = fieldName
-      ..modifier = FieldModifier.final$
-      ..type = moduleType);
-    constructor.requiredParameters.add(
-      new Parameter((b) => b
+    fields.add(
+      FieldBuilder()
         ..name = fieldName
-        ..toThis = true),
+        ..modifier = FieldModifier.final$
+        ..type = moduleType,
     );
-    moduleVariables[m] = new _Variable(name: paramName, type: moduleType);
+    constructor.requiredParameters.add(
+      Parameter(
+        (b) => b
+          ..name = fieldName
+          ..toThis = true,
+      ),
+    );
+    moduleVariables[m] = _Variable(name: paramName, type: moduleType);
   }
 
   // Returns a _create{{Type}}() method invocation, creating the needed
   // _create method if necessary; OR, returns a method reference if [dependency]
   // is a provider.
   Expression _invokeCreateMethod({
-    @required InjectedType dependency,
-    @required String scope,
-    @required SymbolPath requestedBy,
+    required InjectedType dependency,
+    required String scope,
+    required SymbolPath requestedBy,
   }) {
     if (!graph.mergedDependencies.containsKey(dependency.lookupKey)) {
       logUnresolvedDependency(
-          injectorSummary: summary,
-          dependency: dependency.lookupKey.root,
-          requestedBy: requestedBy);
+        injectorSummary: summary,
+        dependency: dependency.lookupKey.root,
+        requestedBy: requestedBy,
+      );
       return literalNull;
     }
-    _generateCreateMethod(graph.mergedDependencies[dependency.lookupKey]);
+    _generateCreateMethod(graph.mergedDependencies[dependency.lookupKey]!);
     final creatorMethod = _creatorMethodReference(dependency.lookupKey, scope);
     return dependency.isProvider ? creatorMethod : creatorMethod.call(const []);
   }
@@ -307,9 +328,9 @@ class _InjectorBuilder {
   static Reference _creatorMethodReference(LookupKey key, String scope) {
     var prefix = '';
     if (scope != 'this') {
-      prefix = '${scope}.';
+      prefix = '$scope.';
     }
-    return refer('${prefix}${_creatorMethodName(key)}');
+    return refer('$prefix${_creatorMethodName(key)}');
   }
 
   void _generateCreateMethod(ResolvedDependency dependency) {
@@ -320,16 +341,17 @@ class _InjectorBuilder {
     }
 
     // Reserve the slot to prevent cycles.
-    creatorMethods[key] = null;
+    // TODO
+    // creatorMethods[key] = null;
 
     if (dependency is DependencyProvidedByModule) {
       _generateModuleField(dependency.moduleClass);
     }
 
-    final method = new MethodBuilder()
+    final method = MethodBuilder()
       ..name = _creatorMethodName(key)
       ..returns = _referenceForKey(key)
-      ..body = _createDependency(dependency).expression.code
+      ..body = _createDependency(dependency).code
       ..lambda = true;
     creatorMethods[key] = method;
   }
@@ -345,10 +367,12 @@ class _InjectorBuilder {
       return dependencyExpression;
     } else if (dependency.isSingleton) {
       // Create a field in the injector to cache the dependency.
-      final fieldName = '_singleton${lookupKeyName}';
-      fields.add(new FieldBuilder()
-        ..name = fieldName
-        ..type = _referenceForKey(dependency.lookupKey));
+      final fieldName = '_singleton$lookupKeyName';
+      fields.add(
+        FieldBuilder()
+          ..name = fieldName
+          ..type = _referenceForKey(dependency.lookupKey, isNullable: true),
+      );
 
       // The body is 'cacheField ??= dependencyExpression'.
       return refer(fieldName).assignNullAware(dependencyExpression);
@@ -363,20 +387,21 @@ class _InjectorBuilder {
   ) {
     var prefix = '';
     if (scope != 'this') {
-      prefix = '${scope}.';
+      prefix = '$scope.';
     }
     Expression dependencyExpression;
     if (dependency is DependencyProvidedByModule) {
-      final callExpression = '${prefix}_' +
-          _decapitalize(dependency.moduleClass.symbol) +
-          '.' +
-          dependency.methodName;
+      final callExpression =
+          '${prefix}_${_decapitalize(dependency.moduleClass.symbol)}.${dependency.methodName}';
       dependencyExpression = refer(callExpression).call(
         dependency.dependencies
-            .map((d) => _invokeCreateMethod(
+            .map(
+              (d) => _invokeCreateMethod(
                 dependency: d,
                 scope: scope,
-                requestedBy: dependency.moduleClass))
+                requestedBy: dependency.moduleClass,
+              ),
+            )
             .toList(),
       );
     } else if (dependency is DependencyProvidedByInjectable) {
@@ -384,22 +409,35 @@ class _InjectorBuilder {
         dependency.summary.clazz.symbol,
         dependency.summary.clazz.toDartUri(relativeTo: libraryUri).toString(),
       );
-      var constructorName = dependency.summary.constructor.name;
+      final constructorName = dependency.summary.constructor.name;
       if (constructorName.isEmpty) {
-        // TODO(https://github.com/dart-lang/code_builder/issues/83)
-        constructorName = null;
+        dependencyExpression = type.newInstance(
+          dependency.dependencies
+              .map(
+                (d) => _invokeCreateMethod(
+                  dependency: d,
+                  scope: scope,
+                  requestedBy: dependency.summary.clazz,
+                ),
+              )
+              .toList(),
+        );
+      } else {
+        dependencyExpression = type.newInstanceNamed(
+          constructorName,
+          dependency.dependencies
+              .map(
+                (d) => _invokeCreateMethod(
+                  dependency: d,
+                  scope: scope,
+                  requestedBy: dependency.summary.clazz,
+                ),
+              )
+              .toList(),
+        );
       }
-      dependencyExpression = type.newInstanceNamed(
-        constructorName,
-        dependency.dependencies
-            .map((d) => _invokeCreateMethod(
-                dependency: d,
-                scope: scope,
-                requestedBy: dependency.summary.clazz))
-            .toList(),
-      );
     } else {
-      throw new StateError(
+      throw StateError(
         'Unrecognized dependency type: ${dependency.runtimeType}',
       );
     }
@@ -412,42 +450,48 @@ class _InjectorBuilder {
     }
     _visitedPreInstantiations.add(dep.lookupKey);
     for (final depDep in dep.dependencies) {
-      _preInstantiateDependency(graph.mergedDependencies[depDep.lookupKey]);
+      _preInstantiateDependency(graph.mergedDependencies[depDep.lookupKey]!);
     }
 
     // Then instantiate.
     if (dep.isAsynchronous) {
       final fieldName = '_${_decapitalize(_lookupKeyName(dep.lookupKey))}';
       fields.add(
-        new FieldBuilder()
+        FieldBuilder()
           ..name = fieldName
-          ..type = _referenceForKey(dep.lookupKey),
+          ..type = _referenceForKey(dep.lookupKey)
+          ..late = true,
       );
       final dependencyExpression = _createDependencyInstantiatingExpression(
         dep,
         'injector',
       ).awaited;
-      preInstantiations.statements.add(refer('injector.${fieldName}')
-          .assign(dependencyExpression)
-          .statement);
+      preInstantiations.statements.add(
+        refer('injector.$fieldName').assign(dependencyExpression).statement,
+      );
     }
   }
 
   Reference _referenceForType(InjectedType injectedType) {
     final keyReference = _referenceForKey(injectedType.lookupKey);
     if (injectedType.isProvider) {
-      return new FunctionType(
-          (functionType) => functionType..returnType = keyReference);
+      return FunctionType(
+        (functionType) => functionType..returnType = keyReference,
+      );
     }
     return keyReference;
   }
 
-  Reference _referenceForKey(LookupKey key) {
-    return _reference(key.root);
-  }
+  Reference _referenceForKey(LookupKey key, {bool isNullable = false}) =>
+      _reference(key.root, isNullable: isNullable);
 
-  Reference _reference(SymbolPath symbolPath) => refer(symbolPath.symbol,
-      symbolPath.toDartUri(relativeTo: libraryUri).toString());
+  Reference _reference(SymbolPath symbolPath, {bool isNullable = false}) =>
+      TypeReference(
+        (b) => b
+          ..symbol = symbolPath.symbol
+          ..url = symbolPath.toDartUri(relativeTo: libraryUri).toString()
+          ..isNullable = isNullable,
+      );
 }
 
 String _decapitalize(String s) => s[0].toLowerCase() + s.substring(1);

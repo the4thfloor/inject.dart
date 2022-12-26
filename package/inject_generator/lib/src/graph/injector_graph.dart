@@ -33,7 +33,11 @@ abstract class ResolvedDependency {
 
   /// Constructor.
   const ResolvedDependency(
-      this.lookupKey, this.isSingleton, this.isAsynchronous, this.dependencies);
+    this.lookupKey,
+    this.isSingleton,
+    this.isAsynchronous,
+    this.dependencies,
+  );
 }
 
 /// A dependency provided by a module class.
@@ -45,13 +49,13 @@ class DependencyProvidedByModule extends ResolvedDependency {
   final String methodName;
 
   DependencyProvidedByModule._(
-      LookupKey lookupKey,
-      bool singleton,
-      bool asynchronous,
-      List<InjectedType> dependencies,
-      this.moduleClass,
-      this.methodName)
-      : super(
+    LookupKey lookupKey,
+    bool singleton,
+    bool asynchronous,
+    List<InjectedType> dependencies,
+    this.moduleClass,
+    this.methodName,
+  ) : super(
           lookupKey,
           singleton,
           asynchronous,
@@ -65,10 +69,9 @@ class DependencyProvidedByInjectable extends ResolvedDependency {
   final InjectableSummary summary;
 
   DependencyProvidedByInjectable._(
-    InjectableSummary summary,
-  )   : this.summary = summary,
-        super(
-          new LookupKey(summary.clazz),
+    this.summary,
+  ) : super(
+          LookupKey(summary.clazz),
           summary.constructor.isSingleton,
           false,
           summary.constructor.dependencies,

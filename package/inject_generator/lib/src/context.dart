@@ -2,17 +2,9 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// TODO(yjbanov): clean up transitional analyzer API when final API is
-//                available. Transitional API is marked with <TRANSITIONAL_API>.
-//                See also: http://cl/219513934
-
 import 'dart:async';
+
 import 'package:analyzer/dart/analysis/results.dart';
-
-// <TRANSITIONAL_API>
-import 'package:analyzer/src/dart/analysis/results.dart';
-// </TRANSITIONAL_API>
-
 import 'package:analyzer/dart/element/element.dart';
 import 'package:build/build.dart';
 import 'package:build/build.dart' as build show log;
@@ -20,8 +12,8 @@ import 'package:logging/logging.dart';
 import 'package:stack_trace/stack_trace.dart';
 
 /// Runs [fn] within a [Zone] with its own [BuilderContext].
-Future<E> runInContext<E>(BuildStep buildStep, Future<E> fn()) {
-  final completer = new Completer<E>();
+Future<E> runInContext<E>(BuildStep buildStep, Future<E> Function() fn) {
+  final completer = Completer<E>();
 
   Chain.capture(
     () {
@@ -29,7 +21,7 @@ Future<E> runInContext<E>(BuildStep buildStep, Future<E> fn()) {
         () async {
           completer.complete(await fn());
         },
-        zoneValues: {#builderContext: new BuilderContext._(buildStep)},
+        zoneValues: {#builderContext: BuilderContext._(buildStep)},
       );
     },
     onError: (e, chain) {
@@ -44,9 +36,9 @@ Future<E> runInContext<E>(BuildStep buildStep, Future<E> fn()) {
 BuilderContext get builderContext {
   final context = Zone.current[#builderContext];
   if (context == null) {
-    throw new StateError(
+    throw StateError(
       'No current $BuilderContext is active. Start your build function using '
-          '"runInContext" to be able to use "builderContext"',
+      '"runInContext" to be able to use "builderContext"',
     );
   }
   return context;
@@ -66,9 +58,7 @@ class BuilderContext {
   ///         'is not expected at this location.');
   final BuilderLogger log;
 
-  BuilderContext._(BuildStep buildStep)
-      : this.buildStep = buildStep,
-        log = new BuilderLogger(buildStep.inputId);
+  BuilderContext._(this.buildStep) : log = BuilderLogger(buildStep.inputId);
 
   /// The logger scoped to the current [buildStep] and therefore scoped to the
   /// currently processed input file.
@@ -85,44 +75,44 @@ class BuilderLogger {
   const BuilderLogger(this._inputId);
 
   /// Logs a warning adding [element]'s source information to the message.
-  void warning(Element element, String message) {
+  void warning(Element? element, String message) {
     builderContext.rawLogger.warning(_constructMessage(element, message));
   }
 
   /// Logs a warning adding [element]'s source information to the message.
-  void info(Element element, String message) {
+  void info(Element? element, String message) {
     builderContext.rawLogger.info(_constructMessage(element, message));
   }
 
   /// Logs a warning adding [element]'s source information to the message.
-  void severe(Element element, String message) {
+  void severe(Element? element, String message) {
     builderContext.rawLogger.severe(_constructMessage(element, message));
   }
 
-  String _constructMessage(Element element, String message) {
-    // <TRANSITIONAL_API>
-    ElementDeclarationResult elementDeclaration;
-    if (element.kind != ElementKind.DYNAMIC) {
-      var parsedLibrary = ParsedLibraryResultImpl.tmp(element.library);
-      if (parsedLibrary.state == ResultState.VALID) {
+  Future<String> _constructMessage(Element? element, String message) async {
+    ElementDeclarationResult? elementDeclaration;
+    if (element != null && element.kind != ElementKind.DYNAMIC) {
+      final parsedLibrary =
+          element.library?.session.getParsedLibraryByElement(element.library!);
+      if (parsedLibrary is ParsedLibraryResult) {
         elementDeclaration = parsedLibrary.getElementDeclaration(element);
       }
     }
-    // </TRANSITIONAL_API>
     String sourceLocation;
     String source;
 
-    if (elementDeclaration?.node == null || element.source == null) {
+    if (elementDeclaration == null || element?.source == null) {
       sourceLocation = 'at unknown source location:';
       source = '.';
     } else {
-      var offset = elementDeclaration.node.offset;
-      var location = elementDeclaration.parsedUnit.lineInfo.getLocation(offset);
-      var code = elementDeclaration.node.toSource();
+      final offset = elementDeclaration.node.offset;
+      final location =
+          elementDeclaration.parsedUnit?.lineInfo.getLocation(offset);
+      final code = elementDeclaration.node.toSource();
       sourceLocation = 'at $location:';
       source = ':\n\n$code';
     }
 
-    return '${_inputId} ${sourceLocation} ${message}${source}';
+    return '$_inputId $sourceLocation $message$source';
   }
 }

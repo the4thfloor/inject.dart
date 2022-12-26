@@ -19,21 +19,16 @@ class InjectorSummary {
   /// Constructor.
   ///
   /// [clazz], [modules] and [providers] must not be `null` or empty.
-  factory InjectorSummary(SymbolPath clazz, List<SymbolPath> modules,
-      List<ProviderSummary> providers) {
-    if (clazz == null) {
-      throw new ArgumentError.notNull('clazz');
-    }
-    if (modules == null) {
-      throw new ArgumentError.value(modules, 'modules', 'Must not be null.');
-    }
-    if (providers == null) {
-      throw new ArgumentError.value(modules, 'providers', 'Must not be null.');
-    }
-    return new InjectorSummary._(
-        clazz,
-        new List<SymbolPath>.unmodifiable(modules),
-        new List<ProviderSummary>.unmodifiable(providers));
+  factory InjectorSummary(
+    SymbolPath clazz,
+    List<SymbolPath> modules,
+    List<ProviderSummary> providers,
+  ) {
+    return InjectorSummary._(
+      clazz,
+      List<SymbolPath>.unmodifiable(modules),
+      List<ProviderSummary>.unmodifiable(providers),
+    );
   }
 
   InjectorSummary._(this.clazz, this.modules, this.providers);
@@ -41,9 +36,9 @@ class InjectorSummary {
   /// Serializes this summary to JSON.
   Map<String, dynamic> toJson() {
     return {
-      "name": clazz.symbol,
-      "providers": providers,
-      "modules":
+      'name': clazz.symbol,
+      'providers': providers,
+      'modules':
           modules.map((summary) => summary.toAbsoluteUri().toString()).toList()
     };
   }

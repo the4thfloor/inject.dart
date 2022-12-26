@@ -20,10 +20,10 @@ abstract class AbstractInjectBuilder implements Builder {
   String get outputExtension;
 
   @override
-  Future<Null> build(BuildStep buildStep) async {
-    var outputFile = buildStep.inputId.changeExtension('.$outputExtension');
-    var outputContents = await buildOutput(buildStep);
-    buildStep.writeAsString(outputFile, outputContents);
+  Future<void> build(BuildStep buildStep) async {
+    final outputFile = buildStep.inputId.changeExtension('.$outputExtension');
+    final outputContents = await buildOutput(buildStep);
+    await buildStep.writeAsString(outputFile, outputContents);
   }
 
   /// Implement in order to return the output file.
