@@ -10,14 +10,14 @@ import 'coffee_app.inject.dart' as $g;
 import 'src/coffee_maker.dart';
 import 'src/drip_coffee_module.dart';
 
-/// An example injector class.
+/// An example component class.
 ///
-/// This injector uses [DripCoffeeModule] as a source of dependency providers.
-@Injector([DripCoffeeModule])
+/// This component uses [DripCoffeeModule] as a source of dependency providers.
+@Component([DripCoffeeModule])
 abstract class Coffee {
   /// A generated `async` static function, which takes a [DripCoffeeModule] and
   /// asynchronously returns an instance of [Coffee].
-  static const create = $g.Coffee$Injector.create;
+  static const create = $g.Coffee$Component.create;
 
   /// An accessor to an object that an application may use.
   @provide

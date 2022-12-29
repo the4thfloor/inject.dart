@@ -3,15 +3,15 @@
 // BSD-style license that can be found in the LICENSE file.
 part of inject.src.graph;
 
-/// Assists code generation by doing compile-time analysis of an `@Injector`.
+/// Assists code generation by doing compile-time analysis of an `@Component`.
 ///
-/// To use, create an [InjectorGraphResolver] for a `@Injector`-annotated class:
-///     var resolver = new InjectorGraphResolver(summaryReader, injectorSummary);
+/// To use, create an [ComponentGraphResolver] for a `@Component`-annotated class:
+///     var resolver = ComponentGraphResolver(summaryReader, componentSummary);
 ///     var graph = await resolver.resolve();
-class InjectorGraphResolver {
+class ComponentGraphResolver {
   static const String _librarySummaryExtension = '.inject.summary';
 
-  final InjectorSummary _injectorSummary;
+  final ComponentSummary _componentSummary;
   final List<SymbolPath> _modules = <SymbolPath>[];
   final List<ProviderSummary> _providers = <ProviderSummary>[];
   final SummaryReader _reader;
@@ -21,9 +21,9 @@ class InjectorGraphResolver {
       <SymbolPath, LibrarySummary>{};
 
   /// Create a new resolver that uses a [SummaryReader].
-  InjectorGraphResolver(this._reader, this._injectorSummary) {
-    _injectorSummary.modules.forEach(_modules.add);
-    _injectorSummary.providers.forEach(_providers.add);
+  ComponentGraphResolver(this._reader, this._componentSummary) {
+    _componentSummary.modules.forEach(_modules.add);
+    _componentSummary.providers.forEach(_providers.add);
   }
 
   Future<LibrarySummary> _readFromPath(
@@ -41,25 +41,25 @@ class InjectorGraphResolver {
       return _summaryCache[p] = await _reader.read(package, filePath);
     } on AssetNotFoundException {
       logUnresolvedDependency(
-        injectorSummary: _injectorSummary,
+        componentSummary: _componentSummary,
         dependency: p,
         requestedBy: requestedBy,
       );
     } on PackageNotFoundException {
       logUnresolvedDependency(
-        injectorSummary: _injectorSummary,
+        componentSummary: _componentSummary,
         dependency: p,
         requestedBy: requestedBy,
       );
     } on InvalidInputException {
       logUnresolvedDependency(
-        injectorSummary: _injectorSummary,
+        componentSummary: _componentSummary,
         dependency: p,
         requestedBy: requestedBy,
       );
     } on FileSystemException {
       logUnresolvedDependency(
-        injectorSummary: _injectorSummary,
+        componentSummary: _componentSummary,
         dependency: p,
         requestedBy: requestedBy,
       );
@@ -74,14 +74,14 @@ class InjectorGraphResolver {
     return LibrarySummary(p.toAbsoluteUri());
   }
 
-  /// Return a resolved graph that can be used to generate a `$Injector` class.
-  Future<InjectorGraph> resolve() async {
+  /// Return a resolved graph that can be used to generate a `$Component` class.
+  Future<ComponentGraph> resolve() async {
     // For every module, load the corresponding library summary that should have
     // already been built in the dependency tree. We then lookup the specific
     // module summary from the library summary.
     final modulesToLoad = _modules.map<Future<ModuleSummary?>>((module) async {
       final moduleSummaries =
-          (await _readFromPath(module, requestedBy: _injectorSummary.clazz))
+          (await _readFromPath(module, requestedBy: _componentSummary.clazz))
               .modules;
 
       final first = moduleSummaries.firstWhereOrNull(
@@ -91,7 +91,7 @@ class InjectorGraphResolver {
       if (first == null) {
         builderContext.rawLogger.severe(
           'Failed to locate summary for module ${module.toAbsoluteUri()} ',
-          'specified in injector ${_injectorSummary.clazz.symbol}.',
+          'specified in component ${_componentSummary.clazz.symbol}.',
         );
       }
       return first;
@@ -160,10 +160,10 @@ class InjectorGraphResolver {
       }
     }
 
-    for (final injectorProvider in _injectorSummary.providers) {
+    for (final componentProvider in _componentSummary.providers) {
       await addInjectableIfExists(
-        injectorProvider.injectedType.lookupKey,
-        requestedBy: _injectorSummary.clazz,
+        componentProvider.injectedType.lookupKey,
+        requestedBy: _componentSummary.clazz,
       );
     }
 
@@ -180,11 +180,11 @@ class InjectorGraphResolver {
       ..addAll(providersByInjectables)
       ..addAll(providersByModules);
 
-    // Providers defined on the injector class.
-    final injectorProviders = <InjectorProvider>[];
+    // Providers defined on the component class.
+    final componentProviders = <ComponentProvider>[];
     for (final p in _providers) {
-      injectorProviders.add(
-        InjectorProvider._(
+      componentProviders.add(
+        ComponentProvider._(
           p.injectedType,
           p.name,
           p.kind == ProviderKind.getter,
@@ -194,9 +194,9 @@ class InjectorGraphResolver {
 
     _detectAndWarnAboutCycles(mergedDependencies);
 
-    return InjectorGraph._(
+    return ComponentGraph._(
       List<SymbolPath>.unmodifiable(allModules.map((m) => m.clazz)),
-      List<InjectorProvider>.unmodifiable(injectorProviders),
+      List<ComponentProvider>.unmodifiable(componentProviders),
       Map<LookupKey, ResolvedDependency>.unmodifiable(mergedDependencies),
     );
   }
@@ -335,25 +335,27 @@ class Cycle {
 /// Since the DI graph can not be created with an unfulfilled dependency, this
 /// logs a severe error.
 void logUnresolvedDependency({
-  required InjectorSummary injectorSummary,
+  required ComponentSummary componentSummary,
   required SymbolPath dependency,
   required SymbolPath requestedBy,
 }) {
-  final injectorClassName = injectorSummary.clazz.symbol;
+  final componentClassName = componentSummary.clazz.symbol;
   final dependencyClassName = dependency.symbol;
   final requestedByClassName = requestedBy.symbol;
   builderContext.rawLogger.severe(
-      '''Could not find a way to provide "$dependencyClassName" for injector "$injectorClassName" which is injected in "$requestedByClassName".
+      '''Could not find a way to provide "$dependencyClassName" for component "$componentClassName" which is injected in "$requestedByClassName".
 
 To fix this, check that at least one of the following is true:
 
 - Ensure that $dependencyClassName's class declaration or constructor is annotated with @provide.
 
-- Ensure $injectorClassName contains a module that provides $dependencyClassName.
+- Ensure the constructor is empty or all parameters are provided (annotated with @provide).
+
+- Ensure $componentClassName contains a module that provides $dependencyClassName.
 
 These classes were found at the following paths:
 
-- Injector ($injectorClassName): ${injectorSummary.clazz.toAbsoluteUri().removeFragment()}.
+- Component ($componentClassName): ${componentSummary.clazz.toAbsoluteUri().removeFragment()}.
 
 - Injected class ($dependencyClassName): ${dependency.toAbsoluteUri().removeFragment()}.
 

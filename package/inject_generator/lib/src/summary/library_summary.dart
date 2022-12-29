@@ -13,8 +13,8 @@ class LibrarySummary {
   static LibrarySummary parseJson(Map<String, dynamic> json) {
     final assetUri = Uri.parse(json['asset'] as String);
     final summary = json['summary'] as Map<String, dynamic>;
-    final injectors = (summary['injector'] as List<dynamic>)
-        .map((e) => _injectorFromJson(assetUri, e as Map<String, dynamic>))
+    final components = (summary['component'] as List<dynamic>)
+        .map((e) => _componentFromJson(assetUri, e as Map<String, dynamic>))
         .toList();
     final modules = (summary['module'] as List<dynamic>)
         .map((e) => _moduleFromJson(assetUri, e as Map<String, dynamic>))
@@ -24,7 +24,7 @@ class LibrarySummary {
         .toList();
     return LibrarySummary(
       assetUri,
-      injectors: injectors,
+      components: components,
       modules: modules,
       injectables: injectables,
     );
@@ -36,8 +36,8 @@ class LibrarySummary {
   /// The URI uses the "asset:" scheme.
   final Uri assetUri;
 
-  /// Injector classes defined in the library.
-  final List<InjectorSummary> injectors;
+  /// Component classes defined in the library.
+  final List<ComponentSummary> components;
 
   /// Module classes defined in this library.
   final List<ModuleSummary> modules;
@@ -47,19 +47,19 @@ class LibrarySummary {
 
   /// Constructor.
   ///
-  /// [assetUri], [injectors] and [modules] must not be `null`.
+  /// [assetUri], [components] and [modules] must not be `null`.
   factory LibrarySummary(
     Uri assetUri, {
-    List<InjectorSummary> injectors = const [],
+    List<ComponentSummary> components = const [],
     List<ModuleSummary> modules = const [],
     List<InjectableSummary> injectables = const [],
   }) {
-    return LibrarySummary._(assetUri, injectors, modules, injectables);
+    return LibrarySummary._(assetUri, components, modules, injectables);
   }
 
   LibrarySummary._(
     this.assetUri,
-    this.injectors,
+    this.components,
     this.modules,
     this.injectables,
   );
@@ -69,7 +69,7 @@ class LibrarySummary {
     return {
       'asset': assetUri.toString(),
       'summary': {
-        'injector': injectors,
+        'component': components,
         'module': modules,
         'injectable': injectables,
       }
@@ -77,7 +77,7 @@ class LibrarySummary {
   }
 }
 
-InjectorSummary _injectorFromJson(Uri assetUri, Map<String, dynamic> json) {
+ComponentSummary _componentFromJson(Uri assetUri, Map<String, dynamic> json) {
   final name = json['name'] as String;
   final List<SymbolPath> modules = json['modules']
       .cast<String>()
@@ -89,7 +89,7 @@ InjectorSummary _injectorFromJson(Uri assetUri, Map<String, dynamic> json) {
       .map<ProviderSummary>(_providerFromJson)
       .toList();
   final clazz = SymbolPath.fromAbsoluteUri(assetUri, name);
-  return InjectorSummary(clazz, modules, providers);
+  return ComponentSummary(clazz, modules, providers);
 }
 
 ModuleSummary _moduleFromJson(Uri assetUri, Map<String, dynamic> json) {

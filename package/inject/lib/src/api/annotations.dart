@@ -4,6 +4,99 @@
 
 import 'package:meta/meta.dart';
 
+/// Annotates an abstract class used as a blueprint to generate an [Component].
+///
+/// Example:
+///     import 'coffee_shop.inject.dart';
+///
+///     @Component(const [DripCoffeeModule])
+///     abstract class CoffeeShop {
+///       static final create = CoffeeShop$Component.create;
+///
+///       CoffeeMaker get coffeeMaker;
+///     }
+///
+///     main() async {
+///       var coffeeShop = await CoffeeShop.create(new DripCoffeeModule());
+///       print(coffeeShop.coffeeMaker.brewCoffee());
+///     }
+///
+/// In the example, we define an component class `CoffeeShop`, which provides a
+/// `CoffeeMaker`. It uses `DripCoffeeModule` as a source of dependency
+/// providers for the component.
+///
+/// The framework generates a concrete class `CoffeeShop$Component` that has a
+/// static asynchronous function named `create`, which takes `DripCoffeeModule`
+/// as an argument and returns a `Future<CoffeeShop>`.
+///
+/// `CoffeeShop` defines `static final create` as a convenience accessor to
+/// `CoffeeShop$Component.create`. This is not strictly necessary, but useful to
+/// hide the generated code from the call sites.
+class Component {
+  /// Modules supplying providers for the component.
+  ///
+  /// Each [Type] must be a `class` definition annotated with [module].
+  final List<Type> modules;
+
+  // ignore: public_member_api_docs
+  const factory Component([List<Type> modules]) = Component._;
+
+  const Component._([this.modules = const <Type>[]]);
+}
+
+/// An annotation to mark something as an [Component] with no included modules.
+const component = Component();
+
+/// Annotates a class as a collection of providers for dependency injection.
+///
+/// A class annotated with [module] is a class that can be used to insert
+/// dependencies into the object graph. Modules may extend or mixin other
+/// modules, or rely on composition to fill in dependencies. Methods can have
+/// parameters that are in the object graph and will be invoked with the objects
+/// created from the [Component] the module is installed on.
+///
+/// An example:
+///
+///     @module
+///     class CarModule {
+///       @provide
+///       Car provideCar(Manufacturer manufacturer) =>
+///           Car(manufacturer: manufacturer, year: 2019);
+///     }
+///
+/// In this instance, an component that includes `CarModule` will know how to
+/// provide an instance of `Car`, given that all parameters of `provideCar` are
+/// satisfied in the final object graph.
+const module = Module._();
+
+/// **INTERNAL ONLY**: Might be exposed if we add flags or other properties.
+@visibleForTesting
+class Module {
+  const Module._();
+}
+
+/// Annotation for a method (in an [Component] or [module]), class, or
+/// constructor that provides an instance.
+///
+/// - If the annotation is on a class or constructor, the class is entered into
+///   the dependency graph and its constructor's arguments are injected when the
+///   class is injected.
+/// - If the annotation is on a method in a module, the return type is entered
+///   into the dependency graph. The method will be executed with injected
+///   arguments when the return type is injected.
+/// - If the annotation is on an [Component], this indicates that the component
+///   should provide instances of the type when the method is called.
+///
+/// The type provided by this annotation can be further specified by including a
+/// [Qualifier] annotation.
+const provide = Provide._();
+
+/// **INTERNAL ONLY**: Might be exposed if we add flags or other properties.
+@visibleForTesting
+class Provide {
+  const Provide._();
+}
+
 /// A reserved name that can be used alongside a [provide] annotation to further
 /// specify the key.
 ///
@@ -32,56 +125,6 @@ class Qualifier {
   const Qualifier._(this.name);
 }
 
-/// Annotates a class as a collection of providers for dependency injection.
-///
-/// A class annotated with [module] is a class that can be used to insert
-/// dependencies into the object graph. Modules may extend or mixin other
-/// modules, or rely on composition to fill in dependencies. Methods can have
-/// parameters that are in the object graph and will be invoked with the objects
-/// created from the [Injector] the module is installed on.
-///
-/// An example:
-///
-///     @module
-///     class CarModule {
-///       @provide
-///       Car provideCar(Manufacturer manufacturer) =>
-///           Car(manufacturer: manufacturer, year: 2019);
-///     }
-///
-/// In this instance, an injector that includes `CarModule` will know how to
-/// provide an instance of `Car`, given that all parameters of `provideCar` are
-/// satisfied in the final object graph.
-const module = Module._();
-
-/// **INTERNAL ONLY**: Might be exposed if we add flags or other properties.
-@visibleForTesting
-class Module {
-  const Module._();
-}
-
-/// Annotation for a method (in an [Injector] or [module]), class, or
-/// constructor that provides an instance.
-///
-/// - If the annotation is on a class or constructor, the class is entered into
-///   the dependency graph and its constructor's arguments are injected when the
-///   class is injected.
-/// - If the annotation is on a method in a module, the return type is entered
-///   into the dependency graph. The method will be executed with injected
-///   arguments when the return type is injected.
-/// - If the annotation is on an [Injector], this indicates that the injector
-///   should provide instances of the type when the method is called.
-///
-/// The type provided by this annotation can be further specified by including a
-/// [Qualifier] annotation.
-const provide = Provide._();
-
-/// **INTERNAL ONLY**: Might be exposed if we add flags or other properties.
-@visibleForTesting
-class Provide {
-  const Provide._();
-}
-
 /// An injectable class or module provider that provides a single instance.
 ///
 /// A dependency annotated with [singleton] will only be instantiated once. The
@@ -92,9 +135,9 @@ class Provide {
 ///     @singleton
 ///     class Foo {}
 ///
-///     @injector
+///     @component
 ///     abstract class FooMaker {
-///       static final create = FooMaker$Injector.create;
+///       static final create = FooMaker$Component.create;
 ///
 ///       // identical(getFoo(), getFoo()) is guaranteed to be true.
 ///       Foo getFoo();
@@ -111,7 +154,7 @@ class Singleton {
 ///
 /// Such a provider is referred to as _asynchronous provider_. Asynchronous
 /// providers are resolved from futures into dependency instances prior to
-/// returning the injector to the application.
+/// returning the component to the application.
 ///
 /// For example:
 ///     @module
@@ -153,46 +196,3 @@ const asynchronous = Asynchronous._();
 class Asynchronous {
   const Asynchronous._();
 }
-
-/// Annotates an abstract class used as a blueprint to generate an injector.
-///
-/// Example:
-///     import 'coffee_shop.inject.dart';
-///
-///     @Injector(const [DripCoffeeModule])
-///     abstract class CoffeeShop {
-///       static final create = CoffeeShop$Injector.create;
-///
-///       CoffeeMaker get coffeeMaker;
-///     }
-///
-///     main() async {
-///       var coffeeShop = await CoffeeShop.create(new DripCoffeeModule());
-///       print(coffeeShop.coffeeMaker.brewCoffee());
-///     }
-///
-/// In the example, we define an injector class `CoffeeShop`, which provides a
-/// `CoffeeMaker`. It uses `DripCoffeeModule` as a source of dependency
-/// providers for the injector.
-///
-/// The framework generates a concrete class `CoffeeShop$Injector` that has a
-/// static asynchronous function named `create`, which takes `DripCoffeeModule`
-/// as an argument and returns a `Future<CoffeeShop>`.
-///
-/// `CoffeeShop` defines `static final create` as a convenience accessor to
-/// `CoffeeShop$Injector.create`. This is not strictly necessary, but useful to
-/// hide the generated code from the call sites.
-class Injector {
-  /// Modules supplying providers for the injector.
-  ///
-  /// Each [Type] must be a `class` definition annotated with [module].
-  final List<Type> modules;
-
-  // ignore: public_member_api_docs
-  const factory Injector([List<Type> modules]) = Injector._;
-
-  const Injector._([this.modules = const <Type>[]]);
-}
-
-/// An annotation to mark something as an [Injector] with no included modules.
-const injector = Injector();

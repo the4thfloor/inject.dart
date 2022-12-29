@@ -140,8 +140,8 @@ bool isSingletonClass(ClassElement clazz) {
 bool isModuleClass(ClassElement clazz) =>
     _hasAnnotation(clazz, SymbolPath.module);
 
-/// Whether [clazz] is annotated with `@Injector()`.
-bool isInjectorClass(ClassElement clazz) => hasInjectorAnnotation(clazz);
+/// Whether [clazz] is annotated with `@Component()`.
+bool isComponentClass(ClassElement clazz) => hasComponentAnnotation(clazz);
 
 /// Whether [e] is annotated with `@Provide()`.
 bool hasProvideAnnotation(Element e) => _hasAnnotation(e, SymbolPath.provide);
@@ -165,13 +165,14 @@ SymbolPath extractQualifier(Element e) {
   return SymbolPath.global(key!);
 }
 
-/// Whether [e] is annotated with `@Injector()`.
-bool hasInjectorAnnotation(Element e) => _hasAnnotation(e, SymbolPath.injector);
+/// Whether [e] is annotated with `@Component()`.
+bool hasComponentAnnotation(Element e) =>
+    _hasAnnotation(e, SymbolPath.component);
 
-/// Returns the element corresponding to the `@Injector()` annotation.
+/// Returns the element corresponding to the `@Component()` annotation.
 ///
 /// Throws if the annotation is missing. It is assumed that the calling code
 /// already verified the existence of the annotation using
-/// [hasInjectorAnnotation].
-ElementAnnotation? getInjectorAnnotation(Element e) =>
-    _getAnnotation(e, SymbolPath.injector);
+/// [hasComponentAnnotation].
+ElementAnnotation? getComponentAnnotation(Element e) =>
+    _getAnnotation(e, SymbolPath.component);

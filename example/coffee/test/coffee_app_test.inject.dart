@@ -7,8 +7,8 @@ import 'package:inject_example_coffee/src/heater.dart' as _i5;
 import 'package:inject_example_coffee/src/pump.dart' as _i6;
 import 'package:inject_example_coffee/src/coffee_maker.dart' as _i7;
 
-class TestCoffee$Injector implements _i1.TestCoffee {
-  TestCoffee$Injector._(
+class TestCoffee$Component implements _i1.TestCoffee {
+  TestCoffee$Component._(
     this._testModule,
     this._dripCoffeeModule,
   );
@@ -25,13 +25,13 @@ class TestCoffee$Injector implements _i1.TestCoffee {
     _i2.DripCoffeeModule dripCoffeeModule,
     _i1.TestModule testModule,
   ) async {
-    final injector = TestCoffee$Injector._(
+    final component = TestCoffee$Component._(
       testModule,
       dripCoffeeModule,
     );
-    injector._powerOutlet =
-        await injector._dripCoffeeModule.providePowerOutlet();
-    return injector;
+    component._powerOutlet =
+        await component._dripCoffeeModule.providePowerOutlet();
+    return component;
   }
 
   _i3.PowerOutlet _createPowerOutlet() => _powerOutlet;

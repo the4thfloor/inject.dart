@@ -17,7 +17,7 @@ import '../source/symbol_path.dart';
 import '../summary.dart';
 import 'abstract_builder.dart';
 
-/// Extracts metadata about modules and injectors from Dart libraries.
+/// Extracts metadata about modules and components from Dart libraries.
 class InjectSummaryBuilder extends AbstractInjectBuilder {
   /// Constructor.
   const InjectSummaryBuilder();
@@ -34,11 +34,12 @@ class InjectSummaryBuilder extends AbstractInjectBuilder {
     LibrarySummary summary;
     if (await resolver.isLibrary(buildStep.inputId)) {
       final lib = await buildStep.inputLibrary;
-      final injectors = <InjectorSummary>[];
+      final components = <ComponentSummary>[];
       final modules = <ModuleSummary>[];
       final injectables = <InjectableSummary>[];
-      _SummaryBuilderVisitor(injectors, modules, injectables).visitLibrary(lib);
-      if (injectors.isEmpty && modules.isEmpty && injectables.isEmpty) {
+      _SummaryBuilderVisitor(components, modules, injectables)
+          .visitLibrary(lib);
+      if (components.isEmpty && modules.isEmpty && injectables.isEmpty) {
         // We are going to be outputting an empty file, which is not ideal.
         // Users should take steps to make sure summary building steps only
         // run on files that will actually be used by inject, and not on
@@ -47,12 +48,12 @@ class InjectSummaryBuilder extends AbstractInjectBuilder {
         // injection.
         builderContext.log.info(
             lib,
-            'no @module, @injector or @provide annotated classes '
+            'no @module, @component or @provide annotated classes '
             'found in library');
       }
       summary = LibrarySummary(
         SymbolPath.toAssetUri(lib.source.uri),
-        injectors: injectors,
+        components: components,
         modules: modules,
         injectables: injectables,
       );
@@ -86,11 +87,11 @@ class InjectSummaryBuilder extends AbstractInjectBuilder {
 }
 
 class _SummaryBuilderVisitor extends InjectLibraryVisitor {
-  final List<InjectorSummary> _injectors;
+  final List<ComponentSummary> _components;
   final List<ModuleSummary> _modules;
   final List<InjectableSummary> _injectables;
 
-  _SummaryBuilderVisitor(this._injectors, this._modules, this._injectables);
+  _SummaryBuilderVisitor(this._components, this._modules, this._injectables);
 
   @override
   void visitInjectable(ClassElement clazz, bool singleton) {
@@ -146,24 +147,24 @@ class _SummaryBuilderVisitor extends InjectLibraryVisitor {
   }
 
   @override
-  void visitInjector(ClassElement clazz, List<SymbolPath> modules) {
+  void visitComponent(ClassElement clazz, List<SymbolPath> modules) {
     final visitor = _ProviderSummaryVisitor(true)..visitClass(clazz);
     if (visitor._providers.isEmpty) {
       builderContext.log
-          .severe(clazz, 'injector class must declare at least one provider');
+          .severe(clazz, 'component class must declare at least one provider');
     }
     final providers = visitor._providers.where((ps) {
       if (ps.isAsynchronous) {
         builderContext.log.severe(
           clazz,
-          'injector class must not declare asynchronous providers',
+          'component class must not declare asynchronous providers',
         );
         return false;
       }
       return true;
     }).toList();
-    final summary = InjectorSummary(getSymbolPath(clazz), modules, providers);
-    _injectors.add(summary);
+    final summary = ComponentSummary(getSymbolPath(clazz), modules, providers);
+    _components.add(summary);
   }
 
   @override
@@ -193,7 +194,7 @@ class _SummaryBuilderVisitor extends InjectLibraryVisitor {
 class _ProviderSummaryVisitor extends InjectClassVisitor {
   final List<ProviderSummary> _providers = <ProviderSummary>[];
 
-  _ProviderSummaryVisitor(bool isForInjector) : super(isForInjector);
+  _ProviderSummaryVisitor(bool isForComponent) : super(isForComponent);
 
   @override
   void visitProvideMethod(
@@ -202,10 +203,10 @@ class _ProviderSummaryVisitor extends InjectClassVisitor {
     bool asynchronous, {
     SymbolPath? qualifier,
   }) {
-    if (isForInjector && !method.isAbstract) {
+    if (isForComponent && !method.isAbstract) {
       builderContext.log.severe(
         method,
-        'providers declared on injector class must be abstract.',
+        'providers declared on component class must be abstract.',
       );
       return;
     }
@@ -225,7 +226,7 @@ class _ProviderSummaryVisitor extends InjectClassVisitor {
       return;
     }
 
-    if (!isForInjector && returnType is FunctionType) {
+    if (!isForComponent && returnType is FunctionType) {
       builderContext.log.severe(
           returnType.element,
           'Modules are not allowed to provide a function type () -> Type. '
@@ -243,9 +244,9 @@ class _ProviderSummaryVisitor extends InjectClassVisitor {
       asynchronous: asynchronous,
       dependencies: method.parameters
           .map((p) {
-            if (isForInjector) {
+            if (isForComponent) {
               builderContext.log
-                  .severe(p, 'injector methods cannot have parameters');
+                  .severe(p, 'component methods cannot have parameters');
               return null;
             } else if (p.isNamed) {
               builderContext.log

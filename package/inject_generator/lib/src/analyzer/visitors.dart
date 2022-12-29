@@ -14,7 +14,7 @@ import 'utils.dart';
 ///
 /// Looks for:
 /// - [visitInjectable]: Classes or constructors annotated with `@provide`.
-/// - [visitInjector]: Classes annotated with `@injector`.
+/// - [visitComponent]: Classes annotated with `@component`.
 /// - [visitModule]: Classes annotated with `@module`.
 abstract class InjectLibraryVisitor {
   /// Call to start visiting [library].
@@ -27,20 +27,20 @@ abstract class InjectLibraryVisitor {
   /// If [clazz] is annotated with `@singleton`, then [singleton] is true.
   void visitInjectable(ClassElement clazz, bool singleton);
 
-  /// Called when [clazz] is annotated with `@injector`.
+  /// Called when [clazz] is annotated with `@component`.
   ///
   /// [modules] is the list of types supplied as modules in the annotation.
   ///
   /// Example:
   ///
-  ///     @Injector(const [FooModule, BarModule])
+  ///     @Component(const [FooModule, BarModule])
   ///     class Services {
   ///       ...
   ///     }
   ///
   /// In this example, [modules] will contain references to `FooModule` and
   /// `BarModule` types.
-  void visitInjector(ClassElement clazz, List<SymbolPath> modules);
+  void visitComponent(ClassElement clazz, List<SymbolPath> modules);
 
   /// Called when [clazz] is annotated with `@module`.
   void visitModule(ClassElement clazz);
@@ -55,7 +55,7 @@ class _LibraryVisitor extends RecursiveElementVisitor<void> {
   void visitClassElement(ClassElement element) {
     var isInjectable = false;
     var isModule = false;
-    var isInjector = false;
+    var isComponent = false;
 
     var count = 0;
     if (isModuleClass(element)) {
@@ -66,8 +66,8 @@ class _LibraryVisitor extends RecursiveElementVisitor<void> {
       isInjectable = true;
       count++;
     }
-    if (isInjectorClass(element)) {
-      isInjector = true;
+    if (isComponentClass(element)) {
+      isComponent = true;
       count++;
     }
 
@@ -75,12 +75,12 @@ class _LibraryVisitor extends RecursiveElementVisitor<void> {
       final types = [
         isInjectable ? 'injectable' : null,
         isModule ? 'module' : null,
-        isInjector ? 'injector' : null,
+        isComponent ? 'component' : null,
       ].where((t) => t != null);
 
       builderContext.log.severe(
         element,
-        'A class may be an injectable, a module or an injector, '
+        'A class may be an injectable, a module or an component, '
         'but not more than one of these types. However class '
         '${element.name} was found to be ${types.join(' and ')}',
       );
@@ -105,8 +105,8 @@ class _LibraryVisitor extends RecursiveElementVisitor<void> {
         singleton,
       );
     }
-    if (isInjector) {
-      _injectLibraryVisitor.visitInjector(
+    if (isComponent) {
+      _injectLibraryVisitor.visitComponent(
         element,
         _extractModules(element),
       );
@@ -116,7 +116,7 @@ class _LibraryVisitor extends RecursiveElementVisitor<void> {
 }
 
 List<SymbolPath> _extractModules(ClassElement clazz) {
-  final annotation = getInjectorAnnotation(clazz);
+  final annotation = getComponentAnnotation(clazz);
   final modules =
       annotation?.computeConstantValue()?.getField('modules')?.toListValue();
   if (modules == null) {
@@ -131,15 +131,15 @@ List<SymbolPath> _extractModules(ClassElement clazz) {
 
 /// Scans a resolved [ClassElement] looking for metadata-annotated members.
 abstract class InjectClassVisitor {
-  final bool _isForInjector;
+  final bool _isForComponent;
 
   /// Constructor.
-  InjectClassVisitor(this._isForInjector);
+  InjectClassVisitor(this._isForComponent);
 
-  /// Whether we are collecting providers for an injector class.
+  /// Whether we are collecting providers for an component class.
   ///
-  /// Unlike modules, the `@provide` annotation is optional in injectors.
-  bool get isForInjector => _isForInjector;
+  /// Unlike modules, the `@provide` annotation is optional in components.
+  bool get isForComponent => _isForComponent;
 
   /// Call to start visiting [clazz].
   void visitClass(ClassElement clazz) {
@@ -181,7 +181,7 @@ class _AnnotatedClassVisitor extends GeneralizingElementVisitor<void> {
 
   bool _isProvider(ExecutableElement element) =>
       hasProvideAnnotation(element) ||
-      (_classVisitor._isForInjector && element.isAbstract);
+      (_classVisitor._isForComponent && element.isAbstract);
 
   @override
   void visitMethodElement(MethodElement method) {

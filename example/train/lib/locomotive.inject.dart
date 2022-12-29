@@ -5,8 +5,8 @@ import 'common.dart' as _i3;
 import 'food.dart' as _i4;
 import 'dart:async' as _i5;
 
-class TrainServices$Injector implements _i1.TrainServices {
-  TrainServices$Injector._(
+class TrainServices$Component implements _i1.TrainServices {
+  TrainServices$Component._(
     this._bikeServices,
     this._commonServices,
     this._foodServices,
@@ -23,13 +23,13 @@ class TrainServices$Injector implements _i1.TrainServices {
     _i4.FoodServices foodServices,
     _i3.CommonServices commonServices,
   ) async {
-    final injector = TrainServices$Injector._(
+    final component = TrainServices$Component._(
       bikeServices,
       commonServices,
       foodServices,
     );
 
-    return injector;
+    return component;
   }
 
   _i3.CarMaintenance _createCarMaintenance() => _commonServices.maintenance();

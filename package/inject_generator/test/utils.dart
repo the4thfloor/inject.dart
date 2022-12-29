@@ -17,7 +17,7 @@ import 'package:test/test.dart';
 ///       '''
 ///         class Foo {}
 ///       ''',
-///       'no @module, @injector or @provide annotated classes found.',
+///       'no @module, @component or @provide annotated classes found.',
 ///     )
 void testShouldWarn(
   String description, {

@@ -3,8 +3,8 @@
 // BSD-style license that can be found in the LICENSE file.
 part of inject.src.graph;
 
-/// A provider defined on an `@Injector` class.
-class InjectorProvider {
+/// A provider defined on an `@Component` class.
+class ComponentProvider {
   /// The type this provides.
   final InjectedType injectedType;
 
@@ -14,7 +14,7 @@ class InjectorProvider {
   /// Whether this provider is a getter.
   final bool isGetter;
 
-  InjectorProvider._(this.injectedType, this.methodName, this.isGetter);
+  ComponentProvider._(this.injectedType, this.methodName, this.isGetter);
 }
 
 /// A dependency resolved to a concrete provider.
@@ -78,16 +78,20 @@ class DependencyProvidedByInjectable extends ResolvedDependency {
         );
 }
 
-/// All of the data that is needed to generate an `@Injector` class.
-class InjectorGraph {
-  /// Modules used by the injector.
+/// All of the data that is needed to generate an `@Component` class.
+class ComponentGraph {
+  /// Modules used by the component.
   final List<SymbolPath> includeModules;
 
   /// Providers that should be generated.
-  final List<InjectorProvider> providers;
+  final List<ComponentProvider> providers;
 
   /// Dependencies resolved to concrete providers mapped from key.
   final Map<LookupKey, ResolvedDependency> mergedDependencies;
 
-  InjectorGraph._(this.includeModules, this.providers, this.mergedDependencies);
+  ComponentGraph._(
+    this.includeModules,
+    this.providers,
+    this.mergedDependencies,
+  );
 }

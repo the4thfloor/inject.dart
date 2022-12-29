@@ -7,8 +7,8 @@ import 'dart:async' as _i5;
 import 'src/pump.dart' as _i6;
 import 'src/coffee_maker.dart' as _i7;
 
-class Coffee$Injector implements _i1.Coffee {
-  Coffee$Injector._(this._dripCoffeeModule);
+class Coffee$Component implements _i1.Coffee {
+  Coffee$Component._(this._dripCoffeeModule);
 
   final _i2.DripCoffeeModule _dripCoffeeModule;
 
@@ -20,12 +20,12 @@ class Coffee$Injector implements _i1.Coffee {
 
   static _i5.Future<_i1.Coffee> create(
       _i2.DripCoffeeModule dripCoffeeModule) async {
-    final injector = Coffee$Injector._(dripCoffeeModule);
-    injector._powerOutlet =
-        await injector._dripCoffeeModule.providePowerOutlet();
-    injector._heater = await injector._dripCoffeeModule
-        .provideHeater(injector._createElectricity());
-    return injector;
+    final component = Coffee$Component._(dripCoffeeModule);
+    component._powerOutlet =
+        await component._dripCoffeeModule.providePowerOutlet();
+    component._heater = await component._dripCoffeeModule
+        .provideHeater(component._createElectricity());
+    return component;
   }
 
   _i3.PowerOutlet _createPowerOutlet() => _powerOutlet;

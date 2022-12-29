@@ -63,10 +63,10 @@ class _TestHeater implements Heater {
 }
 
 /// Demonstrates overriding dependencies in a test by mixing in test modules.
-@Injector([DripCoffeeModule, TestModule])
+@Component([DripCoffeeModule, TestModule])
 abstract class TestCoffee {
   /// Note test modules being used.
-  static const create = g.TestCoffee$Injector.create;
+  static const create = g.TestCoffee$Component.create;
 
   /// Provides a coffee maker.
   @provide

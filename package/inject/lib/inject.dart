@@ -8,9 +8,9 @@ library inject;
 export 'src/api/annotations.dart'
     show
         asynchronous,
-        injector,
+        component,
         module,
         provide,
         singleton,
-        Injector,
+        Component,
         Qualifier;

@@ -18,6 +18,6 @@ import 'source/lookup_key.dart';
 import 'source/symbol_path.dart';
 import 'summary.dart';
 
-part 'graph/injector_graph.dart';
-part 'graph/injector_graph_resolver.dart';
+part 'graph/component_graph.dart';
+part 'graph/component_graph_resolver.dart';
 part 'graph/summary_reader.dart';

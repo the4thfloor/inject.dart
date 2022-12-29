@@ -11,7 +11,7 @@ import 'package:test/test.dart';
 
 void main() {
   group(
-    '$InjectorGraphResolver',
+    '$ComponentGraphResolver',
     () {
       FakeSummaryReader? reader;
 
@@ -41,8 +41,8 @@ void main() {
         final foo = InjectedType(
           LookupKey(SymbolPath.parseAbsoluteUri('asset:foo/foo.dart#Foo')),
         );
-        final injectorSummary = InjectorSummary(
-          SymbolPath('foo', 'foo.dart', 'FooInjector'),
+        final componentSummary = ComponentSummary(
+          SymbolPath('foo', 'foo.dart', 'FooComponent'),
           [SymbolPath.parseAbsoluteUri('asset:foo/foo.dart#FooModule')],
           [
             ProviderSummary(
@@ -52,7 +52,7 @@ void main() {
             )
           ],
         );
-        final resolver = InjectorGraphResolver(reader!, injectorSummary);
+        final resolver = ComponentGraphResolver(reader!, componentSummary);
         final resolvedGraph = await resolver.resolve();
 
         expect(resolvedGraph.includeModules, hasLength(1));
@@ -75,8 +75,8 @@ void main() {
             qualifier: const SymbolPath.global('uniqueName'),
           ),
         );
-        final injectorSummary = InjectorSummary(
-          SymbolPath('foo', 'foo.dart', 'FooInjector'),
+        final componentSummary = ComponentSummary(
+          SymbolPath('foo', 'foo.dart', 'FooComponent'),
           [
             SymbolPath.parseAbsoluteUri('asset:foo/foo.dart#FooModule'),
           ],
@@ -88,7 +88,7 @@ void main() {
             ),
           ],
         );
-        final resolver = InjectorGraphResolver(reader!, injectorSummary);
+        final resolver = ComponentGraphResolver(reader!, componentSummary);
         final resolvedGraph = await resolver.resolve();
 
         expect(resolvedGraph.includeModules, hasLength(1));
@@ -111,8 +111,8 @@ void main() {
       //   final ctx = _FakeBuilderContext();
       //   await runZoned(
       //     () async {
-      //       final injectorSummary = InjectorSummary(
-      //         SymbolPath('foo', 'foo.dart', 'FooInjector'),
+      //       final componentSummary = ComponentSummary(
+      //         SymbolPath('foo', 'foo.dart', 'FooComponent'),
       //         [],
       //         [
       //           ProviderSummary(
@@ -126,7 +126,7 @@ void main() {
       //           )
       //         ],
       //       );
-      //       final resolver = InjectorGraphResolver(reader, injectorSummary);
+      //       final resolver = ComponentGraphResolver(reader, componentSummary);
       //       await resolver.resolve();
       //     },
       //     zoneValues: {#builderContext: ctx},
@@ -139,7 +139,7 @@ void main() {
       //             'Unable to locate metadata about Foo defined in asset:foo/missing.dart',
       //           ) &&
       //           r.message.contains(
-      //             'This dependency is requested by FooInjector defined in asset:foo/foo.dart.',
+      //             'This dependency is requested by FooComponent defined in asset:foo/foo.dart.',
       //           ),
       //     ),
       //     isTrue,

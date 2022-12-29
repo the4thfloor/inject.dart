@@ -4,9 +4,9 @@
 
 part of inject.src.summary;
 
-/// JSON-serializable subset of code analysis information about an injector
-/// class pertaining to an injector class.
-class InjectorSummary {
+/// JSON-serializable subset of code analysis information about an component
+/// class pertaining to an component class.
+class ComponentSummary {
   /// Modules that are part of the object graph.
   final List<SymbolPath> modules;
 
@@ -19,19 +19,19 @@ class InjectorSummary {
   /// Constructor.
   ///
   /// [clazz], [modules] and [providers] must not be `null` or empty.
-  factory InjectorSummary(
+  factory ComponentSummary(
     SymbolPath clazz,
     List<SymbolPath> modules,
     List<ProviderSummary> providers,
   ) {
-    return InjectorSummary._(
+    return ComponentSummary._(
       clazz,
       List<SymbolPath>.unmodifiable(modules),
       List<ProviderSummary>.unmodifiable(providers),
     );
   }
 
-  InjectorSummary._(this.clazz, this.modules, this.providers);
+  const ComponentSummary._(this.clazz, this.modules, this.providers);
 
   /// Serializes this summary to JSON.
   Map<String, dynamic> toJson() {

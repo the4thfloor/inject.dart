@@ -29,8 +29,8 @@ class SymbolPath implements Comparable<SymbolPath> {
   /// Path to the `@Asynchronous` annotation.
   static const SymbolPath asynchronous = SymbolPath._standard('Asynchronous');
 
-  /// Path to the `@Injector` annotation.
-  static const SymbolPath injector = SymbolPath._standard('Injector');
+  /// Path to the `@Component` annotation.
+  static const SymbolPath component = SymbolPath._standard('Component');
 
   static const String _dartExtension = '.dart';
   static const String _dartPackage = 'dart';
