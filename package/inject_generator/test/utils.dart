@@ -8,34 +8,7 @@ import 'package:inject_generator/src/summary.dart';
 import 'package:logging/logging.dart';
 import 'package:test/test.dart';
 
-/// Tests that [buggyCode] produces the [expectedWarning].
-///
-/// Example:
-///
-///     testShouldWarn(
-///       'when code has no inject annotations',
-///       '''
-///         class Foo {}
-///       ''',
-///       'no @module, @component or @provide annotated classes found.',
-///     )
-void testShouldWarn(
-  String description, {
-  required String buggyCode,
-  required String expectedWarning,
-}) {
-  test('should warn $description', () async {
-    final tb = SummaryTestBed(
-      pkg: 'a',
-      inputs: {
-        'a|lib/buggy_code.dart': buggyCode,
-      },
-    );
-    await tb.run();
-
-    tb.expectLogRecord(Level.WARNING, expectedWarning);
-  });
-}
+const rootPackage = 'inject_generator';
 
 /// Matches a [LogRecord] on its [level] and [message].
 Matcher logRecord(Level level, String message) {
@@ -44,11 +17,8 @@ Matcher logRecord(Level level, String message) {
 
 /// Makes testing the [InjectSummaryBuilder] convenient.
 class SummaryTestBed {
-  /// Test package being processed by the summary builder.
-  final String pkg;
-
-  /// Input files for the builder.
-  final Map<String, String> inputs;
+  /// AssetId of the content to test for the builder.
+  final AssetId inputAssetId;
 
   /// Log records written by the builder.
   final List<LogRecord> logRecords = <LogRecord>[];
@@ -56,7 +26,7 @@ class SummaryTestBed {
   final TestingAssetWriter _writer = TestingAssetWriter();
 
   /// Constructor.
-  SummaryTestBed({required this.pkg, required this.inputs});
+  SummaryTestBed({required this.inputAssetId});
 
   /// Generated library summaries keyed by their paths.
   Map<String, LibrarySummary> get summaries => _writer.summaries;
@@ -94,21 +64,19 @@ class SummaryTestBed {
 
   /// Runs the [InjectSummaryBuilder].
   Future<void> run() async {
-    final reader = await PackageAssetReader.currentIsolate();
-    final metadata = await reader.readAsString(
-      AssetId('inject', 'lib/inject.dart'),
-    );
-    inputs.addAll({
-      'inject|lib/inject.dart': metadata,
-    });
+    final reader =
+        await PackageAssetReader.currentIsolate(rootPackage: rootPackage);
+    final content = await reader.readAsString(inputAssetId);
+
     const builder = InjectSummaryBuilder();
     await testBuilder(
       builder,
-      inputs,
-      rootPackage: pkg,
-      isInput: (assetId) => assetId.startsWith(pkg),
-      onLog: logRecords.add,
+      {inputAssetId.toString(): content},
+      isInput: (assetId) => assetId.startsWith(rootPackage),
+      rootPackage: rootPackage,
+      reader: reader,
       writer: _writer,
+      onLog: logRecords.add,
     );
   }
 }

@@ -21,17 +21,22 @@ void main() {
             Uri.parse('asset:foo/foo.dart'),
             modules: [
               ModuleSummary(
-                  SymbolPath.parseAbsoluteUri('asset:foo/foo.dart#FooModule'), [
-                ProviderSummary(
-                  InjectedType(
-                    LookupKey(
-                      SymbolPath.parseAbsoluteUri('asset:foo/foo.dart', 'Foo'),
+                SymbolPath.parseAbsoluteUri('asset:foo/foo.dart#FooModule'),
+                [
+                  ProviderSummary(
+                    InjectedType(
+                      LookupKey(
+                        SymbolPath.parseAbsoluteUri(
+                          'asset:foo/foo.dart',
+                          'Foo',
+                        ),
+                      ),
                     ),
+                    'provideFoo',
+                    ProviderKind.method,
                   ),
-                  'provideFoo',
-                  ProviderKind.method,
-                ),
-              ]),
+                ],
+              ),
             ],
           )
         });

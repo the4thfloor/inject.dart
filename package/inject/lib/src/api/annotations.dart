@@ -75,26 +75,38 @@ class Module {
   const Module._();
 }
 
-/// Annotation for a method (in an [Component] or [module]), class, or
+/// Annotation for a method (in an [Component]), class, or
 /// constructor that provides an instance.
 ///
 /// - If the annotation is on a class or constructor, the class is entered into
 ///   the dependency graph and its constructor's arguments are injected when the
 ///   class is injected.
-/// - If the annotation is on a method in a module, the return type is entered
-///   into the dependency graph. The method will be executed with injected
-///   arguments when the return type is injected.
 /// - If the annotation is on an [Component], this indicates that the component
 ///   should provide instances of the type when the method is called.
 ///
 /// The type provided by this annotation can be further specified by including a
 /// [Qualifier] annotation.
-const provide = Provide._();
+const inject = Inject._();
 
 /// **INTERNAL ONLY**: Might be exposed if we add flags or other properties.
 @visibleForTesting
-class Provide {
-  const Provide._();
+class Inject {
+  const Inject._();
+}
+
+/// Annotation for a method (in an [module]).
+///
+/// The return type is entered into the dependency graph. The method will be
+/// executed with injected arguments when the return type is injected.
+///
+/// The type provided by this annotation can be further specified by including a
+/// [Qualifier] annotation.
+const provides = Provides._();
+
+/// **INTERNAL ONLY**: Might be exposed if we add flags or other properties.
+@visibleForTesting
+class Provides {
+  const Provides._();
 }
 
 /// A reserved name that can be used alongside a [provide] annotation to further

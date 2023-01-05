@@ -89,7 +89,7 @@ class BuilderLogger {
     builderContext.rawLogger.severe(_constructMessage(element, message));
   }
 
-  Future<String> _constructMessage(Element? element, String message) async {
+  String _constructMessage(Element? element, String message) {
     ElementDeclarationResult? elementDeclaration;
     if (element != null && element.kind != ElementKind.DYNAMIC) {
       final parsedLibrary =

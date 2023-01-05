@@ -7,10 +7,12 @@ library inject;
 
 export 'src/api/annotations.dart'
     show
+        Component,
+        Provides,
+        Qualifier,
         asynchronous,
         component,
+        inject,
         module,
-        provide,
-        singleton,
-        Component,
-        Qualifier;
+        provides,
+        singleton;

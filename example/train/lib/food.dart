@@ -7,14 +7,14 @@ FoodServiceLocator? foodServices;
 
 /// Declares dependencies used by the food car.
 abstract class FoodServiceLocator {
-  @provide
+  @inject
   Kitchen get kitchen;
 }
 
 /// Declares dependencies needed by the food car.
 @module
 class FoodServices {
-  @provide
+  @provides
   Kitchen kitchen(CarMaintenance cm) => Kitchen(cm);
 }
 

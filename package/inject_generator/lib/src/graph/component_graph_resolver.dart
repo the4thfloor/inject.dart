@@ -347,9 +347,9 @@ void logUnresolvedDependency({
 
 To fix this, check that at least one of the following is true:
 
-- Ensure that $dependencyClassName's class declaration or constructor is annotated with @provide.
+- Ensure that $dependencyClassName's class declaration or constructor is annotated with @inject.
 
-- Ensure the constructor is empty or all parameters are provided (annotated with @provide).
+- Ensure the constructor is empty or all parameters are provided.
 
 - Ensure $componentClassName contains a module that provides $dependencyClassName.
 

@@ -30,7 +30,6 @@ class InjectSummaryBuilder extends AbstractInjectBuilder {
   Future<String> _buildInContext(BuildStep buildStep) async {
     log.info('Generating DI summary for ${buildStep.inputId}');
     final resolver = buildStep.resolver;
-    log.info('After resolve');
     LibrarySummary summary;
     if (await resolver.isLibrary(buildStep.inputId)) {
       final lib = await buildStep.inputLibrary;
@@ -48,7 +47,7 @@ class InjectSummaryBuilder extends AbstractInjectBuilder {
         // injection.
         builderContext.log.info(
             lib,
-            'no @module, @component or @provide annotated classes '
+            'no @module, @component or @inject annotated classes '
             'found in library');
       }
       summary = LibrarySummary(
@@ -95,14 +94,14 @@ class _SummaryBuilderVisitor extends InjectLibraryVisitor {
 
   @override
   void visitInjectable(ClassElement clazz, bool singleton) {
-    final classIsAnnotated = hasProvideAnnotation(clazz);
+    final classIsAnnotated = hasInjectAnnotation(clazz);
     final annotatedConstructors =
-        clazz.constructors.where(hasProvideAnnotation).toList();
+        clazz.constructors.where(hasInjectAnnotation).toList();
 
     if (classIsAnnotated && annotatedConstructors.isNotEmpty) {
       builderContext.log.severe(
         clazz,
-        'has @provide annotation on both the class and on one of the '
+        'has @inject annotation on both the class and on one of the '
         'constructors or factories. Please annotate one or the other, '
         'but not both.',
       );
@@ -119,7 +118,7 @@ class _SummaryBuilderVisitor extends InjectLibraryVisitor {
     if (annotatedConstructors.length > 1) {
       builderContext.log.severe(
         clazz,
-        'no more than one constructor may be annotated with @provide.',
+        'no more than one constructor may be annotated with @inject.',
       );
     }
 
@@ -183,7 +182,7 @@ class _SummaryBuilderVisitor extends InjectLibraryVisitor {
     }).toList();
     if (providers.isEmpty) {
       builderContext.log
-          .warning(clazz, 'module class must declare at least one provider');
+          .severe(clazz, 'module class must declare at least one provider');
       return;
     }
     final summary = ModuleSummary(getSymbolPath(clazz), providers);

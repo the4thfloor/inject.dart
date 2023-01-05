@@ -134,11 +134,9 @@ abstract class InjectClassVisitor {
   final bool _isForComponent;
 
   /// Constructor.
-  InjectClassVisitor(this._isForComponent);
+  const InjectClassVisitor(this._isForComponent);
 
-  /// Whether we are collecting providers for an component class.
-  ///
-  /// Unlike modules, the `@provide` annotation is optional in components.
+  /// Whether we are collecting providers for an component class or a module class.
   bool get isForComponent => _isForComponent;
 
   /// Call to start visiting [clazz].
@@ -177,11 +175,20 @@ abstract class InjectClassVisitor {
 class _AnnotatedClassVisitor extends GeneralizingElementVisitor<void> {
   final InjectClassVisitor _classVisitor;
 
-  _AnnotatedClassVisitor(this._classVisitor);
+  const _AnnotatedClassVisitor(this._classVisitor);
 
-  bool _isProvider(ExecutableElement element) =>
-      hasProvideAnnotation(element) ||
-      (_classVisitor._isForComponent && element.isAbstract);
+  // - true, if it is a component and has the `@inject` annotation
+  // - true, if it is a component and the element is abstract
+  //   unlike modules, the `@inject` annotation is optional in components
+  // - true, if it is a module and has the `@provides` annotation
+  bool _isProvider(ExecutableElement element) {
+    if (_classVisitor._isForComponent) {
+      return (hasInjectAnnotation(element) || element.isAbstract) &&
+          !hasProvidesAnnotation(element);
+    } else {
+      return hasProvidesAnnotation(element);
+    }
+  }
 
   @override
   void visitMethodElement(MethodElement method) {
@@ -193,6 +200,16 @@ class _AnnotatedClassVisitor extends GeneralizingElementVisitor<void> {
         singleton,
         asynchronous,
         qualifier: hasQualifier(method) ? extractQualifier(method) : null,
+      );
+    } else if (_classVisitor._isForComponent && hasProvidesAnnotation(method)) {
+      builderContext.log.warning(
+        method,
+        '@provides annotation is not supported for components',
+      );
+    } else if (!_classVisitor._isForComponent && hasInjectAnnotation(method)) {
+      builderContext.log.warning(
+        method,
+        '@inject annotation is not supported for modules',
       );
     }
     return;
@@ -210,6 +227,16 @@ class _AnnotatedClassVisitor extends GeneralizingElementVisitor<void> {
         );
       }
       _classVisitor.visitProvideGetter(field, singleton);
+    } else if (_classVisitor._isForComponent && hasProvidesAnnotation(field.getter!)) {
+      builderContext.log.warning(
+        field.getter!,
+        '@provides annotation is not supported for components',
+      );
+    } else if (!_classVisitor._isForComponent && hasInjectAnnotation(field.getter!)) {
+      builderContext.log.warning(
+        field.getter!,
+        '@inject annotation is not supported for modules',
+      );
     }
     return;
   }

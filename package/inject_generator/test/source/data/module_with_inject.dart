@@ -1,0 +1,24 @@
+import 'package:inject/inject.dart';
+
+// import 'module_with_inject.inject.dart' as g;
+
+@Component([BarModule])
+abstract class ModuleWithInject implements BarLocator {
+  // static const create = g.ModuleWithInject$Component.create;
+}
+
+abstract class BarLocator {
+  @inject
+  Bar get bar;
+}
+
+@module
+class BarModule {
+  @inject
+  Bar getBar() => Bar();
+}
+
+@inject
+class Bar {
+  String get foo => 'foo';
+}

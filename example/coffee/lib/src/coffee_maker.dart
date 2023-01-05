@@ -18,7 +18,7 @@ class CoffeeMaker {
   @brandName
   final String _brand;
 
-  @provide
+  @inject
   CoffeeMaker(this._heater, this._pump, this._brand, this._model);
 
   void brew() {

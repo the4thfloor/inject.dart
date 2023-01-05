@@ -19,7 +19,7 @@ const modelName = Qualifier(#modelName);
 @module
 class DripCoffeeModule {
   /// An example of a provider that uses a [Qualifier].
-  @provide
+  @provides
   @brandName
   String provideBrand() => 'Coffee by Dart Inc.';
 
@@ -28,7 +28,7 @@ class DripCoffeeModule {
   /// Just like [provideBrand], it also returns a `String`. The qualifier
   /// `modelName` is used to distinguish between this provider and
   /// [provideBrand].
-  @provide
+  @provides
   @modelName
   String provideModel() => 'DripCoffeeStandard';
 
@@ -43,14 +43,14 @@ class DripCoffeeModule {
   /// asynchronous nature of [PowerOutlet]. This feature allows you to switch
   /// between synchronous and asynchronous providers without a major refactoring
   /// downstream.
-  @provide
+  @provides
   @asynchronous
   Future<PowerOutlet> providePowerOutlet() async => PowerOutlet();
 
   /// An example of a singleton provider.
   ///
   /// Calling it multiple times will return the same instance.
-  @provide
+  @provides
   @singleton
   Electricity provideElectricity(PowerOutlet outlet) => Electricity(outlet);
 
@@ -60,12 +60,12 @@ class DripCoffeeModule {
   /// [Electricity], which in turn depends on asynchronously provided
   /// [PowerOutlet]. The big point here is that _a provider does not need to be
   /// aware of how its dependencies are resolved_.
-  @provide
+  @provides
   @asynchronous
   Future<Heater> provideHeater(Electricity e) async => ElectricHeater(e);
 
   /// A most basic provider that provides synchronously instantiated
   /// non-singleton [Heater] objects.
-  @provide
+  @provides
   Pump providePump(Heater heater) => Thermosiphon(heater);
 }

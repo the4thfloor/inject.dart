@@ -91,24 +91,24 @@ ElementAnnotation? _getAnnotation(
 /// Determines if [clazz] is an injectable class.
 ///
 /// Injectability is determined by checking if the class declaration or one of
-/// its constructors is annotated with `@Provide()`.
+/// its constructors is annotated with `@Inject()`.
 bool isInjectableClass(ClassElement clazz) =>
-    hasProvideAnnotation(clazz) || clazz.constructors.any(hasProvideAnnotation);
+    hasInjectAnnotation(clazz) || clazz.constructors.any(hasInjectAnnotation);
 
 /// Determines if [clazz] is a singleton class.
 ///
 /// A class is a singleton if:
-///     1. the class declaration is tagged with both `@Provide()` and
+///     1. the class declaration is tagged with both `@Inject()` and
 ///        `@Singleton()`, or
-///     2. one of the constructors is tagged with both `@Provide()` and
+///     2. one of the constructors is tagged with both `@Inject()` and
 ///        `@Singleton()`.
 ///
-/// It is a warning to have an `@Singleton()` annotation without an `@Provide()`
+/// It is a warning to have an `@Singleton()` annotation without an `@Inject()`
 /// annotation.
 bool isSingletonClass(ClassElement clazz) {
   var isSingleton = false;
   if (hasSingletonAnnotation(clazz)) {
-    if (hasProvideAnnotation(clazz)) {
+    if (hasInjectAnnotation(clazz)) {
       isSingleton = true;
     } else {
       builderContext.log.severe(
@@ -121,7 +121,7 @@ bool isSingletonClass(ClassElement clazz) {
   }
   for (final constructor in clazz.constructors) {
     if (hasSingletonAnnotation(constructor)) {
-      if (hasProvideAnnotation(constructor)) {
+      if (hasInjectAnnotation(constructor)) {
         isSingleton = true;
       } else {
         builderContext.log.severe(
@@ -143,8 +143,11 @@ bool isModuleClass(ClassElement clazz) =>
 /// Whether [clazz] is annotated with `@Component()`.
 bool isComponentClass(ClassElement clazz) => hasComponentAnnotation(clazz);
 
-/// Whether [e] is annotated with `@Provide()`.
-bool hasProvideAnnotation(Element e) => _hasAnnotation(e, SymbolPath.provide);
+/// Whether [e] is annotated with `@Inject()`.
+bool hasInjectAnnotation(Element e) => _hasAnnotation(e, SymbolPath.inject);
+
+/// Whether [e] is annotated with `@Provides()`.
+bool hasProvidesAnnotation(Element e) => _hasAnnotation(e, SymbolPath.provides);
 
 /// Whether [e] is annotated with `@Singleton()`.
 bool hasSingletonAnnotation(Element e) =>

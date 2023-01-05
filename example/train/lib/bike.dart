@@ -7,7 +7,7 @@ BikeServiceLocator? bikeServices;
 
 /// Declares dependencies used by the bike car.
 abstract class BikeServiceLocator {
-  @provide
+  @inject
   BikeRack get bikeRack;
 }
 
@@ -18,7 +18,7 @@ class BikeServices {
   /// provide. This tells `package:inject` to look for it when this module is
   /// mixed into an injector. The compiler will _statically_ check that this
   /// dependency is satisfied, and issue a warning if it's not.
-  @provide
+  @provides
   BikeRack bikeRack(CarMaintenance cm) => BikeRack(cm);
 }
 

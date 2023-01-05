@@ -10,7 +10,7 @@ import 'pump.dart';
 class Thermosiphon implements Pump {
   final Heater _heater;
 
-  @provide
+  @inject
   Thermosiphon(this._heater);
 
   @override

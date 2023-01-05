@@ -37,12 +37,12 @@ void main() {
 @module
 class TestModule {
   /// Let's override what the [Heater] does.
-  @provide
+  @provides
   Heater testHeater(Electricity _) => _TestHeater();
 
   /// Let's also override the model name.
   @modelName
-  @provide
+  @provides
   String testModel() => 'TestCoffeeMachine';
 }
 
@@ -69,7 +69,7 @@ abstract class TestCoffee {
   static const create = g.TestCoffee$Component.create;
 
   /// Provides a coffee maker.
-  @provide
+  @inject
   CoffeeMaker getCoffeeMaker();
 }
 

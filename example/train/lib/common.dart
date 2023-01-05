@@ -3,7 +3,7 @@ import 'package:inject/inject.dart';
 /// Provides common dependencies.
 @module
 class CommonServices {
-  @provide
+  @provides
   CarMaintenance maintenance() => CarMaintenance();
 }
 

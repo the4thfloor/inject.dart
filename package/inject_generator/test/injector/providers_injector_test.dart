@@ -2,7 +2,7 @@
 // import 'package:test/test.dart';
 //
 // // ignore: uri_does_not_exist
-// import 'providers_injector_test.inject.dart' as $generated;
+// import 'providers_injector_test.inject.dart' as g;
 //
 // /// Qualifier for a manually written [CounterFactory] for the purpose of testing
 // /// getting a [Provider] in a module provide method.
@@ -12,39 +12,39 @@
 // typedef Provider<T> = T Function();
 //
 // /// Injector whose purpose is to test binding providers.
-// @Injector([CounterModule])
+// @Component([CounterModule])
 // abstract class ProvidersInjector {
-//   static final create = $generated.ProvidersInjector$Injector.create;
+//   static final create = g.ProvidersInjector$Injector.create;
 //
 //   /// Returns a [CounterFactory].
 //   ///
 //   /// Tests injecting a [Provider] in a class.
-//   @provide
+//   @inject
 //   CounterFactory get counterFactory;
 //
 //   /// Returns a [Provider] of [Counter].
 //   ///
 //   /// Tests getting a [Provider] from an injector.
-//   @provide
+//   @inject
 //   Provider<Counter> get counter;
 //
 //   /// Returns a [CounterFactory].
 //   ///
 //   /// Tests getting a [Provider] from a module provider method.
-//   @provide
+//   @inject
 //   @manual
 //   CounterFactory get manualCounterFactory;
 // }
 //
 // @module
 // class CounterModule {
-//   @provide
+//   @inject
 //   @manual
 //   CounterFactory provideCounterProvider(Counter Function() counter) =>
 //       CounterFactory(counter);
 // }
 //
-// @provide
+// @inject
 // class CounterFactory {
 //   Provider<Counter> counter;
 //
@@ -54,7 +54,7 @@
 // }
 //
 // /// A simple stateful class for the purpose of testing [Provider]s.
-// @provide
+// @inject
 // class Counter {
 //   int value = 0;
 //

@@ -14,23 +14,26 @@ import 'package:quiver/core.dart';
 ///     // A reference to dart:core#List
 ///     new SymbolPath.dartSdk('core', 'List')
 class SymbolPath implements Comparable<SymbolPath> {
-  /// Path to the `@Qualifier` annotation.
-  static const SymbolPath qualifier = SymbolPath._standard('Qualifier');
+  /// Path to the `@Component` annotation.
+  static const SymbolPath component = SymbolPath._standard('Component');
 
   /// Path to the `@Module` annotation.
   static const SymbolPath module = SymbolPath._standard('Module');
 
-  /// Path to the `@Provide` annotation.
-  static const SymbolPath provide = SymbolPath._standard('Provide');
+  /// Path to the `@Inject` annotation.
+  static const SymbolPath inject = SymbolPath._standard('Inject');
+
+  /// Path to the `@Provides` annotation.
+  static const SymbolPath provides = SymbolPath._standard('Provides');
+
+  /// Path to the `@Qualifier` annotation.
+  static const SymbolPath qualifier = SymbolPath._standard('Qualifier');
 
   /// Path to the `@Singleton` annotation.
   static const SymbolPath singleton = SymbolPath._standard('Singleton');
 
   /// Path to the `@Asynchronous` annotation.
   static const SymbolPath asynchronous = SymbolPath._standard('Asynchronous');
-
-  /// Path to the `@Component` annotation.
-  static const SymbolPath component = SymbolPath._standard('Component');
 
   static const String _dartExtension = '.dart';
   static const String _dartPackage = 'dart';
