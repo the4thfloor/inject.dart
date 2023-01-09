@@ -227,12 +227,14 @@ class _AnnotatedClassVisitor extends GeneralizingElementVisitor<void> {
         );
       }
       _classVisitor.visitProvideGetter(field, singleton);
-    } else if (_classVisitor._isForComponent && hasProvidesAnnotation(field.getter!)) {
+    } else if (_classVisitor._isForComponent &&
+        hasProvidesAnnotation(field.getter!)) {
       builderContext.log.warning(
         field.getter!,
         '@provides annotation is not supported for components',
       );
-    } else if (!_classVisitor._isForComponent && hasInjectAnnotation(field.getter!)) {
+    } else if (!_classVisitor._isForComponent &&
+        hasInjectAnnotation(field.getter!)) {
       builderContext.log.warning(
         field.getter!,
         '@inject annotation is not supported for modules',

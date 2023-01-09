@@ -1,11 +1,10 @@
 import 'package:inject/inject.dart';
 
-// import 'component_without_module.inject.dart' as g;
+import 'component_without_module.inject.dart' as g;
 
 @component
 abstract class ComponentWithoutModule {
-
-  // static const create = g.ComponentWithoutModule$Component.create;
+  static const create = g.ComponentWithoutModule$Component.create;
 
   @inject
   Bar getBar();
