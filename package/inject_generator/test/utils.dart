@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:build/build.dart';
 import 'package:build_test/build_test.dart';
+import 'package:inject_generator/src/build/codegen_builder.dart';
 import 'package:inject_generator/src/build/summary_builder.dart';
 import 'package:inject_generator/src/summary.dart';
 import 'package:logging/logging.dart';
@@ -15,21 +16,53 @@ Matcher logRecord(Level level, String message) {
   return _LogRecordMatcher(level, message);
 }
 
+class SummaryTestBed extends _TestBed {
+  @override
+  SummaryTestBed({required super.inputAssetId})
+      : super(builder: const InjectSummaryBuilder());
+}
+
+class CodegenTestBed extends _TestBed {
+  @override
+  CodegenTestBed({required super.inputAssetId, required super.input})
+      : super(builder: const InjectCodegenBuilder());
+
+  /// Compare the generated code with the code in the file.
+  Future<void> compare() async {
+    final reader =
+        await PackageAssetReader.currentIsolate(rootPackage: rootPackage);
+    final content = await reader.readAsString(genFiles.keys.first);
+    expect(genFiles.length, 1);
+    expect(genFiles.values.first, content);
+  }
+}
+
 /// Makes testing the [InjectSummaryBuilder] convenient.
-class SummaryTestBed {
+class _TestBed {
   /// AssetId of the content to test for the builder.
   final AssetId inputAssetId;
+
+  /// The content to test for the builder.
+  final String? input;
+
+  final Builder builder;
 
   /// Log records written by the builder.
   final List<LogRecord> logRecords = <LogRecord>[];
 
-  final TestingAssetWriter _writer = TestingAssetWriter();
+  final _TestingAssetWriter _writer = _TestingAssetWriter();
 
-  /// Constructor.
-  SummaryTestBed({required this.inputAssetId});
+  _TestBed({required this.inputAssetId, this.input, required this.builder});
 
   /// Generated library summaries keyed by their paths.
-  Map<String, LibrarySummary> get summaries => _writer.summaries;
+  Map<AssetId, LibrarySummary> get summaries => _writer.summaries;
+
+  /// Generated code keyed by their paths.
+  Map<AssetId, String> get genFiles => _writer.genFiles;
+
+  /// Generated stuff as String keyed by their paths
+  Map<AssetId, String> get content =>
+      _writer.assets.map((key, value) => MapEntry(key, utf8.decode(value)));
 
   /// Verifies that [logRecords] contains a message with the desired [level] and
   /// [message].
@@ -66,9 +99,8 @@ class SummaryTestBed {
   Future<void> run() async {
     final reader =
         await PackageAssetReader.currentIsolate(rootPackage: rootPackage);
-    final content = await reader.readAsString(inputAssetId);
 
-    const builder = InjectSummaryBuilder();
+    final content = input ?? await reader.readAsString(inputAssetId);
     await testBuilder(
       builder,
       {inputAssetId.toString(): content},
@@ -101,11 +133,11 @@ class _LogRecordMatcher extends Matcher {
   }
 }
 
-class TestingAssetWriter extends InMemoryAssetWriter {
-  final Map<String, LibrarySummary> summaries = <String, LibrarySummary>{};
-  final Map<String, String> genfiles = <String, String>{};
+class _TestingAssetWriter extends InMemoryAssetWriter {
+  final Map<AssetId, LibrarySummary> summaries = <AssetId, LibrarySummary>{};
+  final Map<AssetId, String> genFiles = <AssetId, String>{};
 
-  TestingAssetWriter();
+  _TestingAssetWriter();
 
   @override
   Future writeAsString(
@@ -115,11 +147,10 @@ class TestingAssetWriter extends InMemoryAssetWriter {
   }) async {
     await super.writeAsString(id, contents, encoding: encoding);
     if (id.path.endsWith('.inject.summary')) {
-      summaries[id.toString()] =
-          LibrarySummary.parseJson(json.decode(contents));
+      summaries[id] = LibrarySummary.parseJson(json.decode(contents));
     }
     if (id.path.endsWith('.inject.dart')) {
-      genfiles[id.toString()] = contents;
+      genFiles[id] = contents;
     }
   }
 }

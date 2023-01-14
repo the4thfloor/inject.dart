@@ -23,7 +23,11 @@ SymbolPath getSymbolPath(Element element) {
 }
 
 /// Constructs a [InjectedType] from a [DartType].
-InjectedType getInjectedType(DartType type, {SymbolPath? qualifier}) {
+InjectedType getInjectedType(
+  DartType type, {
+  String? name,
+  SymbolPath? qualifier,
+}) {
   if (type is FunctionType) {
     if (type.parameters.isNotEmpty) {
       builderContext.log.severe(
@@ -41,12 +45,14 @@ InjectedType getInjectedType(DartType type, {SymbolPath? qualifier}) {
     }
     return InjectedType(
       _getLookupKey(type.returnType, qualifier: qualifier),
+      name: name,
       isProvider: true,
     );
   }
 
   return InjectedType(
     _getLookupKey(type, qualifier: qualifier),
+    name: name,
     isProvider: false,
   );
 }

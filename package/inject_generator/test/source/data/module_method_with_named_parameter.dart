@@ -1,6 +1,6 @@
 import 'package:inject/inject.dart';
 
-import 'component_with_module.inject.dart' as g;
+import 'module_method_with_named_parameter.inject.dart' as g;
 
 @Component([BarModule])
 abstract class ComponentWithModule implements BarLocator {
@@ -15,10 +15,15 @@ abstract class BarLocator {
 @module
 class BarModule {
   @provides
-  Bar getBar() => Bar();
+  Bar getBar({required Foo foo}) => Bar(foo: foo);
 }
 
 @inject
+class Foo {}
+
+@inject
 class Bar {
-  String get foo => 'foo';
+  final Foo foo;
+
+  const Bar({required this.foo});
 }

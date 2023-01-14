@@ -392,47 +392,52 @@ class _ComponentBuilder {
     if (dependency is DependencyProvidedByModule) {
       final callExpression =
           '${prefix}_${_decapitalize(dependency.moduleClass.symbol)}.${dependency.methodName}';
-      dependencyExpression = refer(callExpression).call(
-        dependency.dependencies
-            .map(
-              (d) => _invokeCreateMethod(
-                dependency: d,
-                scope: scope,
-                requestedBy: dependency.moduleClass,
-              ),
-            )
-            .toList(),
-      );
+      final positionalArguments = <Expression>[];
+      final namedArguments = <String, Expression>{};
+      for (final d in dependency.dependencies) {
+        final methodExpression = _invokeCreateMethod(
+          dependency: d,
+          scope: scope,
+          requestedBy: dependency.moduleClass,
+        );
+        if (d.name == null) {
+          positionalArguments.add(methodExpression);
+        } else {
+          namedArguments[d.name!] = methodExpression;
+        }
+      }
+      dependencyExpression =
+          refer(callExpression).call(positionalArguments, namedArguments);
     } else if (dependency is DependencyProvidedByInjectable) {
       final type = refer(
         dependency.summary.clazz.symbol,
         dependency.summary.clazz.toDartUri(relativeTo: libraryUri).toString(),
       );
       final constructorName = dependency.summary.constructor.name;
+      final positionalArguments = <Expression>[];
+      final namedArguments = <String, Expression>{};
+      for (final d in dependency.dependencies) {
+        final methodExpression = _invokeCreateMethod(
+          dependency: d,
+          scope: scope,
+          requestedBy: dependency.summary.clazz,
+        );
+        if (d.name == null) {
+          positionalArguments.add(methodExpression);
+        } else {
+          namedArguments[d.name!] = methodExpression;
+        }
+      }
       if (constructorName.isEmpty) {
         dependencyExpression = type.newInstance(
-          dependency.dependencies
-              .map(
-                (d) => _invokeCreateMethod(
-                  dependency: d,
-                  scope: scope,
-                  requestedBy: dependency.summary.clazz,
-                ),
-              )
-              .toList(),
+          positionalArguments,
+          namedArguments,
         );
       } else {
         dependencyExpression = type.newInstanceNamed(
           constructorName,
-          dependency.dependencies
-              .map(
-                (d) => _invokeCreateMethod(
-                  dependency: d,
-                  scope: scope,
-                  requestedBy: dependency.summary.clazz,
-                ),
-              )
-              .toList(),
+          positionalArguments,
+          namedArguments,
         );
       }
     } else {

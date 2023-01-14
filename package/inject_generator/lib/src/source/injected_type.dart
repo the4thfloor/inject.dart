@@ -12,11 +12,14 @@ class InjectedType {
   /// The type the user is trying to inject.
   final LookupKey lookupKey;
 
+  /// Name of the parameter if the user wants to inject it as a named paramter.
+  final String? name;
+
   /// True if the user is trying to inject [LookupKey] using a function type. If
   /// false, the user is trying to inject the type directly.
   final bool isProvider;
 
-  InjectedType(this.lookupKey, {this.isProvider = false});
+  InjectedType(this.lookupKey, {this.name, this.isProvider = false});
 
   /// Returns a new instance from the JSON encoding of an instance.
   ///
@@ -24,6 +27,7 @@ class InjectedType {
   factory InjectedType.fromJson(Map<String, dynamic> json) {
     return InjectedType(
       LookupKey.fromJson(json['lookupKey']),
+      name: json['name'],
       isProvider: json['isProvider'],
     );
   }
@@ -34,6 +38,7 @@ class InjectedType {
   Map<String, dynamic> toJson() {
     return {
       'lookupKey': lookupKey.toJson(),
+      'name': name,
       'isProvider': isProvider,
     };
   }
@@ -44,18 +49,20 @@ class InjectedType {
       other is InjectedType &&
           runtimeType == other.runtimeType &&
           lookupKey == other.lookupKey &&
+          name == other.name &&
           isProvider == other.isProvider;
 
   @override
   int get hashCode {
     // Not all fields are here. See the equals method doc for more info.
-    return hash2(lookupKey, isProvider);
+    return hash3(lookupKey, name, isProvider);
   }
 
   @override
   String toString() {
     return '$InjectedType{'
         'lookupKey: $lookupKey, '
+        'name: $name, '
         'isProvider: $isProvider}';
   }
 }

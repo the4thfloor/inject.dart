@@ -247,13 +247,7 @@ class _ProviderSummaryVisitor extends InjectClassVisitor {
               builderContext.log
                   .severe(p, 'component methods cannot have parameters');
               return null;
-            } else if (p.isNamed) {
-              builderContext.log
-                  .severe(p, 'named provider parameters are unsupported');
-              return null;
-            }
-
-            if (p.type.isDynamic) {
+            } else if (p.type.isDynamic) {
               builderContext.log.severe(
                   p.enclosingElement,
                   'Parameter named `${p.name}` resolved to dynamic. This can '
@@ -264,8 +258,10 @@ class _ProviderSummaryVisitor extends InjectClassVisitor {
                   'code.');
               return null;
             }
+
             return getInjectedType(
               p.type,
+              name: p.isNamed ? p.name : null,
               qualifier: hasQualifier(p) ? extractQualifier(p) : null,
             );
           })
@@ -356,13 +352,11 @@ ProviderSummary _createConstructorProviderSummary(
             return null;
           }
 
-          if (p.isNamed) {
-            builderContext.log
-                .severe(p, 'named constructor parameters are unsupported');
-            return null;
-          }
-
-          return getInjectedType(p.type, qualifier: qualifier);
+          return getInjectedType(
+            p.type,
+            name: p.isNamed ? p.name : null,
+            qualifier: qualifier,
+          );
         })
         .whereNotNull()
         .toList(),
