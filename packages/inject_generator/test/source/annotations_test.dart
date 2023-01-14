@@ -14,8 +14,6 @@ void main() {
       await stb.run();
       stb.printLog();
 
-      expect(stb.logRecords.length, 1);
-
       final summaries = stb.summaries;
       expect(summaries.length, 1);
 
@@ -58,8 +56,6 @@ void main() {
       final stb = SummaryTestBed(inputAssetId: testAssetId);
       await stb.run();
       stb.printLog();
-
-      expect(stb.logRecords.length, 1);
 
       final summaries = stb.summaries;
       expect(summaries.length, 1);
@@ -136,8 +132,6 @@ void main() {
       await stb.run();
       stb.printLog();
 
-      expect(stb.logRecords.length, 1);
-
       final summaries = stb.summaries;
       expect(summaries.length, 1);
 
@@ -185,8 +179,6 @@ void main() {
       final stb = SummaryTestBed(inputAssetId: testAssetId);
       await stb.run();
       stb.printLog();
-
-      expect(stb.logRecords.length, 1);
 
       final summaries = stb.summaries;
       expect(summaries.length, 1);

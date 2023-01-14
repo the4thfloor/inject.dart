@@ -1,0 +1,17 @@
+name: inject
+
+packages:
+  - packages/**
+  - examples/**
+
+scripts:
+  analyze:
+    exec: dart analyze .
+  fix:
+    exec: dart fix --apply
+  format:
+    exec: dart format .
+  test:
+    exec: dart pub run build_runner test --delete-conflicting-outputs
+    select-package:
+      dir-exists: test
