@@ -1,1 +1,1 @@
-package/inject/README.md
+packages/inject/README.md

@@ -22,7 +22,6 @@ linter:
     - avoid_returning_null_for_future
     - avoid_types_on_closure_parameters
     - cascade_invocations
-    - combinators_ordering
     - directives_ordering
     - eol_at_end_of_file
     - omit_local_variable_types
@@ -39,9 +38,9 @@ linter:
     - unnecessary_await_in_return
 
 
-# analyzer:
-#   exclude:
-#     - path/to/excluded/files/**
+analyzer:
+  exclude:
+    - "**/*.inject.dart"
 
 # For more information about the core and recommended set of lints, see
 # https://dart.dev/go/core-lints
