@@ -39,9 +39,9 @@ linter:
     - unnecessary_await_in_return
 
 
-# analyzer:
-#   exclude:
-#     - path/to/excluded/files/**
+analyzer:
+  exclude:
+    - "**/*.inject.dart"
 
 # For more information about the core and recommended set of lints, see
 # https://dart.dev/go/core-lints

@@ -5,10 +5,10 @@
 */*/build/
 **/pubspec.lock
 
-package/inject/android/
-package/inject/ios/
-package/inject_generator/android/
-package/inject_generator/ios/
+packages/inject/android/
+packages/inject/ios/
+packages/inject_generator/android/
+packages/inject_generator/ios/
 
 .idea/*
 !.idea/modules.xml
