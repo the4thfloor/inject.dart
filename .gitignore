@@ -9,6 +9,3 @@ packages/inject/android/
 packages/inject/ios/
 packages/inject_generator/android/
 packages/inject_generator/ios/
-
-.idea/*
-!.idea/modules.xml

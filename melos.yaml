@@ -1,4 +1,4 @@
-name: inject
+name: inject_dart
 
 packages:
   - packages/**
