@@ -6,8 +6,8 @@ import 'package:inject_generator/src/source/symbol_path.dart';
 import 'package:quiver/testing/equality.dart';
 import 'package:test/test.dart';
 
-final LookupKey lookupKey1 = LookupKey(const SymbolPath.global('1'));
-final LookupKey lookupKey2 = LookupKey(const SymbolPath.global('2'));
+const LookupKey lookupKey1 = LookupKey(SymbolPath.global('1'));
+const LookupKey lookupKey2 = LookupKey(SymbolPath.global('2'));
 
 void main() {
   group(LookupKey, () {

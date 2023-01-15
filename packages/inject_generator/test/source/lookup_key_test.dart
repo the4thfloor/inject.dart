@@ -18,7 +18,7 @@ void main() {
   group(LookupKey, () {
     group('toPrettyString', () {
       test('only root', () {
-        final type = LookupKey(typeSymbolPath1);
+        const type = LookupKey(typeSymbolPath1);
 
         final prettyString = type.toPrettyString();
 
@@ -26,17 +26,17 @@ void main() {
       });
 
       test('qualified type', () {
-        final type = LookupKey(typeSymbolPath1, qualifier: qualifier);
+        const type = LookupKey(typeSymbolPath1, qualifier: qualifier);
 
         final prettyString = type.toPrettyString();
 
-        expect(prettyString, '@$qualifierName $typeName1');
+        expect(prettyString, '$qualifierName@$typeName1');
       });
     });
 
     group('serialization', () {
       test('with all fields', () {
-        final type = LookupKey(typeSymbolPath1, qualifier: qualifier);
+        const type = LookupKey(typeSymbolPath1, qualifier: qualifier);
 
         final deserialized = deserialize(type);
 
@@ -44,7 +44,7 @@ void main() {
       });
 
       test('without qualifier', () {
-        final type = LookupKey(typeSymbolPath1);
+        const type = LookupKey(typeSymbolPath1);
 
         final deserialized = deserialize(type);
 
@@ -55,10 +55,13 @@ void main() {
     test('equality', () {
       expect(
         {
-          'only root': [LookupKey(typeSymbolPath1), LookupKey(typeSymbolPath1)],
+          'only root': [
+            const LookupKey(typeSymbolPath1),
+            const LookupKey(typeSymbolPath1)
+          ],
           'with qualifier': [
-            LookupKey(typeSymbolPath1, qualifier: qualifier),
-            LookupKey(typeSymbolPath1, qualifier: qualifier)
+            const LookupKey(typeSymbolPath1, qualifier: qualifier),
+            const LookupKey(typeSymbolPath1, qualifier: qualifier)
           ],
         },
         areEqualityGroups,

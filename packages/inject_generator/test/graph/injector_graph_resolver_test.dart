@@ -22,6 +22,7 @@ void main() {
             modules: [
               ModuleSummary(
                 SymbolPath.parseAbsoluteUri('asset:foo/foo.dart#FooModule'),
+                true,
                 [
                   ProviderSummary(
                     'provideFoo',
@@ -63,7 +64,7 @@ void main() {
         expect(resolvedGraph.includeModules, hasLength(1));
         final fooModule = resolvedGraph.includeModules.first;
         expect(
-          fooModule.toAbsoluteUri().toString(),
+          fooModule.clazz.toAbsoluteUri().toString(),
           'asset:foo/foo.dart#FooModule',
         );
 
@@ -99,7 +100,7 @@ void main() {
         expect(resolvedGraph.includeModules, hasLength(1));
         final fooModule = resolvedGraph.includeModules.first;
         expect(
-          fooModule.toAbsoluteUri().toString(),
+          fooModule.clazz.toAbsoluteUri().toString(),
           'asset:foo/foo.dart#FooModule',
         );
         expect(resolvedGraph.providers, hasLength(1));

@@ -10,9 +10,11 @@ library inject.src.summary;
 import 'package:quiver/collection.dart';
 
 import 'source/injected_type.dart';
+import 'source/lookup_key.dart';
 import 'source/symbol_path.dart';
 
 part 'summary/component_summary.dart';
+part 'summary/factory_summary.dart';
 part 'summary/injectable_summary.dart';
 part 'summary/library_summary.dart';
 part 'summary/module_summary.dart';

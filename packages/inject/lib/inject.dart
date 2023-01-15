@@ -10,9 +10,13 @@ export 'src/api/annotations.dart'
         Component,
         Provides,
         Qualifier,
+        assisted,
+        assistedFactory,
+        AssistedInject,
         asynchronous,
         component,
         inject,
         module,
         provides,
         singleton;
+export 'src/api/provider.dart';

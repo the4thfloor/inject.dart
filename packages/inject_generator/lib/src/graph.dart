@@ -10,7 +10,6 @@ import 'package:build/build.dart';
 import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
 import 'package:path/path.dart' as path;
-import 'package:quiver/core.dart';
 
 import 'context.dart';
 import 'source/injected_type.dart';

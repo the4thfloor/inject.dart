@@ -59,7 +59,7 @@ const component = Component();
 ///
 ///     @module
 ///     class CarModule {
-///       @provide
+///       @provides
 ///       Car provideCar(Manufacturer manufacturer) =>
 ///           Car(manufacturer: manufacturer, year: 2019);
 ///     }
@@ -94,6 +94,49 @@ class Inject {
   const Inject._();
 }
 
+/// Annotates a class or the constructor of a class that will be created via
+/// assisted injection.
+class AssistedInject {
+  /// The [Type] of the [AssistedFactory] for this class.
+  final Type factory;
+
+  // ignore: public_member_api_docs
+  const factory AssistedInject(Type factory) = AssistedInject._;
+
+  const AssistedInject._(this.factory);
+}
+
+/// Annotates a parameter for an assisted injection constructor.
+///
+/// The assisted injection is a dependency injection (DI) pattern used to
+/// construct an object where the DI framework can provide some parameters
+/// while the user must pass others at build time (also known as assisted).
+///
+/// A factory is usually responsible for combining all the parameters
+/// and creating the object.
+const assisted = Assisted._();
+
+/// **INTERNAL ONLY**: Might be exposed if we add flags or other properties.
+@visibleForTesting
+class Assisted {
+  const Assisted._();
+}
+
+/// Annotates an abstract class used to create an instance of a type via an
+/// [AssistedInject] constructor.
+///
+/// - The type must be an abstract class.
+/// - Return type must exactly match the type of the [AssistedInject] type
+/// - Parameters must match the exact list of [Assisted] parameters in the
+///   [AssistedInject] type's constructor
+const assistedFactory = AssistedFactory._();
+
+/// **INTERNAL ONLY**: Might be exposed if we add flags or other properties.
+@visibleForTesting
+class AssistedFactory {
+  const AssistedFactory._();
+}
+
 /// Annotation for a method (in an [module]).
 ///
 /// The return type is entered into the dependency graph. The method will be
@@ -109,17 +152,17 @@ class Provides {
   const Provides._();
 }
 
-/// A reserved name that can be used alongside a [provide] annotation to further
+/// A reserved name that can be used alongside a [provides] annotation to further
 /// specify the key.
 ///
-/// [Qualifier] must be placed at the same level as a `@provide` annotation. It
+/// [Qualifier] must be placed at the same level as a `@provides` annotation. It
 /// is **illegal** to have more than one [Qualifier] for a given provider.
 ///
 /// # Example
 ///     const baseUri = const Qualifier(#baseUri);
 ///
 ///     abstract class RpcModule {
-///       @provide
+///       @provides
 ///       @baseUri
 ///       String provideBaseUri() => 'https://foo.bar/service/v2';
 ///     }
@@ -143,7 +186,7 @@ class Qualifier {
 /// same instance will be used to satisfy all dependencies.
 ///
 /// For example:
-///     @provide
+///     @inject
 ///     @singleton
 ///     class Foo {}
 ///
@@ -171,13 +214,13 @@ class Singleton {
 /// For example:
 ///     @module
 ///     abstract class CarModule {
-///       @provide
+///       @provides
 ///       @asynchronous
 ///       Future<Car> provideCar();
 ///     }
 ///
 ///     class Dealership {
-///       @provide
+///       @inject
 ///       Dealership(Car car);
 ///     }
 ///
@@ -193,12 +236,12 @@ class Singleton {
 /// For example:
 ///     @module
 ///     abstract class CarModule {
-///       @provide
+///       @provides
 ///       Future<Car> provideCar();
 ///     }
 ///
 ///     class Dealership {
-///       @provide
+///       @inject
 ///       Dealership(Future<Car> car);
 ///     }
 const asynchronous = Asynchronous._();

@@ -40,25 +40,25 @@ class ComponentGraphResolver {
     try {
       return _summaryCache[p] = await _reader.read(package, filePath);
     } on AssetNotFoundException {
-      logUnresolvedDependency(
+      _logUnresolvedDependency(
         componentSummary: _componentSummary,
         dependency: p,
         requestedBy: requestedBy,
       );
     } on PackageNotFoundException {
-      logUnresolvedDependency(
+      _logUnresolvedDependency(
         componentSummary: _componentSummary,
         dependency: p,
         requestedBy: requestedBy,
       );
     } on InvalidInputException {
-      logUnresolvedDependency(
+      _logUnresolvedDependency(
         componentSummary: _componentSummary,
         dependency: p,
         requestedBy: requestedBy,
       );
     } on FileSystemException {
-      logUnresolvedDependency(
+      _logUnresolvedDependency(
         componentSummary: _componentSummary,
         dependency: p,
         requestedBy: requestedBy,
@@ -110,31 +110,97 @@ class ComponentGraphResolver {
         providersByModules[lookupKey] = DependencyProvidedByModule._(
           lookupKey,
           provider.isSingleton,
-          provider.isAsynchronous,
           provider.dependencies,
           module.clazz,
           provider.name,
+          provider.isAsynchronous,
         );
       }
     }
 
-    final injectables = <LookupKey, InjectableSummary>{};
+    final providersByFactory = <LookupKey, DependencyProvidedByFactory>{};
+
+    Future<List<InjectedType>?> addFactoryIfExists(
+      LookupKey key, {
+      required InjectableSummary injectableSummary,
+      required SymbolPath requestedBy,
+    }) async {
+      final isSeen = providersByFactory.containsKey(key);
+      if (isSeen) {
+        return null;
+      }
+
+      final factorySummaries =
+          (await _readFromPath(key.root, requestedBy: requestedBy)).factories;
+      final factorySummary = factorySummaries.firstWhereOrNull(
+        (s) => s.clazz == key.root,
+      );
+      if (factorySummary != null) {
+        providersByFactory[key] =
+            DependencyProvidedByFactory._(factorySummary, injectableSummary);
+
+        final createdType = factorySummary.factory.createdType.lookupKey.root;
+        final createdTypeLib = (await _readFromPath(
+          createdType,
+          requestedBy: factorySummary.clazz,
+        ));
+        final resolved = createdTypeLib.injectables
+            .firstWhereOrNull((element) => element.clazz == createdType);
+        return resolved?.constructor.dependencies
+            .where((dep) => !dep.isAssisted)
+            .toList();
+      } else {
+        builderContext.rawLogger.severe(
+          'Failed to locate factory for injectable ${requestedBy.toAbsoluteUri()} ',
+        );
+        return null;
+      }
+    }
+
+    final providersByInjectables =
+        <LookupKey, DependencyProvidedByInjectable>{};
+
+    var count = 0;
 
     Future<void> addInjectableIfExists(
       LookupKey key, {
       required SymbolPath requestedBy,
     }) async {
-      // Modules take precedence.
+      count = count + 1;
+      if (count > 25) {
+        return;
+      }
+
       final isProvidedByAModule = providersByModules.containsKey(key);
-      final isSeen = injectables.containsKey(key);
+      final isSeen = providersByInjectables.containsKey(key);
       if (isProvidedByAModule || isSeen) {
         return;
       }
+
       if (!key.root.isGlobal) {
         final lib = await _readFromPath(key.root, requestedBy: requestedBy);
         for (final injectable in lib.injectables) {
+          final factory = injectable.factory;
+          if (factory != null) {
+            final dependencies = await addFactoryIfExists(
+              factory,
+              injectableSummary: injectable,
+              requestedBy: injectable.clazz,
+            );
+
+            if (dependencies != null) {
+              for (final dependency in dependencies) {
+                await addInjectableIfExists(
+                  dependency.lookupKey,
+                  requestedBy: factory.root,
+                );
+              }
+            }
+          }
+
           if (injectable.clazz == key.root) {
-            injectables[key] = injectable;
+            providersByInjectables[key] =
+                DependencyProvidedByInjectable._(injectable);
             for (final dependency in injectable.constructor.dependencies) {
               await addInjectableIfExists(
                 dependency.lookupKey,
@@ -167,17 +233,11 @@ class ComponentGraphResolver {
       );
     }
 
-    final providersByInjectables =
-        <LookupKey, DependencyProvidedByInjectable>{};
-    injectables.forEach((symbol, summary) {
-      providersByInjectables[symbol] =
-          DependencyProvidedByInjectable._(summary);
-    });
-
     // Combined dependencies provided by injectables with those provided by
     // modules, giving modules a higher precedence.
     final mergedDependencies = <LookupKey, ResolvedDependency>{}
       ..addAll(providersByInjectables)
+      ..addAll(providersByFactory)
       ..addAll(providersByModules);
 
     // Providers defined on the component class.
@@ -195,7 +255,7 @@ class ComponentGraphResolver {
     _detectAndWarnAboutCycles(mergedDependencies);
 
     return ComponentGraph._(
-      List<SymbolPath>.unmodifiable(allModules.map((m) => m.clazz)),
+      List<ModuleSummary>.unmodifiable(allModules),
       List<ComponentProvider>.unmodifiable(componentProviders),
       Map<LookupKey, ResolvedDependency>.unmodifiable(mergedDependencies),
     );
@@ -274,11 +334,15 @@ class DependencyEdge {
   DependencyEdge({required this.from, required this.to});
 
   @override
-  int get hashCode => hash2(from, to);
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is DependencyEdge &&
+          runtimeType == other.runtimeType &&
+          from == other.from &&
+          to == other.to;
 
   @override
-  bool operator ==(Object other) =>
-      other is DependencyEdge && other.from == from && other.to == to;
+  int get hashCode => from.hashCode ^ to.hashCode;
 }
 
 /// Represents a cycle inside a dependency graph.
@@ -334,7 +398,7 @@ class Cycle {
 ///
 /// Since the DI graph can not be created with an unfulfilled dependency, this
 /// logs a severe error.
-void logUnresolvedDependency({
+void _logUnresolvedDependency({
   required ComponentSummary componentSummary,
   required SymbolPath dependency,
   required SymbolPath requestedBy,
@@ -355,10 +419,10 @@ To fix this, check that at least one of the following is true:
 
 These classes were found at the following paths:
 
-- Component ($componentClassName): ${componentSummary.clazz.toAbsoluteUri().removeFragment()}.
+- Component "$componentClassName": ${componentSummary.clazz.toAbsoluteUri().removeFragment()}.
 
-- Injected class ($dependencyClassName): ${dependency.toAbsoluteUri().removeFragment()}.
+- Injected class "$dependencyClassName": ${dependency.toAbsoluteUri().removeFragment()}.
 
-- Injected in class ($requestedByClassName): ${requestedBy.toAbsoluteUri().removeFragment()}.
+- Injected in class "$requestedByClassName": ${requestedBy.toAbsoluteUri().removeFragment()}.
 ''');
 }

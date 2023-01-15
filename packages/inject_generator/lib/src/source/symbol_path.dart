@@ -3,7 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:path/path.dart' as pkg_path;
-import 'package:quiver/core.dart';
 
 /// Represents the absolute canonical location of a [symbol] within Dart.
 ///
@@ -22,6 +21,17 @@ class SymbolPath implements Comparable<SymbolPath> {
 
   /// Path to the `@Inject` annotation.
   static const SymbolPath inject = SymbolPath._standard('Inject');
+
+  /// Path to the `@AssistedInject` annotation.
+  static const SymbolPath assistedInject =
+      SymbolPath._standard('AssistedInject');
+
+  /// Path to the `@AssistedFactory` annotation.
+  static const SymbolPath assistedFactory =
+      SymbolPath._standard('AssistedFactory');
+
+  /// Path to the `@Assisted` annotation.
+  static const SymbolPath assisted = SymbolPath._standard('Assisted');
 
   /// Path to the `@Provides` annotation.
   static const SymbolPath provides = SymbolPath._standard('Provides');
@@ -171,17 +181,16 @@ class SymbolPath implements Comparable<SymbolPath> {
   bool get isGlobal => package == null && path == null;
 
   @override
-  bool operator ==(Object other) {
-    if (other is SymbolPath) {
-      return package == other.package &&
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SymbolPath &&
+          runtimeType == other.runtimeType &&
+          package == other.package &&
           path == other.path &&
           symbol == other.symbol;
-    }
-    return false;
-  }
 
   @override
-  int get hashCode => hash3(package, path, symbol);
+  int get hashCode => package.hashCode ^ path.hashCode ^ symbol.hashCode;
 
   @override
   int compareTo(SymbolPath symbolPath) {
@@ -252,7 +261,4 @@ class SymbolPath implements Comparable<SymbolPath> {
 
   /// Absolute path to this symbol for use in log messages.
   String toHumanReadableString() => '${toDartUri()}#$symbol';
-
-  @override
-  String toString() => '$SymbolPath {${toAbsoluteUri()}}';
 }

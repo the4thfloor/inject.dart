@@ -13,6 +13,7 @@ import 'package:collection/collection.dart';
 import '../analyzer/utils.dart';
 import '../analyzer/visitors.dart';
 import '../context.dart';
+import '../source/lookup_key.dart';
 import '../source/symbol_path.dart';
 import '../summary.dart';
 import 'abstract_builder.dart';
@@ -36,7 +37,8 @@ class InjectSummaryBuilder extends AbstractInjectBuilder {
       final components = <ComponentSummary>[];
       final modules = <ModuleSummary>[];
       final injectables = <InjectableSummary>[];
-      _SummaryBuilderVisitor(components, modules, injectables)
+      final factories = <FactorySummary>[];
+      _SummaryBuilderVisitor(components, modules, injectables, factories)
           .visitLibrary(lib);
       if (components.isEmpty && modules.isEmpty && injectables.isEmpty) {
         // We are going to be outputting an empty file, which is not ideal.
@@ -55,6 +57,7 @@ class InjectSummaryBuilder extends AbstractInjectBuilder {
         components: components,
         modules: modules,
         injectables: injectables,
+        factories: factories,
       );
     } else {
       final contents = await buildStep.readAsString(buildStep.inputId);
@@ -89,14 +92,27 @@ class _SummaryBuilderVisitor extends InjectLibraryVisitor {
   final List<ComponentSummary> _components;
   final List<ModuleSummary> _modules;
   final List<InjectableSummary> _injectables;
+  final List<FactorySummary> _factories;
 
-  _SummaryBuilderVisitor(this._components, this._modules, this._injectables);
+  const _SummaryBuilderVisitor(
+    this._components,
+    this._modules,
+    this._injectables,
+    this._factories,
+  );
 
   @override
-  void visitInjectable(ClassElement clazz, bool singleton) {
-    final classIsAnnotated = hasInjectAnnotation(clazz);
-    final annotatedConstructors =
-        clazz.constructors.where(hasInjectAnnotation).toList();
+  void visitInjectable(
+    ClassElement clazz,
+    bool singleton,
+    LookupKey? factory,
+  ) {
+    final classIsAnnotated =
+        hasInjectAnnotation(clazz) || hasAssistedInjectAnnotation(clazz);
+    final annotatedConstructors = [
+      ...clazz.constructors.where(hasInjectAnnotation),
+      ...clazz.constructors.where(hasAssistedInjectAnnotation)
+    ];
 
     if (classIsAnnotated && annotatedConstructors.isNotEmpty) {
       builderContext.log.severe(
@@ -128,6 +144,7 @@ class _SummaryBuilderVisitor extends InjectLibraryVisitor {
       constructorSummary = _createConstructorProviderSummary(
         annotatedConstructors.single,
         singleton,
+        factory,
       );
     } else if (classIsAnnotated) {
       if (clazz.constructors.length <= 1) {
@@ -135,13 +152,49 @@ class _SummaryBuilderVisitor extends InjectLibraryVisitor {
         constructorSummary = _createConstructorProviderSummary(
           clazz.constructors.single,
           singleton,
+          factory,
         );
       }
     }
 
     if (constructorSummary != null) {
-      _injectables
-          .add(InjectableSummary(getSymbolPath(clazz), constructorSummary));
+      _injectables.add(
+        InjectableSummary(
+          getSymbolPath(clazz),
+          constructorSummary,
+          factory,
+        ),
+      );
+    }
+  }
+
+  @override
+  void visitAssistedFactory(ClassElement clazz) {
+    if (!clazz.hasDefaultConstructor()) {
+      builderContext.log.severe(
+        clazz,
+        'factory class should have no constructor or only the default constructor.',
+      );
+    }
+
+    final visitor = _FactorySummaryVisitor()..visitClass(clazz);
+    if (visitor._factories.isEmpty) {
+      builderContext.log.severe(
+        clazz,
+        'factory class is missing an abstract, non-default method, usually '
+        'called `create`, whose return type matches the assisted injection '
+        'type and whose parameters match all @assisted-annotated parameters '
+        'of the injected class.',
+      );
+    } else if (visitor._factories.length > 1) {
+      builderContext.log.severe(
+        clazz,
+        'factory class should contain a single abstract, non-default method but '
+        'found multiple.',
+      );
+    } else {
+      _factories
+          .add(FactorySummary(getSymbolPath(clazz), visitor._factories.single));
     }
   }
 
@@ -149,14 +202,16 @@ class _SummaryBuilderVisitor extends InjectLibraryVisitor {
   void visitComponent(ClassElement clazz, List<SymbolPath> modules) {
     final visitor = _ProviderSummaryVisitor(true)..visitClass(clazz);
     if (visitor._providers.isEmpty) {
-      builderContext.log
-          .severe(clazz, 'component class must declare at least one provider');
+      builderContext.log.severe(
+        clazz,
+        'component class must declare at least one @inject-annotated provider',
+      );
     }
     final providers = visitor._providers.where((ps) {
       if (ps.isAsynchronous) {
         builderContext.log.severe(
           clazz,
-          'component class must not declare asynchronous providers',
+          'component class must not declare @asynchronous-annotated providers',
         );
         return false;
       }
@@ -181,19 +236,82 @@ class _SummaryBuilderVisitor extends InjectLibraryVisitor {
       return true;
     }).toList();
     if (providers.isEmpty) {
-      builderContext.log
-          .severe(clazz, 'module class must declare at least one provider');
+      builderContext.log.severe(
+        clazz,
+        'module class must declare at least one @provides-annotated provider',
+      );
       return;
     }
-    final summary = ModuleSummary(getSymbolPath(clazz), providers);
+    final summary = ModuleSummary(
+      getSymbolPath(clazz),
+      clazz.hasDefaultConstructor(),
+      providers,
+    );
     _modules.add(summary);
+  }
+}
+
+class _FactorySummaryVisitor extends FactoryClassVisitor {
+  final List<FactoryMethodSummary> _factories = <FactoryMethodSummary>[];
+
+  @override
+  void visitFactoryMethod(MethodElement method) {
+    if (!method.isAbstract) {
+      builderContext.log.severe(
+        method,
+        'factory methods must be abstract.',
+      );
+      return;
+    }
+    if (method.returnType.isDartCoreFunction) {
+      builderContext.log.severe(
+        method,
+        'factory methods can only return a class and not a function',
+      );
+      return;
+    }
+
+    final returnType = method.returnType;
+    if (!_checkReturnType(method, returnType.element!)) {
+      return;
+    }
+
+    final summary = FactoryMethodSummary(
+      method.name,
+      getInjectedType(returnType),
+      method.parameters
+          .map((p) {
+            if (p.type.isDynamic) {
+              builderContext.log.severe(
+                  p.enclosingElement,
+                  'Parameter named `${p.name}` resolved to dynamic. This can '
+                  'happen when the return type is not specified, when it is '
+                  'specified as `dynamic`, or when the return type failed to '
+                  'resolve to a proper type due to a bad import or a typo. Do '
+                  'make sure that there are no analyzer warnings in your '
+                  'code.');
+              return null;
+            }
+
+            return getInjectedType(
+              p.type,
+              name: p.name,
+              required: p.isRequired,
+              named: p.isNamed,
+              qualifier: hasQualifier(p) ? extractQualifier(p) : null,
+            );
+          })
+          .whereNotNull()
+          .toList(),
+    );
+    _factories.add(summary);
   }
 }
 
 class _ProviderSummaryVisitor extends InjectClassVisitor {
   final List<ProviderSummary> _providers = <ProviderSummary>[];
 
-  _ProviderSummaryVisitor(bool isForComponent) : super(isForComponent);
+  _ProviderSummaryVisitor(super.isForComponent);
 
   @override
   void visitProvideMethod(
@@ -209,7 +327,7 @@ class _ProviderSummaryVisitor extends InjectClassVisitor {
       );
       return;
     }
-    if (asynchronous && !method.returnType.isDartAsyncFuture) {
+    if (asynchronous && !(method.returnType.isDartAsyncFuture)) {
       builderContext.log.severe(
         method,
         'asynchronous provider must return a Future.',
@@ -221,22 +339,17 @@ class _ProviderSummaryVisitor extends InjectClassVisitor {
         ? (method.returnType as ParameterizedType).typeArguments.single
         : method.returnType;
 
-    if (!_checkReturnType(
-      method,
-      returnType is FunctionType
-          ? returnType.returnType.element!
-          : returnType.element!,
-    )) {
-      return;
-    }
-
-    if (!isForComponent && returnType is FunctionType) {
+    if (!isForComponent && returnType.isDartCoreFunction) {
       builderContext.log.severe(
           method,
           'Modules are not allowed to provide a function type () -> Type. '
           'The inject library prohibits this to avoid confusion '
           'with injecting providers of injectable types. '
           'Your provider method will not be used.');
+      return;
+    }
+
+    if (!_checkReturnType(method, returnType.element!)) {
       return;
     }
 
@@ -266,7 +379,9 @@ class _ProviderSummaryVisitor extends InjectClassVisitor {
 
             return getInjectedType(
               p.type,
-              name: p.isNamed ? p.name : null,
+              name: p.name,
+              required: p.isRequired,
+              named: p.isNamed,
               qualifier: hasQualifier(p) ? extractQualifier(p) : null,
             );
           })
@@ -277,7 +392,11 @@ class _ProviderSummaryVisitor extends InjectClassVisitor {
   }
 
   @override
-  void visitProvideGetter(FieldElement field, bool singleton) {
+  void visitProvideGetter(
+    FieldElement field,
+    bool singleton, {
+    SymbolPath? qualifier,
+  }) {
     if (!_checkReturnType(field.getter!, field.getter!.returnType.element!)) {
       return;
     }
@@ -285,37 +404,38 @@ class _ProviderSummaryVisitor extends InjectClassVisitor {
     final summary = ProviderSummary(
       field.name,
       ProviderKind.getter,
-      getInjectedType(returnType),
+      getInjectedType(returnType, qualifier: qualifier),
       singleton: singleton,
       dependencies: const [],
     );
     _providers.add(summary);
   }
+}
 
-  bool _checkReturnType(
-    ExecutableElement executableElement,
-    Element returnTypeElement,
-  ) {
-    if (returnTypeElement.kind == ElementKind.DYNAMIC ||
-        returnTypeElement is TypeDefiningElement &&
-            returnTypeElement.kind == ElementKind.DYNAMIC) {
-      builderContext.log.severe(
-        executableElement,
-        'provider return type resolved to dynamic. This can happen when the '
-        'return type is not specified, when it is specified as `dynamic`, or '
-        'when the return type failed to resolve to a proper type due to a '
-        'bad import or a typo. Do make sure that there are no analyzer '
-        'warnings in your code.',
-      );
-      return false;
-    }
-    return true;
+bool _checkReturnType(
+  ExecutableElement executableElement,
+  Element returnTypeElement,
+) {
+  if (returnTypeElement.kind == ElementKind.DYNAMIC ||
+      returnTypeElement is TypeDefiningElement &&
+          returnTypeElement.kind == ElementKind.DYNAMIC) {
+    builderContext.log.severe(
+      executableElement,
+      'return type resolved to dynamic. This can happen when the '
+      'return type is not specified, when it is specified as `dynamic`, or '
+      'when the return type failed to resolve to a proper type due to a '
+      'bad import or a typo. Do make sure that there are no analyzer '
+      'warnings in your code.',
+    );
+    return false;
   }
+  return true;
 }
 
 ProviderSummary _createConstructorProviderSummary(
   ConstructorElement element,
   bool isSingleton,
+  LookupKey? factory,
 ) {
   final returnType = element.enclosingElement.thisType;
   return ProviderSummary(
@@ -323,6 +443,7 @@ ProviderSummary _createConstructorProviderSummary(
     ProviderKind.constructor,
     getInjectedType(returnType),
     singleton: isSingleton,
+    factory: factory,
     dependencies: element.parameters
         .map((p) {
           SymbolPath? qualifier;
@@ -359,8 +480,11 @@ ProviderSummary _createConstructorProviderSummary(
 
           return getInjectedType(
             p.type,
-            name: p.isNamed ? p.name : null,
+            name: p.name,
+            required: p.isRequired,
+            named: p.isNamed,
             qualifier: qualifier,
+            assisted: hasAssistedAnnotation(p),
           );
         })
         .whereNotNull()
@@ -370,4 +494,13 @@ ProviderSummary _createConstructorProviderSummary(
 
 String _librarySummaryToJson(LibrarySummary library) {
   return const JsonEncoder.withIndent('  ').convert(library);
+}
+
+extension _ClassElement on ClassElement {
+  /// true if it has no constructor or a default constructor
+  bool hasDefaultConstructor() =>
+      constructors.isEmpty ||
+      constructors
+          .where((constructor) => !constructor.isDefaultConstructor)
+          .isEmpty;
 }

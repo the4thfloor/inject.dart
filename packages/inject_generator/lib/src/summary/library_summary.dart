@@ -24,6 +24,9 @@ class LibrarySummary {
   /// Injectable classes.
   final List<InjectableSummary> injectables;
 
+  /// AssistedInject factory classes.
+  final List<FactorySummary> factories;
+
   /// Constructor.
   ///
   /// [assetUri], [components] and [modules] must not be `null`.
@@ -32,8 +35,15 @@ class LibrarySummary {
     List<ComponentSummary> components = const [],
     List<ModuleSummary> modules = const [],
     List<InjectableSummary> injectables = const [],
+    List<FactorySummary> factories = const [],
   }) {
-    return LibrarySummary._(assetUri, components, modules, injectables);
+    return LibrarySummary._(
+      assetUri,
+      components,
+      modules,
+      injectables,
+      factories,
+    );
   }
 
   const LibrarySummary._(
@@ -41,6 +51,7 @@ class LibrarySummary {
     this.components,
     this.modules,
     this.injectables,
+    this.factories,
   );
 
   /// Creates a [LibrarySummary] by parsing the .inject.summary [json].
@@ -65,11 +76,17 @@ class LibrarySummary {
               InjectableSummary.fromJson(assetUri, e as Map<String, dynamic>),
         )
         .toList();
+    final factories = (summary['factories'] as List<dynamic>)
+        .map(
+          (e) => FactorySummary.fromJson(assetUri, e as Map<String, dynamic>),
+        )
+        .toList();
     return LibrarySummary(
       assetUri,
       components: components,
       modules: modules,
       injectables: injectables,
+      factories: factories,
     );
   }
 
@@ -81,6 +98,7 @@ class LibrarySummary {
         'component': components,
         'module': modules,
         'injectable': injectables,
+        'factories': factories,
       }
     };
   }

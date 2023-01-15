@@ -21,5 +21,5 @@ abstract class Coffee {
 
   /// An accessor to an object that an application may use.
   @inject
-  CoffeeMaker getCoffeeMaker();
+  Future<CoffeeMaker> getCoffeeMaker();
 }
