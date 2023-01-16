@@ -221,13 +221,18 @@ class _ProviderSummaryVisitor extends InjectClassVisitor {
         ? (method.returnType as ParameterizedType).typeArguments.single
         : method.returnType;
 
-    if (!_checkReturnType(method, returnType.element!)) {
+    if (!_checkReturnType(
+      method,
+      returnType is FunctionType
+          ? returnType.returnType.element!
+          : returnType.element!,
+    )) {
       return;
     }
 
     if (!isForComponent && returnType is FunctionType) {
       builderContext.log.severe(
-          returnType.element,
+          method,
           'Modules are not allowed to provide a function type () -> Type. '
           'The inject library prohibits this to avoid confusion '
           'with injecting providers of injectable types. '

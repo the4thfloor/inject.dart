@@ -212,7 +212,6 @@ class _AnnotatedClassVisitor extends GeneralizingElementVisitor<void> {
         '@inject annotation is not supported for modules',
       );
     }
-    return;
   }
 
   @override
