@@ -241,9 +241,9 @@ class _ProviderSummaryVisitor extends InjectClassVisitor {
     }
 
     final summary = ProviderSummary(
-      getInjectedType(returnType, qualifier: qualifier),
       method.name,
       ProviderKind.method,
+      getInjectedType(returnType, qualifier: qualifier),
       singleton: singleton,
       asynchronous: asynchronous,
       dependencies: method.parameters
@@ -283,9 +283,9 @@ class _ProviderSummaryVisitor extends InjectClassVisitor {
     }
     final returnType = field.getter!.returnType;
     final summary = ProviderSummary(
-      getInjectedType(returnType),
       field.name,
       ProviderKind.getter,
+      getInjectedType(returnType),
       singleton: singleton,
       dependencies: const [],
     );
@@ -319,9 +319,9 @@ ProviderSummary _createConstructorProviderSummary(
 ) {
   final returnType = element.enclosingElement.thisType;
   return ProviderSummary(
-    getInjectedType(returnType),
     element.name,
     ProviderKind.constructor,
+    getInjectedType(returnType),
     singleton: isSingleton,
     dependencies: element.parameters
         .map((p) {

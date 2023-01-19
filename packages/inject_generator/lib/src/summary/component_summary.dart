@@ -7,14 +7,14 @@ part of inject.src.summary;
 /// JSON-serializable subset of code analysis information about an component
 /// class pertaining to an component class.
 class ComponentSummary {
+  /// Location of the analyzed class.
+  final SymbolPath clazz;
+
   /// Modules that are part of the object graph.
   final List<SymbolPath> modules;
 
   /// Methods that will need to be implemented by the generated class.
   final List<ProviderSummary> providers;
-
-  /// Location of the analyzed class.
-  final SymbolPath clazz;
 
   /// Constructor.
   ///
@@ -37,9 +37,24 @@ class ComponentSummary {
   Map<String, dynamic> toJson() {
     return {
       'name': clazz.symbol,
-      'providers': providers,
       'modules':
-          modules.map((summary) => summary.toAbsoluteUri().toString()).toList()
+          modules.map((summary) => summary.toAbsoluteUri().toString()).toList(),
+      'providers': providers,
     };
+  }
+
+  static ComponentSummary parseJson(Uri assetUri, Map<String, dynamic> json) {
+    final name = json['name'] as String;
+    final List<SymbolPath> modules = json['modules']
+        .cast<String>()
+        .map(Uri.parse)
+        .map<SymbolPath>((e) => SymbolPath.fromAbsoluteUri(e))
+        .toList();
+    final List<ProviderSummary> providers = json['providers']
+        .cast<Map<String, dynamic>>()
+        .map<ProviderSummary>(ProviderSummary.parseJson)
+        .toList();
+    final clazz = SymbolPath.fromAbsoluteUri(assetUri, name);
+    return ComponentSummary(clazz, modules, providers);
   }
 }

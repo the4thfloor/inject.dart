@@ -12,3 +12,4 @@
 /runConfigurations/*
 !/runConfigurations/melos*.xml
 /vcs.xml
+/misc.xml

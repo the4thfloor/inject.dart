@@ -24,6 +24,8 @@ void main() {
                 SymbolPath.parseAbsoluteUri('asset:foo/foo.dart#FooModule'),
                 [
                   ProviderSummary(
+                    'provideFoo',
+                    ProviderKind.method,
                     InjectedType(
                       LookupKey(
                         SymbolPath.parseAbsoluteUri(
@@ -32,8 +34,6 @@ void main() {
                         ),
                       ),
                     ),
-                    'provideFoo',
-                    ProviderKind.method,
                   ),
                 ],
               ),
@@ -51,9 +51,9 @@ void main() {
           [SymbolPath.parseAbsoluteUri('asset:foo/foo.dart#FooModule')],
           [
             ProviderSummary(
-              foo,
               'getFoo',
               ProviderKind.method,
+              foo,
             )
           ],
         );
@@ -87,9 +87,9 @@ void main() {
           ],
           [
             ProviderSummary(
-              qualifiedFoo,
               'provideName',
               ProviderKind.method,
+              qualifiedFoo,
             ),
           ],
         );
