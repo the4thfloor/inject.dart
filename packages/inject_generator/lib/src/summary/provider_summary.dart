@@ -71,12 +71,12 @@ class ProviderSummary {
   /// Create a new summary of a provider that returns an instance of
   /// [injectedType].
   factory ProviderSummary(
-    InjectedType injectedType,
     String name,
-    ProviderKind kind, {
-    List<InjectedType> dependencies = const [],
+    ProviderKind kind,
+    InjectedType injectedType, {
     bool singleton = false,
     bool asynchronous = false,
+    List<InjectedType> dependencies = const [],
   }) {
     return ProviderSummary._(
       name,
@@ -88,7 +88,7 @@ class ProviderSummary {
     );
   }
 
-  ProviderSummary._(
+  const ProviderSummary._(
     this.name,
     this.kind,
     this.injectedType,
@@ -109,13 +109,23 @@ class ProviderSummary {
     };
   }
 
-  @override
-  String toString() => '$ProviderSummary ${{
-        'name': name,
-        'kind': kind,
-        'injectedType': injectedType,
-        'singleton': isSingleton,
-        'asynchronous': isAsynchronous,
-        'dependencies': dependencies
-      }}';
+  static ProviderSummary parseJson(Map<String, dynamic> json) {
+    final name = json['name'] as String;
+    final kind = json['kind'] as String;
+    final injectedType = InjectedType.fromJson(json['injectedType']);
+    final singleton = json['singleton'] as bool;
+    final asynchronous = json['asynchronous'] as bool;
+    final dependencies = json['dependencies']
+        .cast<Map<String, dynamic>>()
+        .map<InjectedType>((dependency) => InjectedType.fromJson(dependency))
+        .toList();
+    return ProviderSummary(
+      name,
+      providerKindFromName(kind),
+      injectedType,
+      singleton: singleton,
+      asynchronous: asynchronous,
+      dependencies: dependencies,
+    );
+  }
 }

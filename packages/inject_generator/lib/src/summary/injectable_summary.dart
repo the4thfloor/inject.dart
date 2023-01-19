@@ -20,14 +20,19 @@ class InjectableSummary {
     return InjectableSummary._(clazz, constructor);
   }
 
-  InjectableSummary._(this.clazz, this.constructor);
+  const InjectableSummary._(this.clazz, this.constructor);
 
   /// Serializes this summary to JSON.
   Map<String, dynamic> toJson() {
     return {'name': clazz.symbol, 'constructor': constructor};
   }
 
-  @override
-  String toString() =>
-      '$InjectableSummary ${{'clazz': clazz, 'constructor': constructor}}';
+  static InjectableSummary parseJson(Uri assetUri, Map<String, dynamic> json) {
+    final name = json['name'] as String;
+    final type = SymbolPath.fromAbsoluteUri(assetUri, name);
+    return InjectableSummary(
+      type,
+      ProviderSummary.parseJson(json['constructor'].cast<String, dynamic>()),
+    );
+  }
 }
