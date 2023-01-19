@@ -33,17 +33,10 @@ class ComponentSummary {
 
   const ComponentSummary._(this.clazz, this.modules, this.providers);
 
-  /// Serializes this summary to JSON.
-  Map<String, dynamic> toJson() {
-    return {
-      'name': clazz.symbol,
-      'modules':
-          modules.map((summary) => summary.toAbsoluteUri().toString()).toList(),
-      'providers': providers,
-    };
-  }
-
-  static ComponentSummary parseJson(Uri assetUri, Map<String, dynamic> json) {
+  /// Returns a new instance from the JSON encoding of an instance.
+  ///
+  /// See also [ComponentSummary.toJson].
+  factory ComponentSummary.fromJson(Uri assetUri, Map<String, dynamic> json) {
     final name = json['name'] as String;
     final List<SymbolPath> modules = json['modules']
         .cast<String>()
@@ -52,9 +45,19 @@ class ComponentSummary {
         .toList();
     final List<ProviderSummary> providers = json['providers']
         .cast<Map<String, dynamic>>()
-        .map<ProviderSummary>(ProviderSummary.parseJson)
+        .map<ProviderSummary>(ProviderSummary.fromJson)
         .toList();
     final clazz = SymbolPath.fromAbsoluteUri(assetUri, name);
     return ComponentSummary(clazz, modules, providers);
+  }
+
+  /// Serializes this summary to JSON.
+  Map<String, dynamic> toJson() {
+    return {
+      'name': clazz.symbol,
+      'modules':
+          modules.map((summary) => summary.toAbsoluteUri().toString()).toList(),
+      'providers': providers,
+    };
   }
 }
