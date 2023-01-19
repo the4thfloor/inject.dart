@@ -97,19 +97,10 @@ class ProviderSummary {
     this.dependencies,
   );
 
-  /// Serializes this summary to JSON.
-  Map<String, dynamic> toJson() {
-    return {
-      'name': name,
-      'kind': provideKindName(kind),
-      'injectedType': injectedType,
-      'singleton': isSingleton,
-      'asynchronous': isAsynchronous,
-      'dependencies': dependencies
-    };
-  }
-
-  static ProviderSummary parseJson(Map<String, dynamic> json) {
+  /// Returns a new instance from the JSON encoding of an instance.
+  ///
+  /// See also [ProviderSummary.toJson].
+  factory ProviderSummary.fromJson(Map<String, dynamic> json) {
     final name = json['name'] as String;
     final kind = json['kind'] as String;
     final injectedType = InjectedType.fromJson(json['injectedType']);
@@ -127,5 +118,17 @@ class ProviderSummary {
       asynchronous: asynchronous,
       dependencies: dependencies,
     );
+  }
+
+  /// Serializes this summary to JSON.
+  Map<String, dynamic> toJson() {
+    return {
+      'name': name,
+      'kind': provideKindName(kind),
+      'injectedType': injectedType,
+      'singleton': isSingleton,
+      'asynchronous': isAsynchronous,
+      'dependencies': dependencies
+    };
   }
 }

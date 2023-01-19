@@ -42,7 +42,7 @@ class InjectCodegenBuilder extends AbstractInjectBuilder {
     final summary = await buildStep
         .readAsString(buildStep.inputId)
         .then(jsonDecode)
-        .then((json) => LibrarySummary.parseJson(json));
+        .then((json) => LibrarySummary.fromJson(json));
 
     if (summary.components.isEmpty) {
       return '';
@@ -88,7 +88,7 @@ class _AssetSummaryReader implements SummaryReader {
     return _buildStep
         .readAsString(AssetId(package, path))
         .then(jsonDecode)
-        .then((json) => LibrarySummary.parseJson(json));
+        .then((json) => LibrarySummary.fromJson(json));
   }
 }
 

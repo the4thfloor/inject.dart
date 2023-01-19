@@ -43,6 +43,36 @@ class LibrarySummary {
     this.injectables,
   );
 
+  /// Creates a [LibrarySummary] by parsing the .inject.summary [json].
+  ///
+  /// See also [LibrarySummary.toJson].
+  factory LibrarySummary.fromJson(Map<String, dynamic> json) {
+    final assetUri = Uri.parse(json['asset'] as String);
+    final summary = json['summary'] as Map<String, dynamic>;
+    final components = (summary['component'] as List<dynamic>)
+        .map(
+          (e) => ComponentSummary.fromJson(assetUri, e as Map<String, dynamic>),
+        )
+        .toList();
+    final modules = (summary['module'] as List<dynamic>)
+        .map(
+          (e) => ModuleSummary.fromJson(assetUri, e as Map<String, dynamic>),
+        )
+        .toList();
+    final injectables = (summary['injectable'] as List<dynamic>)
+        .map(
+          (e) =>
+              InjectableSummary.fromJson(assetUri, e as Map<String, dynamic>),
+        )
+        .toList();
+    return LibrarySummary(
+      assetUri,
+      components: components,
+      modules: modules,
+      injectables: injectables,
+    );
+  }
+
   /// Serializes this summary to JSON.
   Map<String, dynamic> toJson() {
     return {
@@ -53,34 +83,5 @@ class LibrarySummary {
         'injectable': injectables,
       }
     };
-  }
-
-  /// Creates a [LibrarySummary] by parsing the .inject.summary [json].
-  static LibrarySummary parseJson(Map<String, dynamic> json) {
-    final assetUri = Uri.parse(json['asset'] as String);
-    final summary = json['summary'] as Map<String, dynamic>;
-    final components = (summary['component'] as List<dynamic>)
-        .map(
-          (e) =>
-              ComponentSummary.parseJson(assetUri, e as Map<String, dynamic>),
-        )
-        .toList();
-    final modules = (summary['module'] as List<dynamic>)
-        .map(
-          (e) => ModuleSummary.parseJson(assetUri, e as Map<String, dynamic>),
-        )
-        .toList();
-    final injectables = (summary['injectable'] as List<dynamic>)
-        .map(
-          (e) =>
-              InjectableSummary.parseJson(assetUri, e as Map<String, dynamic>),
-        )
-        .toList();
-    return LibrarySummary(
-      assetUri,
-      components: components,
-      modules: modules,
-      injectables: injectables,
-    );
   }
 }

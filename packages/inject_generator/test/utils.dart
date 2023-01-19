@@ -147,7 +147,7 @@ class _TestingAssetWriter extends InMemoryAssetWriter {
   }) async {
     await super.writeAsString(id, contents, encoding: encoding);
     if (id.path.endsWith('.inject.summary')) {
-      summaries[id] = LibrarySummary.parseJson(json.decode(contents));
+      summaries[id] = LibrarySummary.fromJson(json.decode(contents));
     }
     if (id.path.endsWith('.inject.dart')) {
       genFiles[id] = contents;

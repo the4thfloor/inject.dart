@@ -57,12 +57,4 @@ class InjectedType {
     // Not all fields are here. See the equals method doc for more info.
     return hash3(lookupKey, name, isProvider);
   }
-
-  @override
-  String toString() {
-    return '$InjectedType{'
-        'lookupKey: $lookupKey, '
-        'name: $name, '
-        'isProvider: $isProvider}';
-  }
 }

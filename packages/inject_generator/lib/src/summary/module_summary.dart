@@ -30,18 +30,21 @@ class ModuleSummary {
 
   const ModuleSummary._(this.clazz, this.providers);
 
-  /// Serializes this summary to JSON.
-  Map<String, dynamic> toJson() {
-    return {'name': clazz.symbol, 'providers': providers};
-  }
-
-  static ModuleSummary parseJson(Uri assetUri, Map<String, dynamic> json) {
+  /// Returns a new instance from the JSON encoding of an instance.
+  ///
+  /// See also [ModuleSummary.toJson].
+  factory ModuleSummary.fromJson(Uri assetUri, Map<String, dynamic> json) {
     final name = json['name'] as String;
     final List<ProviderSummary> providers = json['providers']
         .cast<Map<String, dynamic>>()
-        .map<ProviderSummary>(ProviderSummary.parseJson)
+        .map<ProviderSummary>(ProviderSummary.fromJson)
         .toList();
     final clazz = SymbolPath.fromAbsoluteUri(assetUri, name);
     return ModuleSummary(clazz, providers);
+  }
+
+  /// Serializes this summary to JSON.
+  Map<String, dynamic> toJson() {
+    return {'name': clazz.symbol, 'providers': providers};
   }
 }
