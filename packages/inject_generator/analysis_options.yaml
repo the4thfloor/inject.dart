@@ -22,6 +22,7 @@ linter:
     - avoid_returning_null_for_future
     - avoid_types_on_closure_parameters
     - cascade_invocations
+    - comment_references
     - directives_ordering
     - eol_at_end_of_file
     - omit_local_variable_types
@@ -34,8 +35,11 @@ linter:
     - prefer_relative_imports
     - prefer_single_quotes
     - require_trailing_commas
+    - test_types_in_equals
+    - throw_in_finally
     - unawaited_futures
     - unnecessary_await_in_return
+    - use_super_parameters
 
 
 analyzer:

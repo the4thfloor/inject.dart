@@ -3,7 +3,9 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:analyzer/dart/element/element.dart';
+import 'package:analyzer/dart/element/nullability_suffix.dart';
 import 'package:analyzer/dart/element/type.dart';
+import 'package:collection/collection.dart';
 
 import '../context.dart';
 import '../source/injected_type.dart';
@@ -26,7 +28,10 @@ SymbolPath getSymbolPath(Element element) {
 InjectedType getInjectedType(
   DartType type, {
   String? name,
+  bool? required,
+  bool? named,
   SymbolPath? qualifier,
+  bool? assisted,
 }) {
   if (type is FunctionType) {
     if (type.parameters.isNotEmpty) {
@@ -44,21 +49,30 @@ InjectedType getInjectedType(
       throw ArgumentError();
     }
     return InjectedType(
-      _getLookupKey(type.returnType, qualifier: qualifier),
+      LookupKey.fromDartType(type.returnType, qualifier: qualifier),
       name: name,
+      isRequired: required,
+      isNamed: named,
       isProvider: true,
+      isAssisted: assisted,
     );
   }
 
+  final asyncFuture = type.isDartAsyncFuture;
+  final futureType = asyncFuture && type is ParameterizedType
+      ? type.typeArguments.firstOrNull
+      : null;
+
   return InjectedType(
-    _getLookupKey(type, qualifier: qualifier),
+    LookupKey.fromDartType(futureType ?? type, qualifier: qualifier),
     name: name,
+    isRequired: required,
+    isNamed: named,
     isProvider: false,
+    isFeature: asyncFuture,
+    isAssisted: assisted,
   );
 }
-
-LookupKey _getLookupKey(DartType type, {SymbolPath? qualifier}) =>
-    LookupKey(getSymbolPath(type.element!), qualifier: qualifier);
 
 bool _hasAnnotation(Element element, SymbolPath annotationSymbol) {
   return _getAnnotation(element, annotationSymbol, orElse: () => null) != null;
@@ -101,6 +115,21 @@ ElementAnnotation? _getAnnotation(
 bool isInjectableClass(ClassElement clazz) =>
     hasInjectAnnotation(clazz) || clazz.constructors.any(hasInjectAnnotation);
 
+/// Determines if [clazz] is an assisted injectable class.
+///
+/// Injectability is determined by checking if the class declaration or one of
+/// its constructors is annotated with `@AssistedInject()`.
+bool isAssistedInjectableClass(ClassElement clazz) =>
+    hasAssistedInjectAnnotation(clazz) ||
+    clazz.constructors.any(hasAssistedInjectAnnotation);
+
+/// Determines if [clazz] is an AssistedInjection factory class.
+///
+/// AssistedInjection factory is determined by checking if the class declaration
+/// is annotated with `@AssistedFactory()`.
+bool isAssistedFactoryClass(ClassElement clazz) =>
+    hasAssistedFactoryAnnotation(clazz);
+
 /// Determines if [clazz] is a singleton class.
 ///
 /// A class is a singleton if:
@@ -120,8 +149,8 @@ bool isSingletonClass(ClassElement clazz) {
       builderContext.log.severe(
           clazz,
           'A class cannot be annotated with `@singleton` '
-          'without also being annotated `@provide`. '
-          'Did you forget to add an `@provide` annotation '
+          'without also being annotated `@inject`. '
+          'Did you forget to add an `@inject` annotation '
           'to class ${clazz.name}?');
     }
   }
@@ -133,8 +162,8 @@ bool isSingletonClass(ClassElement clazz) {
         builderContext.log.severe(
             constructor,
             'A constructor cannot be annotated with `@Singleton()` '
-            'without also being annotated `@Provide()`. '
-            'Did you forget to add an `@Provide()` annotation '
+            'without also being annotated `@Inject()`. '
+            'Did you forget to add an `@Inject()` annotation '
             'to the constructor ${constructor.name}?');
       }
     }
@@ -151,6 +180,17 @@ bool isComponentClass(ClassElement clazz) => hasComponentAnnotation(clazz);
 
 /// Whether [e] is annotated with `@Inject()`.
 bool hasInjectAnnotation(Element e) => _hasAnnotation(e, SymbolPath.inject);
+
+/// Whether [e] is annotated with `@AssistedInject()`.
+bool hasAssistedInjectAnnotation(Element e) =>
+    _hasAnnotation(e, SymbolPath.assistedInject);
+
+/// Whether [e] is annotated with `@AssistedFactory()`.
+bool hasAssistedFactoryAnnotation(Element e) =>
+    _hasAnnotation(e, SymbolPath.assistedFactory);
+
+/// Whether [e] is annotated with `@Assisted()`.
+bool hasAssistedAnnotation(Element e) => _hasAnnotation(e, SymbolPath.assisted);
 
 /// Whether [e] is annotated with `@Provides()`.
 bool hasProvidesAnnotation(Element e) => _hasAnnotation(e, SymbolPath.provides);
@@ -185,3 +225,15 @@ bool hasComponentAnnotation(Element e) =>
 /// [hasComponentAnnotation].
 ElementAnnotation? getComponentAnnotation(Element e) =>
     _getAnnotation(e, SymbolPath.component);
+
+/// Returns the element corresponding to the `@AssistedInject()` annotation.
+///
+/// Throws if the annotation is missing. It is assumed that the calling code
+/// already verified the existence of the annotation using
+/// [hasAssistedInjectAnnotation].
+ElementAnnotation? getAssistedInjectAnnotation(Element e) =>
+    _getAnnotation(e, SymbolPath.assistedInject);
+
+extension IsNullable on DartType {
+  bool isNullable() => nullabilitySuffix == NullabilitySuffix.question;
+}

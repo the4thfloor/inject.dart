@@ -1,15 +1,4 @@
-# Default ignored files
-/shelf/
-/workspace.xml
-# Editor-based HTTP Client requests
-/httpRequests/
-# Datasource local storage ignored files
-/dataSources/
-/dataSources.local.xml
-
-
-/libraries/
-/runConfigurations/*
-!/runConfigurations/melos*.xml
-/vcs.xml
-/misc.xml
+*
+!.gitignore
+!.name
+!modules.xml

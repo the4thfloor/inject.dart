@@ -22,17 +22,18 @@ void main() {
       expect(summary.assetUri, testAssetId.uri);
 
       expect(summary.components.length, 1);
+      final component = summary.components[0];
+
       expect(
-        summary.components[0].clazz,
+        component.clazz,
         SymbolPath(rootPackage, testFilePath, 'ComponentWithoutModule'),
       );
-      expect(summary.components[0].providers.length, 1);
-      expect(summary.components[0].providers[0].name, 'getBar');
+      expect(component.providers.length, 1);
+      expect(component.providers[0].name, 'getBar');
       expect(
-        summary.components[0].providers[0].injectedType.lookupKey.root,
+        component.providers[0].injectedType.lookupKey.root,
         SymbolPath(rootPackage, testFilePath, 'Bar'),
       );
-      expect(summary.components[0].providers[0].injectedType.isProvider, false);
 
       expect(summary.injectables.length, 2);
       expect(
@@ -65,23 +66,20 @@ void main() {
       expect(summary.assetUri, testAssetId.uri);
 
       expect(summary.components.length, 1);
+      final component = summary.components[0];
+
       expect(
-        summary.components[0].clazz,
+        component.clazz,
         SymbolPath(rootPackage, testFilePath, 'ComponentWithModule'),
       );
-      expect(summary.components[0].providers.length, 1);
-      expect(summary.components[0].providers[0].name, 'bar');
+      expect(component.providers.length, 1);
+      expect(component.providers[0].name, 'bar');
       expect(
-        summary.components[0].providers[0].injectedType.lookupKey.root,
+        component.providers[0].injectedType.lookupKey.root,
         SymbolPath(rootPackage, testFilePath, 'Bar'),
       );
-      expect(summary.components[0].providers[0].injectedType.isProvider, false);
 
-      expect(summary.injectables.length, 1);
-      expect(
-        summary.injectables[0].clazz,
-        SymbolPath(rootPackage, testFilePath, 'Bar'),
-      );
+      expect(summary.injectables.length, 0);
 
       final asset = stb.content.entries.first;
       final ctb = CodegenTestBed(inputAssetId: asset.key, input: asset.value);
@@ -103,7 +101,7 @@ void main() {
         )
         ..expectLogRecord(
           Level.SEVERE,
-          'component class must declare at least one provider',
+          'component class must declare at least one @inject-annotated provider',
         );
     });
 
@@ -121,12 +119,13 @@ void main() {
         )
         ..expectLogRecord(
           Level.SEVERE,
-          'module class must declare at least one provider',
+          'module class must declare at least one @provides-annotated provider',
         );
     });
 
-    test('class with named parameter', () async {
-      const testFilePath = 'test/source/data/class_with_named_parameter.dart';
+    test('module method with async provider', () async {
+      const testFilePath =
+          'test/source/data/module_method_with_async_provider.dart';
       final testAssetId = AssetId(rootPackage, testFilePath);
       final stb = SummaryTestBed(inputAssetId: testAssetId);
       await stb.run();
@@ -138,33 +137,19 @@ void main() {
       final summary = summaries.values.first;
       expect(summary, isNotNull);
       expect(summary.assetUri, testAssetId.uri);
+      expect(summary.modules.length, 1);
 
-      expect(summary.components[0].providers.length, 1);
-      expect(summary.components[0].providers[0].name, 'fooBar');
+      final module = summary.modules[0];
       expect(
-        summary.components[0].providers[0].injectedType.lookupKey.root,
-        SymbolPath(rootPackage, testFilePath, 'FooBar'),
+        module.clazz,
+        SymbolPath(rootPackage, testFilePath, 'BarModule'),
       );
-
-      expect(summary.injectables.length, 3);
+      expect(module.providers.length, 1);
+      expect(module.providers[0].isAsynchronous, true);
       expect(
-        summary.injectables[2].clazz,
-        SymbolPath(rootPackage, testFilePath, 'FooBar'),
-      );
-
-      expect(summary.injectables[2].constructor.dependencies.length, 2);
-
-      expect(
-        summary.injectables[2].constructor.dependencies[0].lookupKey.root,
-        SymbolPath(rootPackage, testFilePath, 'Foo'),
-      );
-      expect(summary.injectables[2].constructor.dependencies[0].name, isNull);
-
-      expect(
-        summary.injectables[2].constructor.dependencies[1].lookupKey.root,
+        module.providers[0].injectedType.lookupKey.root,
         SymbolPath(rootPackage, testFilePath, 'Bar'),
       );
-      expect(summary.injectables[2].constructor.dependencies[1].name, 'bar');
 
       final asset = stb.content.entries.first;
       final ctb = CodegenTestBed(inputAssetId: asset.key, input: asset.value);
@@ -172,9 +157,8 @@ void main() {
       await ctb.compare();
     });
 
-    test('module method with named parameter', () async {
-      const testFilePath =
-          'test/source/data/module_method_with_named_parameter.dart';
+    test('singleton inject', () async {
+      const testFilePath = 'test/source/data/singleton_inject.dart';
       final testAssetId = AssetId(rootPackage, testFilePath);
       final stb = SummaryTestBed(inputAssetId: testAssetId);
       await stb.run();
@@ -186,41 +170,100 @@ void main() {
       final summary = summaries.values.first;
       expect(summary, isNotNull);
       expect(summary.assetUri, testAssetId.uri);
+      expect(summary.modules.length, 1);
 
-      expect(summary.components.length, 1);
+      final module = summary.modules[0];
       expect(
-        summary.components[0].clazz,
-        SymbolPath(rootPackage, testFilePath, 'ComponentWithModule'),
+        module.clazz,
+        SymbolPath(rootPackage, testFilePath, 'BarModule'),
       );
-      expect(summary.components[0].providers.length, 1);
-      expect(summary.components[0].providers[0].name, 'bar');
+      expect(module.providers.length, 1);
+      expect(module.providers[0].isSingleton, true);
       expect(
-        summary.components[0].providers[0].injectedType.lookupKey.root,
+        module.providers[0].injectedType.lookupKey.root,
         SymbolPath(rootPackage, testFilePath, 'Bar'),
       );
 
       expect(summary.injectables.length, 2);
+      final injectable0 = summary.injectables[0];
+      final injectable1 = summary.injectables[1];
+
+      expect(injectable0.clazz, SymbolPath(rootPackage, testFilePath, 'Foo'));
+      expect(injectable0.constructor.isSingleton, true);
+
+      expect(injectable1.clazz, SymbolPath(rootPackage, testFilePath, 'Foo2'));
+      expect(injectable1.constructor.isSingleton, true);
+
+      final asset = stb.content.entries.first;
+      final ctb = CodegenTestBed(inputAssetId: asset.key, input: asset.value);
+      await ctb.run();
+      await ctb.compare();
+    });
+
+    test('assisted inject', () async {
+      const testFilePath = 'test/source/data/assisted_inject.dart';
+      final testAssetId = AssetId(rootPackage, testFilePath);
+      final stb = SummaryTestBed(inputAssetId: testAssetId);
+      await stb.run();
+      stb.printLog();
+
+      final summaries = stb.summaries;
+      expect(summaries.length, 1);
+
+      final summary = summaries.values.first;
+      expect(summary, isNotNull);
+      expect(summary.assetUri, testAssetId.uri);
+      expect(summary.components.length, 1);
+
+      final component = summary.components[0];
       expect(
-        summary.injectables[0].clazz,
+        component.clazz,
+        SymbolPath(rootPackage, testFilePath, 'Component'),
+      );
+      expect(component.providers.length, 1);
+      expect(component.providers[0].name, 'fooBarFactory');
+      expect(
+        component.providers[0].injectedType.lookupKey.root,
+        SymbolPath(rootPackage, testFilePath, 'FooBarFactory'),
+      );
+
+      expect(summary.injectables.length, 2);
+      final injectable0 = summary.injectables[0];
+      final injectable1 = summary.injectables[1];
+
+      expect(
+        injectable0.clazz,
+        SymbolPath(rootPackage, testFilePath, 'FooBar'),
+      );
+      expect(
+        injectable0.constructor.factory!.root,
+        SymbolPath(rootPackage, testFilePath, 'FooBarFactory'),
+      );
+      expect(injectable0.constructor.dependencies.length, 2);
+      expect(
+        injectable0.constructor.dependencies[0].lookupKey.root,
         SymbolPath(rootPackage, testFilePath, 'Foo'),
       );
       expect(
-        summary.injectables[1].clazz,
+        injectable0.constructor.dependencies[0].isAssisted,
+        false,
+      );
+      expect(
+        injectable0.constructor.dependencies[1].lookupKey.root,
         SymbolPath(rootPackage, testFilePath, 'Bar'),
       );
-
-      expect(summary.modules.length, 1);
       expect(
-        summary.modules[0].clazz,
-        SymbolPath(rootPackage, testFilePath, 'BarModule'),
+        injectable0.constructor.dependencies[1].isAssisted,
+        true,
       );
 
-      expect(summary.modules[0].providers.length, 1);
-      expect(summary.modules[0].providers[0].dependencies.length, 1);
-      expect(summary.modules[0].providers[0].dependencies[0].name, 'foo');
+      expect(injectable1.clazz, SymbolPath(rootPackage, testFilePath, 'Foo'));
+      expect(injectable1.constructor.factory, isNull);
+
+      expect(summary.factories.length, 1);
       expect(
-        summary.modules[0].providers[0].dependencies[0].lookupKey.root,
-        SymbolPath(rootPackage, testFilePath, 'Foo'),
+        summary.factories[0].clazz,
+        SymbolPath(rootPackage, testFilePath, 'FooBarFactory'),
       );
 
       final asset = stb.content.entries.first;

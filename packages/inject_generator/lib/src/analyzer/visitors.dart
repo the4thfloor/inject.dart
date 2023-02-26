@@ -7,25 +7,32 @@ import 'package:analyzer/dart/element/visitor.dart';
 import 'package:collection/collection.dart';
 
 import '../context.dart';
+import '../source/lookup_key.dart';
 import '../source/symbol_path.dart';
 import 'utils.dart';
 
 /// Scans a resolved [LibraryElement] looking for metadata-annotated members.
 ///
 /// Looks for:
-/// - [visitInjectable]: Classes or constructors annotated with `@provide`.
+/// - [visitInjectable]: Classes or constructors annotated with `@inject`.
+/// - [visitAssistedFactory]: Classes or constructors annotated with `@assistedFactory`.
 /// - [visitComponent]: Classes annotated with `@component`.
 /// - [visitModule]: Classes annotated with `@module`.
 abstract class InjectLibraryVisitor {
+  const InjectLibraryVisitor();
+
   /// Call to start visiting [library].
   void visitLibrary(LibraryElement library) {
     _LibraryVisitor(this).visitLibraryElement(library);
   }
 
-  /// Called when [clazz] is annotated with `@provide`.
+  /// Called when [clazz] is annotated with `@inject`.
   ///
   /// If [clazz] is annotated with `@singleton`, then [singleton] is true.
-  void visitInjectable(ClassElement clazz, bool singleton);
+  void visitInjectable(ClassElement clazz, bool singleton, LookupKey? factory);
+
+  /// Called when [clazz] is annotated with `@assistedFactory`.
+  void visitAssistedFactory(ClassElement clazz);
 
   /// Called when [clazz] is annotated with `@component`.
   ///
@@ -54,16 +61,21 @@ class _LibraryVisitor extends RecursiveElementVisitor<void> {
   @override
   void visitClassElement(ClassElement element) {
     var isInjectable = false;
+    var isAssistedFactory = false;
     var isModule = false;
     var isComponent = false;
 
     var count = 0;
-    if (isModuleClass(element)) {
-      isModule = true;
+    if (isInjectableClass(element) || isAssistedInjectableClass(element)) {
+      isInjectable = true;
       count++;
     }
-    if (isInjectableClass(element)) {
-      isInjectable = true;
+    if (isAssistedFactoryClass(element)) {
+      isAssistedFactory = true;
+      count++;
+    }
+    if (isModuleClass(element)) {
+      isModule = true;
       count++;
     }
     if (isComponentClass(element)) {
@@ -74,9 +86,10 @@ class _LibraryVisitor extends RecursiveElementVisitor<void> {
     if (count > 1) {
       final types = [
         isInjectable ? 'injectable' : null,
+        isAssistedFactory ? 'isAssistedFactory' : null,
         isModule ? 'module' : null,
         isComponent ? 'component' : null,
-      ].where((t) => t != null);
+      ].whereNotNull();
 
       builderContext.log.severe(
         element,
@@ -87,11 +100,9 @@ class _LibraryVisitor extends RecursiveElementVisitor<void> {
       return;
     }
 
-    if (isModule) {
-      _injectLibraryVisitor.visitModule(element);
-    }
     if (isInjectable) {
       final singleton = isSingletonClass(element);
+      final assisted = isAssistedInjectableClass(element);
       final asynchronous = hasAsynchronousAnnotation(element) ||
           element.constructors.any(hasAsynchronousAnnotation);
       if (asynchronous) {
@@ -103,7 +114,14 @@ class _LibraryVisitor extends RecursiveElementVisitor<void> {
       _injectLibraryVisitor.visitInjectable(
         element,
         singleton,
+        assisted ? _extractFactory(element) : null,
       );
+    }
+    if (isAssistedFactory) {
+      _injectLibraryVisitor.visitAssistedFactory(element);
+    }
+    if (isModule) {
+      _injectLibraryVisitor.visitModule(element);
     }
     if (isComponent) {
       _injectLibraryVisitor.visitComponent(
@@ -113,6 +131,17 @@ class _LibraryVisitor extends RecursiveElementVisitor<void> {
     }
     return;
   }
+}
+
+LookupKey? _extractFactory(ClassElement clazz) {
+  final annotation = getAssistedInjectAnnotation(clazz);
+  final factory = annotation?.computeConstantValue()?.getField('factory');
+  final type = factory?.toTypeValue();
+  if (type == null) {
+    return null;
+  }
+
+  return LookupKey.fromDartType(type);
 }
 
 List<SymbolPath> _extractModules(ClassElement clazz) {
@@ -148,7 +177,7 @@ abstract class InjectClassVisitor {
     _AnnotatedClassVisitor(this).visitClassElement(clazz);
   }
 
-  /// Called when a method is annotated with `@provide`.
+  /// Called when a method is annotated with `@provides`.
   ///
   /// [singleton] is `true` when the method is also annotated with
   /// `@singleton`.
@@ -165,11 +194,15 @@ abstract class InjectClassVisitor {
     SymbolPath? qualifier,
   });
 
-  /// Called when a getter is annotated with `@provide`.
+  /// Called when a getter is annotated with `@provides`.
   ///
   /// [singleton] is `true` when the getter is also annotated with
   /// `@singleton`.
-  void visitProvideGetter(FieldElement method, bool singleton);
+  void visitProvideGetter(
+    FieldElement method,
+    bool singleton, {
+    SymbolPath? qualifier,
+  });
 }
 
 class _AnnotatedClassVisitor extends GeneralizingElementVisitor<void> {
@@ -225,7 +258,13 @@ class _AnnotatedClassVisitor extends GeneralizingElementVisitor<void> {
           'Getters cannot be annotated with @Asynchronous().',
         );
       }
-      _classVisitor.visitProvideGetter(field, singleton);
+      _classVisitor.visitProvideGetter(
+        field,
+        singleton,
+        qualifier: hasQualifier(field.getter!)
+            ? extractQualifier(field.getter!)
+            : null,
+      );
     } else if (_classVisitor._isForComponent &&
         hasProvidesAnnotation(field.getter!)) {
       builderContext.log.warning(
@@ -241,4 +280,18 @@ class _AnnotatedClassVisitor extends GeneralizingElementVisitor<void> {
     }
     return;
   }
+}
+
+abstract class FactoryClassVisitor extends GeneralizingElementVisitor<void> {
+  /// Call to start visiting [clazz].
+  void visitClass(ClassElement clazz) {
+    visitClassElement(clazz);
+  }
+
+  @override
+  void visitMethodElement(MethodElement method) {
+    visitFactoryMethod(method);
+  }
+
+  void visitFactoryMethod(MethodElement method);
 }

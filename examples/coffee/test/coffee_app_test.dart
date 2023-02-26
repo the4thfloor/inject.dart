@@ -20,9 +20,11 @@ void main() {
     test(
       'can be done by mixing test modules',
       _interceptPrint(() async {
-        final coffee =
-            await TestCoffee.create(DripCoffeeModule(), TestModule());
-        coffee.getCoffeeMaker().brew();
+        final coffee = TestCoffee.create(
+          dripCoffeeModule: DripCoffeeModule(),
+          testModule: TestModule(),
+        );
+        (await coffee.getCoffeeMaker()).brew();
         expect(_printLog, [
           'test heater turned on',
           ' [_]P coffee! [_]P',
@@ -70,7 +72,7 @@ abstract class TestCoffee {
 
   /// Provides a coffee maker.
   @inject
-  CoffeeMaker getCoffeeMaker();
+  Future<CoffeeMaker> getCoffeeMaker();
 }
 
 /// Forwards [print] messages to [_printLog].

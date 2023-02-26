@@ -25,9 +25,6 @@ abstract class ResolvedDependency {
   /// Whether or not this dependency is a singleton.
   final bool isSingleton;
 
-  /// Whether this provider is annotated with `@asynchronous`.
-  final bool isAsynchronous;
-
   /// Transitive dependencies.
   final List<InjectedType> dependencies;
 
@@ -35,9 +32,18 @@ abstract class ResolvedDependency {
   const ResolvedDependency(
     this.lookupKey,
     this.isSingleton,
-    this.isAsynchronous,
     this.dependencies,
   );
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ResolvedDependency &&
+          runtimeType == other.runtimeType &&
+          lookupKey == other.lookupKey;
+
+  @override
+  int get hashCode => lookupKey.hashCode;
 }
 
 /// A dependency provided by a module class.
@@ -48,19 +54,17 @@ class DependencyProvidedByModule extends ResolvedDependency {
   /// Name of the method in the class.
   final String methodName;
 
+  /// Whether this provider is annotated with `@asynchronous`.
+  final bool isAsynchronous;
+
   DependencyProvidedByModule._(
-    LookupKey lookupKey,
-    bool singleton,
-    bool asynchronous,
-    List<InjectedType> dependencies,
+    super.lookupKey,
+    super.singleton,
+    super.dependencies,
     this.moduleClass,
     this.methodName,
-  ) : super(
-          lookupKey,
-          singleton,
-          asynchronous,
-          dependencies,
-        );
+    this.isAsynchronous,
+  );
 }
 
 /// A dependency provided by an injectable class.
@@ -68,20 +72,34 @@ class DependencyProvidedByInjectable extends ResolvedDependency {
   /// Summary about the injectable class.
   final InjectableSummary summary;
 
-  DependencyProvidedByInjectable._(
-    this.summary,
-  ) : super(
-          LookupKey(summary.clazz),
+  DependencyProvidedByInjectable._(this.summary)
+      : super(
+          LookupKey(summary.clazz, isNullable: false),
           summary.constructor.isSingleton,
-          false,
           summary.constructor.dependencies,
+        );
+}
+
+/// A dependency provided by an factory class.
+class DependencyProvidedByFactory extends ResolvedDependency {
+  /// Summary about the factory.
+  final FactorySummary summary;
+
+  /// Summary about the created class.
+  final InjectableSummary injectable;
+
+  DependencyProvidedByFactory._(this.summary, this.injectable)
+      : super(
+          LookupKey(summary.clazz, isNullable: false),
+          false,
+          injectable.constructor.dependencies,
         );
 }
 
 /// All of the data that is needed to generate an `@Component` class.
 class ComponentGraph {
   /// Modules used by the component.
-  final List<SymbolPath> includeModules;
+  final List<ModuleSummary> includeModules;
 
   /// Providers that should be generated.
   final List<ComponentProvider> providers;

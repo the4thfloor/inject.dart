@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:inject/inject.dart';
 
 import 'bike.dart';
@@ -11,17 +9,8 @@ import 'locomotive.inject.dart' as g;
 /// a complete app.
 @Component([BikeServices, FoodServices, CommonServices])
 abstract class TrainServices implements BikeServiceLocator, FoodServiceLocator {
-  static Future<TrainServices> create(
-    BikeServices bikeModule,
-    FoodServices foodModule,
-    CommonServices commonModule,
-  ) async {
-    final services = await g.TrainServices$Component.create(
-      bikeModule,
-      foodModule,
-      commonModule,
-    );
-
+  static TrainServices create() {
+    final services = g.TrainServices$Component.create();
     bikeServices = services;
     foodServices = services;
     return services;

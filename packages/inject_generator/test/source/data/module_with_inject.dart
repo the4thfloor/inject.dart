@@ -18,7 +18,6 @@ class BarModule {
   Bar getBar() => Bar();
 }
 
-@inject
 class Bar {
   String get foo => 'foo';
 }
