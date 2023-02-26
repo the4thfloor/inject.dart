@@ -2,7 +2,10 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:json_annotation/json_annotation.dart';
 import 'package:path/path.dart' as pkg_path;
+
+part 'symbol_path.g.dart';
 
 /// Represents the absolute canonical location of a [symbol] within Dart.
 ///
@@ -12,6 +15,7 @@ import 'package:path/path.dart' as pkg_path;
 ///
 ///     // A reference to dart:core#List
 ///     new SymbolPath.dartSdk('core', 'List')
+@JsonSerializable()
 class SymbolPath implements Comparable<SymbolPath> {
   /// Path to the `@Component` annotation.
   static const SymbolPath component = SymbolPath._standard('Component');
@@ -122,7 +126,7 @@ class SymbolPath implements Comparable<SymbolPath> {
   /// Create a [SymbolPath] using [assetUri].
   factory SymbolPath.fromAbsoluteUri(Uri assetUri, [String? symbolName]) {
     assetUri = toAssetUri(assetUri);
-    symbolName ??= assetUri.fragment;
+    symbolName ??= Uri.decodeComponent(assetUri.fragment);
     if (assetUri.scheme == _dartPackage) {
       return SymbolPath.dartSdk(assetUri.path, symbolName);
     }
@@ -261,4 +265,14 @@ class SymbolPath implements Comparable<SymbolPath> {
 
   /// Absolute path to this symbol for use in log messages.
   String toHumanReadableString() => '${toDartUri()}#$symbol';
+
+  factory SymbolPath.fromJson(Map<String, dynamic> json) =>
+      _$SymbolPathFromJson(json);
+
+  Map<String, dynamic> toJson() => _$SymbolPathToJson(this);
+
+  @override
+  String toString() {
+    return 'SymbolPath{package: $package, path: $path, symbol: $symbol}';
+  }
 }

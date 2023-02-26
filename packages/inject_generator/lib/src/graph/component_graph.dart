@@ -22,6 +22,9 @@ abstract class ResolvedDependency {
   /// The key of the dependency.
   final LookupKey lookupKey;
 
+  /// Whether or not this dependency is nullable.
+  final bool isNullable;
+
   /// Whether or not this dependency is a singleton.
   final bool isSingleton;
 
@@ -31,6 +34,7 @@ abstract class ResolvedDependency {
   /// Constructor.
   const ResolvedDependency(
     this.lookupKey,
+    this.isNullable,
     this.isSingleton,
     this.dependencies,
   );
@@ -59,7 +63,8 @@ class DependencyProvidedByModule extends ResolvedDependency {
 
   DependencyProvidedByModule._(
     super.lookupKey,
-    super.singleton,
+    super.isNullable,
+    super.isSingleton,
     super.dependencies,
     this.moduleClass,
     this.methodName,
@@ -74,7 +79,8 @@ class DependencyProvidedByInjectable extends ResolvedDependency {
 
   DependencyProvidedByInjectable._(this.summary)
       : super(
-          LookupKey(summary.clazz, isNullable: false),
+          summary.constructor.injectedType.lookupKey,
+          false,
           summary.constructor.isSingleton,
           summary.constructor.dependencies,
         );
@@ -90,7 +96,8 @@ class DependencyProvidedByFactory extends ResolvedDependency {
 
   DependencyProvidedByFactory._(this.summary, this.injectable)
       : super(
-          LookupKey(summary.clazz, isNullable: false),
+          LookupKey(summary.clazz),
+          false,
           false,
           injectable.constructor.dependencies,
         );

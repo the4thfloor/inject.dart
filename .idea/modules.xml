@@ -3,10 +3,10 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/packages/inject/melos_inject.iml" filepath="$PROJECT_DIR$/packages/inject/melos_inject.iml" />
+      <module fileurl="file://$PROJECT_DIR$/melos_inject_dart.iml" filepath="$PROJECT_DIR$/melos_inject_dart.iml" />
       <module fileurl="file://$PROJECT_DIR$/examples/coffee/melos_inject_example_coffee.iml" filepath="$PROJECT_DIR$/examples/coffee/melos_inject_example_coffee.iml" />
       <module fileurl="file://$PROJECT_DIR$/examples/train/melos_inject_example_train.iml" filepath="$PROJECT_DIR$/examples/train/melos_inject_example_train.iml" />
       <module fileurl="file://$PROJECT_DIR$/packages/inject_generator/melos_inject_generator.iml" filepath="$PROJECT_DIR$/packages/inject_generator/melos_inject_generator.iml" />
-      <module fileurl="file://$PROJECT_DIR$/melos_inject_dart.iml" filepath="$PROJECT_DIR$/melos_inject_dart.iml" />
     </modules>
   </component>
 </project>

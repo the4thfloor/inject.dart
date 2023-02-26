@@ -13,11 +13,15 @@ import '../source/lookup_key.dart';
 import '../source/symbol_path.dart';
 
 /// Constructs a serializable path to [element].
-SymbolPath getSymbolPath(Element element) {
-  if (element is TypeDefiningElement && element.kind == ElementKind.DYNAMIC) {
+SymbolPath getSymbolPath(DartType type) {
+  final element = type.element!;
+
+  // if (element is TypeDefiningElement && element.kind == ElementKind.DYNAMIC) {
+  if (type.isDynamic) {
     throw ArgumentError('Dynamic element type not supported. This is a '
         'package:inject bug. Please report it.');
   }
+
   return SymbolPath.fromAbsoluteUri(
     element.library!.source.uri,
     element.name,
@@ -33,43 +37,35 @@ InjectedType getInjectedType(
   SymbolPath? qualifier,
   bool? assisted,
 }) {
-  if (type is FunctionType) {
-    if (type.parameters.isNotEmpty) {
-      builderContext.log.severe(
-          type.element,
-          'Only no-arg typedefs are supported, '
-          'and no-arg typedefs are treated as providers of the return type. ');
-      throw ArgumentError();
+  if (type is InterfaceType &&
+      type.element.name == 'Provider' &&
+      type.element.library.source.uri ==
+          Uri.parse('package:inject/src/api/provider.dart')) {
+    final providedType = type.typeArguments.firstOrNull;
+    if (providedType == null || providedType.isDynamic) {
+      throw 'Generic type for `${type.getDisplayString(withNullability: false)} $name` not specified.';
     }
-    if (type.returnType.isDynamic) {
-      builderContext.log.severe(
-          type.element,
-          'Cannot create a provider of type dynamic. '
-          'Your function type did not include a return type.');
-      throw ArgumentError();
-    }
+
     return InjectedType(
-      LookupKey.fromDartType(type.returnType, qualifier: qualifier),
+      LookupKey.fromDartType(providedType, qualifier: qualifier),
       name: name,
+      isNullable: type.isNullable(),
       isRequired: required,
       isNamed: named,
       isProvider: true,
+      isFeature: type.isDartAsyncFuture,
       isAssisted: assisted,
     );
   }
 
-  final asyncFuture = type.isDartAsyncFuture;
-  final futureType = asyncFuture && type is ParameterizedType
-      ? type.typeArguments.firstOrNull
-      : null;
-
   return InjectedType(
-    LookupKey.fromDartType(futureType ?? type, qualifier: qualifier),
+    LookupKey.fromDartType(type, qualifier: qualifier),
     name: name,
+    isNullable: type.isNullable(),
     isRequired: required,
     isNamed: named,
     isProvider: false,
-    isFeature: asyncFuture,
+    isFeature: type.isDartAsyncFuture,
     isAssisted: assisted,
   );
 }
@@ -87,9 +83,9 @@ ElementAnnotation? _getAnnotation(
 
   for (var i = 0; i < resolvedMetadata.length; i++) {
     final annotation = resolvedMetadata[i];
-    final valueElement = annotation.computeConstantValue()?.type?.element;
+    final type = annotation.computeConstantValue()?.type;
 
-    if (valueElement == null) {
+    if (type == null) {
       final pathToAnnotation = annotationSymbol.toHumanReadableString();
       builderContext.log.severe(
         annotation.element ?? element,
@@ -98,7 +94,7 @@ ElementAnnotation? _getAnnotation(
         'a misspelling or a failure to resolve the import where the '
         'annotation comes from.',
       );
-    } else if (getSymbolPath(valueElement) == annotationSymbol) {
+    } else if (getSymbolPath(type) == annotationSymbol) {
       return annotation;
     }
   }

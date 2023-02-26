@@ -5,6 +5,7 @@
 part of inject.src.summary;
 
 /// Result of analyzing a class whose constructor is annotated with `@Inject()`.
+@JsonSerializable()
 class InjectableSummary {
   /// Location of the analyzed class.
   final SymbolPath clazz;
@@ -21,26 +22,8 @@ class InjectableSummary {
   /// about the constructor annotated with `@Inject()`.
   const InjectableSummary(this.clazz, this.constructor, this.factory);
 
-  /// Returns a new instance from the JSON encoding of an instance.
-  ///
-  /// See also [InjectableSummary.toJson].
-  factory InjectableSummary.fromJson(Uri assetUri, Map<String, dynamic> json) {
-    final name = json['name'] as String;
-    final factory = json['factory'];
-    final type = SymbolPath.fromAbsoluteUri(assetUri, name);
-    return InjectableSummary(
-      type,
-      ProviderSummary.fromJson(json['constructor']),
-      factory != null ? LookupKey.fromJson(factory) : null,
-    );
-  }
+  factory InjectableSummary.fromJson(Map<String, dynamic> json) =>
+      _$InjectableSummaryFromJson(json);
 
-  /// Serializes this summary to JSON.
-  Map<String, dynamic> toJson() {
-    return {
-      'name': clazz.symbol,
-      'constructor': constructor,
-      'factory': factory,
-    };
-  }
+  Map<String, dynamic> toJson() => _$InjectableSummaryToJson(this);
 }

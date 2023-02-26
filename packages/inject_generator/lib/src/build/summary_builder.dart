@@ -157,7 +157,7 @@ class _SummaryBuilderVisitor extends InjectLibraryVisitor {
     if (constructorSummary != null) {
       _injectables.add(
         InjectableSummary(
-          getSymbolPath(clazz),
+          getSymbolPath(clazz.thisType),
           constructorSummary,
           factory,
         ),
@@ -190,8 +190,12 @@ class _SummaryBuilderVisitor extends InjectLibraryVisitor {
         'found multiple.',
       );
     } else {
-      _factories
-          .add(FactorySummary(getSymbolPath(clazz), visitor._factories.single));
+      _factories.add(
+        FactorySummary(
+          getSymbolPath(clazz.thisType),
+          visitor._factories.single,
+        ),
+      );
     }
   }
 
@@ -214,7 +218,8 @@ class _SummaryBuilderVisitor extends InjectLibraryVisitor {
       }
       return true;
     }).toList();
-    final summary = ComponentSummary(getSymbolPath(clazz), modules, providers);
+    final summary =
+        ComponentSummary(getSymbolPath(clazz.thisType), modules, providers);
     _components.add(summary);
   }
 
@@ -240,7 +245,7 @@ class _SummaryBuilderVisitor extends InjectLibraryVisitor {
       return;
     }
     final summary = ModuleSummary(
-      getSymbolPath(clazz),
+      getSymbolPath(clazz.thisType),
       clazz.hasDefaultConstructor(),
       providers,
     );
@@ -336,15 +341,15 @@ class _ProviderSummaryVisitor extends InjectClassVisitor {
         ? (method.returnType as ParameterizedType).typeArguments.single
         : method.returnType;
 
-    if (!isForComponent && returnType.isDartCoreFunction) {
-      builderContext.log.severe(
-          method,
-          'Modules are not allowed to provide a function type () -> Type. '
-          'The inject library prohibits this to avoid confusion '
-          'with injecting providers of injectable types. '
-          'Your provider method will not be used.');
-      return;
-    }
+    // if (!isForComponent && returnType is FunctionType) {
+    //   builderContext.log.severe(
+    //       method,
+    //       'Modules are not allowed to provide a function type () -> Type. '
+    //       'The inject library prohibits this to avoid confusion '
+    //       'with injecting providers of injectable types. '
+    //       'Your provider method will not be used.');
+    //   return;
+    // }
 
     if (!_checkReturnType(method, returnType.element!)) {
       return;

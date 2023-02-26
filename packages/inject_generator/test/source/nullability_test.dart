@@ -35,7 +35,7 @@ void main() {
         SymbolPath(rootPackage, testFilePath, 'FooBar'),
       );
       expect(
-        summary.components[0].providers[0].injectedType.lookupKey.isNullable,
+        summary.components[0].providers[0].injectedType.isNullable,
         false,
       );
 
@@ -45,7 +45,7 @@ void main() {
         SymbolPath(rootPackage, testFilePath, 'Foo'),
       );
       expect(
-        summary.components[0].providers[1].injectedType.lookupKey.isNullable,
+        summary.components[0].providers[1].injectedType.isNullable,
         false,
       );
 
@@ -55,7 +55,7 @@ void main() {
         SymbolPath(rootPackage, testFilePath, 'Bar'),
       );
       expect(
-        summary.components[0].providers[2].injectedType.lookupKey.isNullable,
+        summary.components[0].providers[2].injectedType.isNullable,
         true,
       );
 

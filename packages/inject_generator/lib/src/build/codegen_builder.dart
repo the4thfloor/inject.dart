@@ -336,8 +336,8 @@ class _ComponentBuilder {
       // TODO: show warning if injected type and dep type are not both
       // asynchronous or both not asynchronous
 
-      final resolvedIsNullable = resolved.lookupKey.isNullable;
-      final injectedIsNullable = provider.injectedType.lookupKey.isNullable;
+      final resolvedIsNullable = resolved.isNullable;
+      final injectedIsNullable = provider.injectedType.isNullable;
       if (!injectedIsNullable && resolvedIsNullable) {
         _logNullabilityMismatchDependency(
           dependency: provider.injectedType,
@@ -351,14 +351,19 @@ class _ComponentBuilder {
         provider.injectedType,
         asFuture: asFuture,
       );
+
       final providerClassName =
-          _providerClassName(provider.injectedType.lookupKey);
+          _providerClassName(provider.injectedType.lookupKey).decapitalize();
+      final isProvider = provider.injectedType.isProvider;
+      final ref = isProvider
+          ? refer(providerClassName)
+          : refer('$providerClassName.get()');
       final method = MethodBuilder()
         ..name = provider.methodName
         ..returns = returnType
         ..type = provider.isGetter ? MethodType.getter : null
         ..lambda = true
-        ..body = refer('${providerClassName.decapitalize()}.get()').code
+        ..body = ref.code
         ..annotations.add(refer('override'));
       methods.add(method);
     }
@@ -441,7 +446,11 @@ class _ProviderBuilder {
       _buildProvidedByFactory(dependency as DependencyProvidedByFactory);
     }
 
-    final providerType = _referenceForKey(libraryUri, dependency.lookupKey);
+    var providerType = _referenceForKey(libraryUri, dependency.lookupKey);
+    if (dependency.isNullable) {
+      providerType = providerType.toNullable();
+    }
+
     final returnType = asynchronous ? providerType.toFuture() : providerType;
 
     methodBuilder
@@ -516,8 +525,7 @@ class _ProviderBuilder {
           ..type = _reference(
             libraryUri,
             dep.lookupKey.root,
-            isNullable: true,
-          ),
+          ).toNullable(),
       );
     }
 
@@ -527,8 +535,8 @@ class _ProviderBuilder {
     for (final injected in dep.dependencies.where((dep) => !dep.isAssisted)) {
       final resolved =
           dependencies.firstWhere((dep) => dep.lookupKey == injected.lookupKey);
-      final resolvedIsNullable = resolved.lookupKey.isNullable;
-      final injectedIsNullable = injected.lookupKey.isNullable;
+      final resolvedIsNullable = resolved.isNullable;
+      final injectedIsNullable = injected.isNullable;
       if (!injectedIsNullable && resolvedIsNullable) {
         _logNullabilityMismatchDependency(
           dependency: injected,
@@ -539,7 +547,8 @@ class _ProviderBuilder {
 
       final type = _providerClassName(injected.lookupKey);
       final fieldName = type.decapitalize();
-      final ref = refer('$fieldName.get()');
+      final isProvider = injected.isProvider;
+      final ref = isProvider ? refer(fieldName) : refer('$fieldName.get()');
       final isAsynchronous = injected.isAsynchronous(dependencies);
       if (injected.isNamed) {
         namedArguments[injected.name!] = isAsynchronous ? ref.awaited : ref;
@@ -567,8 +576,7 @@ class _ProviderBuilder {
           ..type = _reference(
             libraryUri,
             dep.lookupKey.root,
-            isNullable: true,
-          ),
+          ).toNullable(),
       );
     }
 
@@ -577,7 +585,8 @@ class _ProviderBuilder {
     for (final injected in dep.dependencies.where((dep) => !dep.isAssisted)) {
       final type = _providerClassName(injected.lookupKey);
       final fieldName = type.decapitalize();
-      final ref = refer('$fieldName.get()');
+      final isProvider = injected.isProvider;
+      final ref = isProvider ? refer(fieldName) : refer('$fieldName.get()');
       final isAsynchronous = injected.isAsynchronous(dependencies);
       if (injected.isNamed) {
         namedArguments[injected.name!] = isAsynchronous ? ref.awaited : ref;
@@ -604,8 +613,7 @@ class _ProviderBuilder {
         ..type = _reference(
           libraryUri,
           dep.lookupKey.root,
-          isNullable: true,
-        ),
+        ).toNullable(),
     );
 
     final params = dep.dependencies
@@ -698,11 +706,12 @@ class _FactoryBuilder {
       final isSeen = seen.contains(injected.lookupKey);
       seen.add(injected.lookupKey);
 
+      final isAssisted = injected.isAssisted;
       final providerFieldName =
           _providerClassName(injected.lookupKey).decapitalize();
 
       // add not assisted dependencies as constructor parameter
-      if (!isSeen && !injected.isAssisted) {
+      if (!isSeen && !isAssisted) {
         constructor.requiredParameters.add(
           Parameter(
             (b) => b
@@ -718,12 +727,21 @@ class _FactoryBuilder {
         );
       }
 
-      // all dependencies for the body of the create method
-      final argRef = injected.isAssisted
-          ? refer(injected.name!)
-          : injected.isAsynchronous(dependencies)
-              ? refer('$providerFieldName.get()').awaited
-              : refer('$providerFieldName.get()');
+      final isProvider = injected.isProvider;
+      final isAsynchronous = injected.isAsynchronous(dependencies);
+
+      Expression argRef;
+      if (isAssisted) {
+        argRef = refer(injected.name!);
+      } else {
+        if (isProvider) {
+          argRef = refer(providerFieldName);
+        } else if (isAsynchronous) {
+          argRef = refer('$providerFieldName.get()').awaited;
+        } else {
+          argRef = refer('$providerFieldName.get()');
+        }
+      }
 
       if (injected.isNamed) {
         namedArguments[injected.name!] = argRef;
@@ -734,12 +752,17 @@ class _FactoryBuilder {
 
     // generate create method parameters
     for (final parameter in dependency.summary.factory.parameters) {
+      var type = _referenceForKey(libraryUri, parameter.lookupKey);
+      if (parameter.isNullable) {
+        type = type.toNullable();
+      }
+
       if (parameter.isRequired && !parameter.isNamed) {
         createMethod.requiredParameters.add(
           Parameter(
             (b) => b
               ..name = parameter.name!
-              ..type = _referenceForKey(libraryUri, parameter.lookupKey),
+              ..type = type,
           ),
         );
       } else {
@@ -749,7 +772,7 @@ class _FactoryBuilder {
               ..name = parameter.name!
               ..named = parameter.isNamed
               ..required = parameter.isRequired
-              ..type = _referenceForKey(libraryUri, parameter.lookupKey),
+              ..type = type,
           ),
         );
       }
@@ -779,7 +802,10 @@ Reference _referenceForType(
   InjectedType injectedType, {
   bool asFuture = false,
 }) {
-  final keyReference = _referenceForKey(libraryUri, injectedType.lookupKey);
+  var keyReference = _referenceForKey(libraryUri, injectedType.lookupKey);
+  if (injectedType.isNullable) {
+    keyReference = keyReference.toNullable();
+  }
   if (injectedType.isProvider) {
     return FunctionType(
       (functionType) => functionType..returnType = keyReference,
@@ -790,22 +816,28 @@ Reference _referenceForType(
   return keyReference;
 }
 
-TypeReference _referenceForKey(Uri libraryUri, LookupKey key) => _reference(
-      libraryUri,
-      key.root,
-      isNullable: key.isNullable,
-    );
+TypeReference _referenceForKey(Uri libraryUri, LookupKey key) {
+  final ref = _reference(libraryUri, key.root);
 
-TypeReference _reference(
-  Uri libraryUri,
-  SymbolPath symbolPath, {
-  bool isNullable = false,
-}) =>
+  final typeArguments = key.typeArguments;
+  if (typeArguments == null || typeArguments.isEmpty) {
+    return ref;
+  }
+
+  return (ref.toBuilder()
+        ..types.addAll(
+          typeArguments
+              .map((typeArgument) => _reference(libraryUri, typeArgument))
+              .toList(),
+        ))
+      .build();
+}
+
+TypeReference _reference(Uri libraryUri, SymbolPath symbolPath) =>
     TypeReference(
       (b) => b
         ..symbol = symbolPath.symbol
-        ..url = symbolPath.toDartUri(relativeTo: libraryUri).toString()
-        ..isNullable = isNullable,
+        ..url = symbolPath.toDartUri(relativeTo: libraryUri).toString(),
     );
 
 extension _ResolvedDependencyExtension on ResolvedDependency {

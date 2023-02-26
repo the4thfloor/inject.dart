@@ -49,6 +49,7 @@ String provideKindName(ProviderKind kind) {
 
 /// Contains information about a method, constructor, factory or a getter
 /// annotated with `@inject` or `@provides`.
+@JsonSerializable()
 class ProviderSummary {
   /// Name of the annotated method.
   final String name;
@@ -97,38 +98,8 @@ class ProviderSummary {
     this.dependencies,
   );
 
-  /// Returns a new instance from the JSON encoding of an instance.
-  ///
-  /// See also [ProviderSummary.toJson].
-  factory ProviderSummary.fromJson(Map<String, dynamic> json) {
-    final name = json['name'] as String;
-    final kind = json['kind'] as String;
-    final injectedType = InjectedType.fromJson(json['injectedType']);
-    final singleton = json['singleton'] as bool;
-    final asynchronous = json['asynchronous'] as bool;
-    final dependencies = json['dependencies']
-        .cast<Map<String, dynamic>>()
-        .map<InjectedType>(InjectedType.fromJson)
-        .toList();
-    return ProviderSummary(
-      name,
-      providerKindFromName(kind),
-      injectedType,
-      singleton: singleton,
-      asynchronous: asynchronous,
-      dependencies: dependencies,
-    );
-  }
+  factory ProviderSummary.fromJson(Map<String, dynamic> json) =>
+      _$ProviderSummaryFromJson(json);
 
-  /// Serializes this summary to JSON.
-  Map<String, dynamic> toJson() {
-    return {
-      'name': name,
-      'kind': provideKindName(kind),
-      'injectedType': injectedType,
-      'singleton': isSingleton,
-      'asynchronous': isAsynchronous,
-      'dependencies': dependencies
-    };
-  }
+  Map<String, dynamic> toJson() => _$ProviderSummaryToJson(this);
 }

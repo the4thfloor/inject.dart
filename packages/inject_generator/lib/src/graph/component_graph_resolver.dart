@@ -106,9 +106,10 @@ class ComponentGraphResolver {
     // all keys that are explicitly provided.
     for (final module in allModules) {
       for (final provider in module.providers) {
-        final lookupKey = _extractLookupKey(provider.injectedType);
+        final lookupKey = provider.injectedType.lookupKey;
         providersByModules[lookupKey] = DependencyProvidedByModule._(
           lookupKey,
+          provider.injectedType.isNullable,
           provider.isSingleton,
           provider.dependencies,
           module.clazz,
@@ -160,17 +161,10 @@ class ComponentGraphResolver {
     final providersByInjectables =
         <LookupKey, DependencyProvidedByInjectable>{};
 
-    var count = 0;
-
     Future<void> addInjectableIfExists(
       LookupKey key, {
       required SymbolPath requestedBy,
     }) async {
-      count = count + 1;
-      if (count > 25) {
-        return;
-      }
-
       final isProvidedByAModule = providersByModules.containsKey(key);
       final isSeen = providersByInjectables.containsKey(key);
       if (isProvidedByAModule || isSeen) {
@@ -310,15 +304,6 @@ class ComponentGraphResolver {
 
       checkForCycles(dependency);
     }
-  }
-
-  static LookupKey _extractLookupKey(InjectedType injectedType) {
-    if (injectedType != InjectedType(injectedType.lookupKey)) {
-      throw ArgumentError('Extracting the LookupKey from an InjectedType that '
-          'has additional metadata. This is a dart:inject bug. '
-          'Please file a bug.');
-    }
-    return injectedType.lookupKey;
   }
 }
 

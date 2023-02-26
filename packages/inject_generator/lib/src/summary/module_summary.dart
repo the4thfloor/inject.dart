@@ -5,6 +5,7 @@
 part of inject.src.summary;
 
 /// Result of analyzing a `@Module()` annotated-class.
+@JsonSerializable()
 class ModuleSummary {
   /// Location of the analyzed class.
   final SymbolPath clazz;
@@ -37,26 +38,8 @@ class ModuleSummary {
 
   const ModuleSummary._(this.clazz, this.hasDefaultConstructor, this.providers);
 
-  /// Returns a new instance from the JSON encoding of an instance.
-  ///
-  /// See also [ModuleSummary.toJson].
-  factory ModuleSummary.fromJson(Uri assetUri, Map<String, dynamic> json) {
-    final name = json['name'] as String;
-    final hasDefaultConstructor = json['hasDefaultConstructor'] as bool;
-    final providers = json['providers']
-        .cast<Map<String, dynamic>>()
-        .map<ProviderSummary>(ProviderSummary.fromJson)
-        .toList();
-    final clazz = SymbolPath.fromAbsoluteUri(assetUri, name);
-    return ModuleSummary(clazz, hasDefaultConstructor, providers);
-  }
+  factory ModuleSummary.fromJson(Map<String, dynamic> json) =>
+      _$ModuleSummaryFromJson(json);
 
-  /// Serializes this summary to JSON.
-  Map<String, dynamic> toJson() {
-    return {
-      'name': clazz.symbol,
-      'hasDefaultConstructor': hasDefaultConstructor,
-      'providers': providers,
-    };
-  }
+  Map<String, dynamic> toJson() => _$ModuleSummaryToJson(this);
 }

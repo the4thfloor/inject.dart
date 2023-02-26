@@ -2,16 +2,24 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:json_annotation/json_annotation.dart';
+
 import 'lookup_key.dart';
+
+part 'injected_type.g.dart';
 
 /// A type that the user is trying to inject with associated metadata about how
 /// the user is trying to inject it.
+@JsonSerializable()
 class InjectedType {
   /// The type the user is trying to inject.
   final LookupKey lookupKey;
 
   /// Name of the parameter.
   final String? name;
+
+  /// Return `true` if this parameter is nullable.
+  final bool isNullable;
 
   /// Return `true` if this parameter is required.
   final bool isRequired;
@@ -33,6 +41,7 @@ class InjectedType {
   factory InjectedType(
     LookupKey lookupKey, {
     String? name,
+    bool? isNullable,
     bool? isRequired,
     bool? isNamed,
     bool? isProvider,
@@ -42,6 +51,7 @@ class InjectedType {
       InjectedType._(
         lookupKey,
         name,
+        isNullable ?? false,
         isRequired ?? false,
         isNamed ?? false,
         isProvider ?? false,
@@ -52,6 +62,7 @@ class InjectedType {
   const InjectedType._(
     this.lookupKey,
     this.name,
+    this.isNullable,
     this.isRequired,
     this.isNamed,
     this.isProvider,
@@ -59,35 +70,10 @@ class InjectedType {
     this.isAssisted,
   );
 
-  /// Returns a new instance from the JSON encoding of an instance.
-  ///
-  /// See also [InjectedType.toJson].
-  factory InjectedType.fromJson(Map<String, dynamic> json) {
-    return InjectedType(
-      LookupKey.fromJson(json['lookupKey']),
-      name: json['name'],
-      isRequired: json['isRequired'],
-      isNamed: json['isNamed'],
-      isProvider: json['isProvider'],
-      isFeature: json['isFeature'],
-      isAssisted: json['isAssisted'],
-    );
-  }
+  factory InjectedType.fromJson(Map<String, dynamic> json) =>
+      _$InjectedTypeFromJson(json);
 
-  /// Returns the JSON encoding of this instance.
-  ///
-  /// See also [InjectedType.fromJson].
-  Map<String, dynamic> toJson() {
-    return {
-      'lookupKey': lookupKey.toJson(),
-      'name': name,
-      'isRequired': isRequired,
-      'isNamed': isNamed,
-      'isProvider': isProvider,
-      'isFeature': isFeature,
-      'isAssisted': isAssisted,
-    };
-  }
+  Map<String, dynamic> toJson() => _$InjectedTypeToJson(this);
 
   @override
   bool operator ==(Object other) =>
@@ -96,6 +82,7 @@ class InjectedType {
           runtimeType == other.runtimeType &&
           lookupKey == other.lookupKey &&
           name == other.name &&
+          isNullable == other.isNullable &&
           isRequired == other.isRequired &&
           isNamed == other.isNamed &&
           isProvider == other.isProvider &&
@@ -106,9 +93,15 @@ class InjectedType {
   int get hashCode =>
       lookupKey.hashCode ^
       name.hashCode ^
+      isNullable.hashCode ^
       isRequired.hashCode ^
       isNamed.hashCode ^
       isProvider.hashCode ^
       isFeature.hashCode ^
       isAssisted.hashCode;
+
+  @override
+  String toString() {
+    return 'InjectedType{lookupKey: ${lookupKey.toClassName()}, name: $name, isNullable: $isNullable}';
+  }
 }

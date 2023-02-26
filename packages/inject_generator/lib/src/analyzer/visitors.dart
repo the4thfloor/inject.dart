@@ -57,6 +57,17 @@ class _LibraryVisitor extends RecursiveElementVisitor<void> {
 
   _LibraryVisitor(this._injectLibraryVisitor);
 
+  // @override
+  // void visitLibraryImportElement(LibraryImportElement element) {
+  //   print('import: ${element.importedLibrary?.source.uri}');
+  //   element.importedLibrary?.exportedLibraries.forEach((element) {
+  //     print('exportedLibraries: ${element.source.uri}');
+  //     element.exportedLibraries.forEach((element) {
+  //       print('  exportedLibraries: ${element.source.uri}');
+  //     });
+  //   });
+  // }
+
   @override
   void visitClassElement(ClassElement element) {
     var isInjectable = false;
@@ -138,9 +149,9 @@ List<SymbolPath> _extractModules(ClassElement clazz) {
     return const <SymbolPath>[];
   }
   return modules
-      .map((obj) => obj.toTypeValue()?.element)
+      .map((obj) => obj.toTypeValue())
       .whereNotNull()
-      .map((element) => getSymbolPath(element))
+      .map((type) => getSymbolPath(type))
       .toList();
 }
 
