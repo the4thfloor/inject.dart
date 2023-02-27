@@ -102,11 +102,7 @@ class _SummaryBuilderVisitor extends InjectLibraryVisitor {
   );
 
   @override
-  void visitInjectable(
-    ClassElement clazz,
-    bool singleton,
-    LookupKey? factory,
-  ) {
+  void visitInjectable(ClassElement clazz, bool singleton) {
     final classIsAnnotated =
         hasInjectAnnotation(clazz) || hasAssistedInjectAnnotation(clazz);
     final annotatedConstructors = [
@@ -139,21 +135,22 @@ class _SummaryBuilderVisitor extends InjectLibraryVisitor {
     }
 
     ProviderSummary? constructorSummary;
+    LookupKey? factory;
     if (annotatedConstructors.length == 1) {
       // Use the explicitly annotated constructor.
       constructorSummary = _createConstructorProviderSummary(
         annotatedConstructors.single,
         singleton,
-        factory,
       );
+      factory = _extractFactory(annotatedConstructors.single);
     } else if (classIsAnnotated) {
       if (clazz.constructors.length <= 1) {
         // This is the case of a default or an only constructor.
         constructorSummary = _createConstructorProviderSummary(
           clazz.constructors.single,
           singleton,
-          factory,
         );
+        factory = _extractFactory(clazz);
       }
     }
 
@@ -435,7 +432,6 @@ bool _checkReturnType(
 ProviderSummary _createConstructorProviderSummary(
   ConstructorElement element,
   bool isSingleton,
-  LookupKey? factory,
 ) {
   final returnType = element.enclosingElement.thisType;
   return ProviderSummary(
@@ -443,7 +439,6 @@ ProviderSummary _createConstructorProviderSummary(
     ProviderKind.constructor,
     getInjectedType(returnType),
     singleton: isSingleton,
-    factory: factory,
     dependencies: element.parameters
         .map((p) {
           SymbolPath? qualifier;
@@ -490,6 +485,21 @@ ProviderSummary _createConstructorProviderSummary(
         .whereNotNull()
         .toList(),
   );
+}
+
+LookupKey? _extractFactory(Element element) {
+  if (!hasAssistedInjectAnnotation(element)) {
+    return null;
+  }
+
+  final annotation = getAssistedInjectAnnotation(element);
+  final factory = annotation?.computeConstantValue()?.getField('factory');
+  final type = factory?.toTypeValue();
+  if (type == null) {
+    return null;
+  }
+
+  return LookupKey.fromDartType(type);
 }
 
 String _librarySummaryToJson(LibrarySummary library) {

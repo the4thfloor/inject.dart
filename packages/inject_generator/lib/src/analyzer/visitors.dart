@@ -7,7 +7,6 @@ import 'package:analyzer/dart/element/visitor.dart';
 import 'package:collection/collection.dart';
 
 import '../context.dart';
-import '../source/lookup_key.dart';
 import '../source/symbol_path.dart';
 import 'utils.dart';
 
@@ -29,7 +28,7 @@ abstract class InjectLibraryVisitor {
   /// Called when [clazz] is annotated with `@inject`.
   ///
   /// If [clazz] is annotated with `@singleton`, then [singleton] is true.
-  void visitInjectable(ClassElement clazz, bool singleton, LookupKey? factory);
+  void visitInjectable(ClassElement clazz, bool singleton);
 
   /// Called when [clazz] is annotated with `@assistedFactory`.
   void visitAssistedFactory(ClassElement clazz);
@@ -102,7 +101,6 @@ class _LibraryVisitor extends RecursiveElementVisitor<void> {
 
     if (isInjectable) {
       final singleton = isSingletonClass(element);
-      final assisted = isAssistedInjectableClass(element);
       final asynchronous = hasAsynchronousAnnotation(element) ||
           element.constructors.any(hasAsynchronousAnnotation);
       if (asynchronous) {
@@ -114,7 +112,6 @@ class _LibraryVisitor extends RecursiveElementVisitor<void> {
       _injectLibraryVisitor.visitInjectable(
         element,
         singleton,
-        assisted ? _extractFactory(element) : null,
       );
     }
     if (isAssistedFactory) {
@@ -131,17 +128,6 @@ class _LibraryVisitor extends RecursiveElementVisitor<void> {
     }
     return;
   }
-}
-
-LookupKey? _extractFactory(ClassElement clazz) {
-  final annotation = getAssistedInjectAnnotation(clazz);
-  final factory = annotation?.computeConstantValue()?.getField('factory');
-  final type = factory?.toTypeValue();
-  if (type == null) {
-    return null;
-  }
-
-  return LookupKey.fromDartType(type);
 }
 
 List<SymbolPath> _extractModules(ClassElement clazz) {

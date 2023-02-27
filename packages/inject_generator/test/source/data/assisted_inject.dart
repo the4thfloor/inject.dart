@@ -7,20 +7,36 @@ abstract class Component {
   static const create = g.Component$Component.create;
 
   @inject
-  FooBarFactory get fooBarFactory;
+  AnnotatedClassFactory get annotatedClassFactory;
+
+  @inject
+  AnnotatedConstructorFactory get annotatedConstructorFactory;
 }
 
-@AssistedInject(FooBarFactory)
-class FooBar {
+@AssistedInject(AnnotatedClassFactory)
+class AnnotatedClass {
   final Foo foo;
   final Bar bar;
 
-  const FooBar(this.foo, {@assisted required this.bar});
+  const AnnotatedClass(this.foo, {@assisted required this.bar});
 }
 
 @assistedFactory
-abstract class FooBarFactory {
-  FooBar create({required Bar bar});
+abstract class AnnotatedClassFactory {
+  AnnotatedClass create({required Bar bar});
+}
+
+class AnnotatedConstructor {
+  final Foo foo;
+  final Bar bar;
+
+  @AssistedInject(AnnotatedConstructorFactory)
+  const AnnotatedConstructor(this.foo, {@assisted required this.bar});
+}
+
+@assistedFactory
+abstract class AnnotatedConstructorFactory {
+  AnnotatedConstructor create({required Bar bar});
 }
 
 @inject

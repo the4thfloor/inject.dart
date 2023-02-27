@@ -220,50 +220,88 @@ void main() {
         component.clazz,
         SymbolPath(rootPackage, testFilePath, 'Component'),
       );
-      expect(component.providers.length, 1);
-      expect(component.providers[0].name, 'fooBarFactory');
+      expect(component.providers.length, 2);
+      expect(component.providers[0].name, 'annotatedClassFactory');
       expect(
         component.providers[0].injectedType.lookupKey.root,
-        SymbolPath(rootPackage, testFilePath, 'FooBarFactory'),
+        SymbolPath(rootPackage, testFilePath, 'AnnotatedClassFactory'),
+      );
+      expect(component.providers[1].name, 'annotatedConstructorFactory');
+      expect(
+        component.providers[1].injectedType.lookupKey.root,
+        SymbolPath(rootPackage, testFilePath, 'AnnotatedConstructorFactory'),
       );
 
-      expect(summary.injectables.length, 2);
-      final injectable0 = summary.injectables[0];
-      final injectable1 = summary.injectables[1];
+      /////
+
+      expect(summary.injectables.length, 3);
+      final annotatedClass = summary.injectables[0];
+      final annotatedConstructor = summary.injectables[1];
+      final foo = summary.injectables[2];
 
       expect(
-        injectable0.clazz,
-        SymbolPath(rootPackage, testFilePath, 'FooBar'),
+        annotatedClass.clazz,
+        SymbolPath(rootPackage, testFilePath, 'AnnotatedClass'),
       );
       expect(
-        injectable0.constructor.factory!.root,
-        SymbolPath(rootPackage, testFilePath, 'FooBarFactory'),
+        annotatedClass.factory!.root,
+        SymbolPath(rootPackage, testFilePath, 'AnnotatedClassFactory'),
       );
-      expect(injectable0.constructor.dependencies.length, 2);
+      expect(annotatedClass.constructor.dependencies.length, 2);
       expect(
-        injectable0.constructor.dependencies[0].lookupKey.root,
+        annotatedClass.constructor.dependencies[0].lookupKey.root,
         SymbolPath(rootPackage, testFilePath, 'Foo'),
       );
       expect(
-        injectable0.constructor.dependencies[0].isAssisted,
+        annotatedClass.constructor.dependencies[0].isAssisted,
         false,
       );
       expect(
-        injectable0.constructor.dependencies[1].lookupKey.root,
+        annotatedClass.constructor.dependencies[1].lookupKey.root,
         SymbolPath(rootPackage, testFilePath, 'Bar'),
       );
       expect(
-        injectable0.constructor.dependencies[1].isAssisted,
+        annotatedClass.constructor.dependencies[1].isAssisted,
         true,
       );
 
-      expect(injectable1.clazz, SymbolPath(rootPackage, testFilePath, 'Foo'));
-      expect(injectable1.constructor.factory, isNull);
+      expect(
+        annotatedConstructor.clazz,
+        SymbolPath(rootPackage, testFilePath, 'AnnotatedConstructor'),
+      );
+      expect(
+        annotatedConstructor.factory!.root,
+        SymbolPath(rootPackage, testFilePath, 'AnnotatedConstructorFactory'),
+      );
+      expect(annotatedConstructor.constructor.dependencies.length, 2);
+      expect(
+        annotatedConstructor.constructor.dependencies[0].lookupKey.root,
+        SymbolPath(rootPackage, testFilePath, 'Foo'),
+      );
+      expect(
+        annotatedConstructor.constructor.dependencies[0].isAssisted,
+        false,
+      );
+      expect(
+        annotatedConstructor.constructor.dependencies[1].lookupKey.root,
+        SymbolPath(rootPackage, testFilePath, 'Bar'),
+      );
+      expect(
+        annotatedConstructor.constructor.dependencies[1].isAssisted,
+        true,
+      );
 
-      expect(summary.factories.length, 1);
+      expect(foo.clazz, SymbolPath(rootPackage, testFilePath, 'Foo'));
+      expect(foo.factory, isNull);
+
+      expect(summary.factories.length, 2);
       expect(
         summary.factories[0].clazz,
-        SymbolPath(rootPackage, testFilePath, 'FooBarFactory'),
+        SymbolPath(rootPackage, testFilePath, 'AnnotatedClassFactory'),
+      );
+      expect(
+        summary.factories[1].clazz,
+        SymbolPath(rootPackage, testFilePath, 'AnnotatedConstructorFactory'),
       );
 
       final asset = stb.content.entries.first;
