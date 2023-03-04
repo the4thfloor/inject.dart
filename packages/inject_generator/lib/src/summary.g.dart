@@ -7,14 +7,27 @@ part of inject.src.summary;
 // **************************************************************************
 
 ComponentSummary _$ComponentSummaryFromJson(Map<String, dynamic> json) =>
-    ComponentSummary(
-      SymbolPath.fromJson(json['clazz'] as Map<String, dynamic>),
-      (json['modules'] as List<dynamic>)
-          .map((e) => SymbolPath.fromJson(e as Map<String, dynamic>))
-          .toList(),
-      (json['providers'] as List<dynamic>)
-          .map((e) => ProviderSummary.fromJson(e as Map<String, dynamic>))
-          .toList(),
+    $checkedCreate(
+      'ComponentSummary',
+      json,
+      ($checkedConvert) {
+        final val = ComponentSummary(
+          $checkedConvert(
+              'clazz', (v) => SymbolPath.fromJson(v as Map<String, dynamic>)),
+          $checkedConvert(
+              'modules',
+              (v) => (v as List<dynamic>)
+                  .map((e) => SymbolPath.fromJson(e as Map<String, dynamic>))
+                  .toList()),
+          $checkedConvert(
+              'providers',
+              (v) => (v as List<dynamic>)
+                  .map((e) =>
+                      ProviderSummary.fromJson(e as Map<String, dynamic>))
+                  .toList()),
+        );
+        return val;
+      },
     );
 
 Map<String, dynamic> _$ComponentSummaryToJson(ComponentSummary instance) =>
@@ -25,9 +38,18 @@ Map<String, dynamic> _$ComponentSummaryToJson(ComponentSummary instance) =>
     };
 
 FactorySummary _$FactorySummaryFromJson(Map<String, dynamic> json) =>
-    FactorySummary(
-      SymbolPath.fromJson(json['clazz'] as Map<String, dynamic>),
-      FactoryMethodSummary.fromJson(json['factory'] as Map<String, dynamic>),
+    $checkedCreate(
+      'FactorySummary',
+      json,
+      ($checkedConvert) {
+        final val = FactorySummary(
+          $checkedConvert(
+              'clazz', (v) => SymbolPath.fromJson(v as Map<String, dynamic>)),
+          $checkedConvert('factory',
+              (v) => FactoryMethodSummary.fromJson(v as Map<String, dynamic>)),
+        );
+        return val;
+      },
     );
 
 Map<String, dynamic> _$FactorySummaryToJson(FactorySummary instance) =>
@@ -38,12 +60,22 @@ Map<String, dynamic> _$FactorySummaryToJson(FactorySummary instance) =>
 
 FactoryMethodSummary _$FactoryMethodSummaryFromJson(
         Map<String, dynamic> json) =>
-    FactoryMethodSummary(
-      json['name'] as String,
-      InjectedType.fromJson(json['createdType'] as Map<String, dynamic>),
-      (json['parameters'] as List<dynamic>)
-          .map((e) => InjectedType.fromJson(e as Map<String, dynamic>))
-          .toList(),
+    $checkedCreate(
+      'FactoryMethodSummary',
+      json,
+      ($checkedConvert) {
+        final val = FactoryMethodSummary(
+          $checkedConvert('name', (v) => v as String),
+          $checkedConvert('createdType',
+              (v) => InjectedType.fromJson(v as Map<String, dynamic>)),
+          $checkedConvert(
+              'parameters',
+              (v) => (v as List<dynamic>)
+                  .map((e) => InjectedType.fromJson(e as Map<String, dynamic>))
+                  .toList()),
+        );
+        return val;
+      },
     );
 
 Map<String, dynamic> _$FactoryMethodSummaryToJson(
@@ -55,12 +87,23 @@ Map<String, dynamic> _$FactoryMethodSummaryToJson(
     };
 
 InjectableSummary _$InjectableSummaryFromJson(Map<String, dynamic> json) =>
-    InjectableSummary(
-      SymbolPath.fromJson(json['clazz'] as Map<String, dynamic>),
-      ProviderSummary.fromJson(json['constructor'] as Map<String, dynamic>),
-      json['factory'] == null
-          ? null
-          : LookupKey.fromJson(json['factory'] as Map<String, dynamic>),
+    $checkedCreate(
+      'InjectableSummary',
+      json,
+      ($checkedConvert) {
+        final val = InjectableSummary(
+          $checkedConvert(
+              'clazz', (v) => SymbolPath.fromJson(v as Map<String, dynamic>)),
+          $checkedConvert('constructor',
+              (v) => ProviderSummary.fromJson(v as Map<String, dynamic>)),
+          $checkedConvert(
+              'factory',
+              (v) => v == null
+                  ? null
+                  : LookupKey.fromJson(v as Map<String, dynamic>)),
+        );
+        return val;
+      },
     );
 
 Map<String, dynamic> _$InjectableSummaryToJson(InjectableSummary instance) =>
@@ -71,25 +114,47 @@ Map<String, dynamic> _$InjectableSummaryToJson(InjectableSummary instance) =>
     };
 
 LibrarySummary _$LibrarySummaryFromJson(Map<String, dynamic> json) =>
-    LibrarySummary(
-      Uri.parse(json['assetUri'] as String),
-      components: (json['components'] as List<dynamic>?)
-              ?.map((e) => ComponentSummary.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          const [],
-      modules: (json['modules'] as List<dynamic>?)
-              ?.map((e) => ModuleSummary.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          const [],
-      injectables: (json['injectables'] as List<dynamic>?)
-              ?.map(
-                  (e) => InjectableSummary.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          const [],
-      factories: (json['factories'] as List<dynamic>?)
-              ?.map((e) => FactorySummary.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          const [],
+    $checkedCreate(
+      'LibrarySummary',
+      json,
+      ($checkedConvert) {
+        final val = LibrarySummary(
+          $checkedConvert('assetUri', (v) => Uri.parse(v as String)),
+          components: $checkedConvert(
+              'components',
+              (v) =>
+                  (v as List<dynamic>?)
+                      ?.map((e) =>
+                          ComponentSummary.fromJson(e as Map<String, dynamic>))
+                      .toList() ??
+                  const []),
+          modules: $checkedConvert(
+              'modules',
+              (v) =>
+                  (v as List<dynamic>?)
+                      ?.map((e) =>
+                          ModuleSummary.fromJson(e as Map<String, dynamic>))
+                      .toList() ??
+                  const []),
+          injectables: $checkedConvert(
+              'injectables',
+              (v) =>
+                  (v as List<dynamic>?)
+                      ?.map((e) =>
+                          InjectableSummary.fromJson(e as Map<String, dynamic>))
+                      .toList() ??
+                  const []),
+          factories: $checkedConvert(
+              'factories',
+              (v) =>
+                  (v as List<dynamic>?)
+                      ?.map((e) =>
+                          FactorySummary.fromJson(e as Map<String, dynamic>))
+                      .toList() ??
+                  const []),
+        );
+        return val;
+      },
     );
 
 Map<String, dynamic> _$LibrarySummaryToJson(LibrarySummary instance) =>
@@ -102,12 +167,23 @@ Map<String, dynamic> _$LibrarySummaryToJson(LibrarySummary instance) =>
     };
 
 ModuleSummary _$ModuleSummaryFromJson(Map<String, dynamic> json) =>
-    ModuleSummary(
-      SymbolPath.fromJson(json['clazz'] as Map<String, dynamic>),
-      json['hasDefaultConstructor'] as bool,
-      (json['providers'] as List<dynamic>)
-          .map((e) => ProviderSummary.fromJson(e as Map<String, dynamic>))
-          .toList(),
+    $checkedCreate(
+      'ModuleSummary',
+      json,
+      ($checkedConvert) {
+        final val = ModuleSummary(
+          $checkedConvert(
+              'clazz', (v) => SymbolPath.fromJson(v as Map<String, dynamic>)),
+          $checkedConvert('hasDefaultConstructor', (v) => v as bool),
+          $checkedConvert(
+              'providers',
+              (v) => (v as List<dynamic>)
+                  .map((e) =>
+                      ProviderSummary.fromJson(e as Map<String, dynamic>))
+                  .toList()),
+        );
+        return val;
+      },
     );
 
 Map<String, dynamic> _$ModuleSummaryToJson(ModuleSummary instance) =>
@@ -118,14 +194,30 @@ Map<String, dynamic> _$ModuleSummaryToJson(ModuleSummary instance) =>
     };
 
 ProviderSummary _$ProviderSummaryFromJson(Map<String, dynamic> json) =>
-    ProviderSummary(
-      json['name'] as String,
-      $enumDecode(_$ProviderKindEnumMap, json['kind']),
-      InjectedType.fromJson(json['injectedType'] as Map<String, dynamic>),
-      dependencies: (json['dependencies'] as List<dynamic>?)
-              ?.map((e) => InjectedType.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          const [],
+    $checkedCreate(
+      'ProviderSummary',
+      json,
+      ($checkedConvert) {
+        final val = ProviderSummary(
+          $checkedConvert('name', (v) => v as String),
+          $checkedConvert('kind', (v) => $enumDecode(_$ProviderKindEnumMap, v)),
+          $checkedConvert('injectedType',
+              (v) => InjectedType.fromJson(v as Map<String, dynamic>)),
+          isSingleton:
+              $checkedConvert('isSingleton', (v) => v as bool? ?? false),
+          isAsynchronous:
+              $checkedConvert('isAsynchronous', (v) => v as bool? ?? false),
+          dependencies: $checkedConvert(
+              'dependencies',
+              (v) =>
+                  (v as List<dynamic>?)
+                      ?.map((e) =>
+                          InjectedType.fromJson(e as Map<String, dynamic>))
+                      .toList() ??
+                  const []),
+        );
+        return val;
+      },
     );
 
 Map<String, dynamic> _$ProviderSummaryToJson(ProviderSummary instance) =>
@@ -133,6 +225,8 @@ Map<String, dynamic> _$ProviderSummaryToJson(ProviderSummary instance) =>
       'name': instance.name,
       'kind': _$ProviderKindEnumMap[instance.kind]!,
       'injectedType': instance.injectedType,
+      'isSingleton': instance.isSingleton,
+      'isAsynchronous': instance.isAsynchronous,
       'dependencies': instance.dependencies,
     };
 

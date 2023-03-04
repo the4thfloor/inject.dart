@@ -337,19 +337,17 @@ class _ProviderSummaryVisitor extends InjectClassVisitor {
       return;
     }
 
-    final returnType = asynchronous
-        ? (method.returnType as ParameterizedType).typeArguments.single
-        : method.returnType;
+    final returnType = method.returnType;
 
-    // if (!isForComponent && returnType is FunctionType) {
-    //   builderContext.log.severe(
-    //       method,
-    //       'Modules are not allowed to provide a function type () -> Type. '
-    //       'The inject library prohibits this to avoid confusion '
-    //       'with injecting providers of injectable types. '
-    //       'Your provider method will not be used.');
-    //   return;
-    // }
+    if (!isForComponent && returnType is FunctionType) {
+      builderContext.log.severe(
+          method,
+          'Modules are not allowed to provide a function type () -> Type. '
+          'The inject library prohibits this to avoid confusion '
+          'with injecting providers of injectable types. '
+          'Your provider method will not be used.');
+      return;
+    }
 
     if (!_checkReturnType(method, returnType.element!)) {
       return;
@@ -359,8 +357,8 @@ class _ProviderSummaryVisitor extends InjectClassVisitor {
       method.name,
       ProviderKind.method,
       getInjectedType(returnType, qualifier: qualifier),
-      singleton: singleton,
-      asynchronous: asynchronous,
+      isSingleton: singleton,
+      isAsynchronous: asynchronous,
       dependencies: method.parameters
           .map((p) {
             if (isForComponent) {
@@ -407,7 +405,7 @@ class _ProviderSummaryVisitor extends InjectClassVisitor {
       field.name,
       ProviderKind.getter,
       getInjectedType(returnType, qualifier: qualifier),
-      singleton: singleton,
+      isSingleton: singleton,
       dependencies: const [],
     );
     _providers.add(summary);
@@ -443,7 +441,7 @@ ProviderSummary _createConstructorProviderSummary(
     element.name,
     ProviderKind.constructor,
     getInjectedType(returnType),
-    singleton: isSingleton,
+    isSingleton: isSingleton,
     dependencies: element.parameters
         .map((p) {
           SymbolPath? qualifier;

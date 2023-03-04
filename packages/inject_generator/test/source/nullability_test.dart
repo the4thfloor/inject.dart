@@ -24,7 +24,7 @@ void main() {
       expect(summary.components.length, 1);
       expect(
         summary.components[0].clazz,
-        SymbolPath(rootPackage, testFilePath, 'ComponentNullability'),
+        const SymbolPath(rootPackage, testFilePath, 'ComponentNullability'),
       );
 
       expect(summary.components[0].providers.length, 3);
@@ -32,7 +32,7 @@ void main() {
       expect(summary.components[0].providers[0].name, 'fooBar');
       expect(
         summary.components[0].providers[0].injectedType.lookupKey.root,
-        SymbolPath(rootPackage, testFilePath, 'FooBar'),
+        const SymbolPath(rootPackage, testFilePath, 'FooBar'),
       );
       expect(
         summary.components[0].providers[0].injectedType.isNullable,
@@ -42,7 +42,7 @@ void main() {
       expect(summary.components[0].providers[1].name, 'foo');
       expect(
         summary.components[0].providers[1].injectedType.lookupKey.root,
-        SymbolPath(rootPackage, testFilePath, 'Foo'),
+        const SymbolPath(rootPackage, testFilePath, 'Foo'),
       );
       expect(
         summary.components[0].providers[1].injectedType.isNullable,
@@ -52,7 +52,7 @@ void main() {
       expect(summary.components[0].providers[2].name, 'bar');
       expect(
         summary.components[0].providers[2].injectedType.lookupKey.root,
-        SymbolPath(rootPackage, testFilePath, 'Bar'),
+        const SymbolPath(rootPackage, testFilePath, 'Bar'),
       );
       expect(
         summary.components[0].providers[2].injectedType.isNullable,

@@ -49,7 +49,9 @@ class SymbolPath implements Comparable<SymbolPath> {
   /// Path to the `@Asynchronous` annotation.
   static const SymbolPath asynchronous = SymbolPath._standard('Asynchronous');
 
-  static const String _dartExtension = '.dart';
+  /// Path to the `async Future` type.
+  static const SymbolPath feature = SymbolPath.dartSdk('async', 'Future');
+
   static const String _dartPackage = 'dart';
 
   /// An alias to `new SymbolPath.fromAbsoluteUri(Uri.parse(...))`.
@@ -87,41 +89,20 @@ class SymbolPath implements Comparable<SymbolPath> {
   /// [symbol] is the symbol defined in the library.
   ///
   /// [package], [path] and [symbol] must not be `null` or empty.
-  factory SymbolPath(String package, String path, String symbol) {
-    if (package.isEmpty) {
-      throw ArgumentError.value(
-        package,
-        'package',
-        'Non-empty value required',
-      );
-    }
-    if (path.isEmpty ||
-        package != _dartPackage && !path.endsWith(_dartExtension)) {
-      throw ArgumentError.value(
-        path,
-        'path',
-        'Must have a .dart extension',
-      );
-    }
-    if (symbol.isEmpty) {
-      throw ArgumentError.value(
-        symbol,
-        'symbol',
-        'Non-empty value required',
-      );
-    }
-    return SymbolPath._(package, path, symbol);
-  }
+  const SymbolPath(this.package, this.path, this.symbol);
 
   /// Within the dart SDK, reference [symbol] found at [path].
-  factory SymbolPath.dartSdk(String path, String symbol) {
-    return SymbolPath(_dartPackage, path, symbol);
-  }
+  const SymbolPath.dartSdk(this.path, this.symbol) : package = _dartPackage;
 
   /// Defines a global symbol that is not scoped to a package/path.
   const SymbolPath.global(this.symbol)
       : package = null,
         path = null;
+
+  /// For standard annotations defined by `package:inject`.
+  const SymbolPath._standard(this.symbol)
+      : package = 'inject',
+        path = 'lib/src/api/annotations.dart';
 
   /// Create a [SymbolPath] using [assetUri].
   factory SymbolPath.fromAbsoluteUri(Uri assetUri, [String? symbolName]) {
@@ -171,12 +152,6 @@ class SymbolPath implements Comparable<SymbolPath> {
             pathSegments: outSegments,
           );
   }
-
-  /// For standard annotations defined by `package:inject`.
-  const SymbolPath._standard(String symbol)
-      : this._('inject', 'lib/src/api/annotations.dart', symbol);
-
-  const SymbolPath._(this.package, this.path, this.symbol);
 
   /// Whether the [path] points within the Dart SDK, not a pub package.
   bool get isDartSdk => package == _dartPackage;

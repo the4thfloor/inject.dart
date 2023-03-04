@@ -28,6 +28,9 @@ abstract class ResolvedDependency {
   /// Whether or not this dependency is a singleton.
   final bool isSingleton;
 
+  /// Whether this provider is annotated with `@asynchronous`.
+  final bool isAsynchronous;
+
   /// Transitive dependencies.
   final List<InjectedType> dependencies;
 
@@ -36,6 +39,7 @@ abstract class ResolvedDependency {
     this.lookupKey,
     this.isNullable,
     this.isSingleton,
+    this.isAsynchronous,
     this.dependencies,
   );
 
@@ -58,17 +62,14 @@ class DependencyProvidedByModule extends ResolvedDependency {
   /// Name of the method in the class.
   final String methodName;
 
-  /// Whether this provider is annotated with `@asynchronous`.
-  final bool isAsynchronous;
-
   DependencyProvidedByModule._(
     super.lookupKey,
     super.isNullable,
     super.isSingleton,
+    super.isAsynchronous,
     super.dependencies,
     this.moduleClass,
     this.methodName,
-    this.isAsynchronous,
   );
 }
 
@@ -82,6 +83,7 @@ class DependencyProvidedByInjectable extends ResolvedDependency {
           summary.constructor.injectedType.lookupKey,
           false,
           summary.constructor.isSingleton,
+          false,
           summary.constructor.dependencies,
         );
 }
@@ -97,6 +99,7 @@ class DependencyProvidedByFactory extends ResolvedDependency {
   DependencyProvidedByFactory._(this.summary, this.injectable)
       : super(
           LookupKey(summary.clazz),
+          false,
           false,
           false,
           injectable.constructor.dependencies,
@@ -119,4 +122,49 @@ class ComponentGraph {
     this.providers,
     this.mergedDependencies,
   );
+
+  void debug() {
+    final buffer = StringBuffer()
+      ..writeln('graph:')
+      ..writeln('   includeModules:');
+
+    for (final summary in includeModules) {
+      buffer
+        ..writeln('      module:')
+        ..writeln('         ${summary.clazz.symbol}')
+        ..writeln('      provides:')
+        ..writeAll(
+          summary.providers
+              .map(
+                (provider) => provider.injectedType.lookupKey.toPrettyString(),
+              )
+              .map((className) => '         $className\n'),
+        );
+    }
+
+    buffer
+      ..writeln('   providers:')
+      ..writeln('      injectedType:')
+      ..writeAll(
+        providers.map(
+          (summary) =>
+              '         ${summary.injectedType.lookupKey.toPrettyString()}\n',
+        ),
+      )
+      ..writeln('   mergedDependencies:');
+
+    for (final dependency in mergedDependencies.values) {
+      buffer
+        ..writeln('      dependency:')
+        ..writeln('         ${dependency.lookupKey.toPrettyString()}')
+        ..writeln('         depends on::')
+        ..writeAll(
+          dependency.dependencies
+              .map((injectedType) => injectedType.lookupKey.toPrettyString())
+              .map((className) => '            $className\n'),
+        );
+    }
+
+    print(buffer);
+  }
 }

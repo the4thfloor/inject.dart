@@ -25,7 +25,7 @@ void main() {
 
       expect(
         injectables[0].clazz,
-        SymbolPath(rootPackage, testFilePath, 'Inject1'),
+        const SymbolPath(rootPackage, testFilePath, 'Inject1'),
       );
 
       expect(injectables[0].constructor.dependencies.length, 3);
@@ -46,7 +46,7 @@ void main() {
       expect(modules.length, 1);
       expect(
         modules[0].clazz,
-        SymbolPath(rootPackage, testFilePath, 'Inject2Module'),
+        const SymbolPath(rootPackage, testFilePath, 'Inject2Module'),
       );
 
       expect(modules[0].providers.length, 1);

@@ -68,6 +68,7 @@ class InjectCodegenBuilder extends AbstractInjectBuilder {
       // summary and get back an object graph.
       final resolver = ComponentGraphResolver(reader, component);
       final graph = await resolver.resolve();
+      // graph.debug();
 
       // Add to the file.
       final tuple =
@@ -331,7 +332,7 @@ class _ComponentBuilder {
       final resolved = _visitedPreInstantiations.firstWhere(
         (element) => element.lookupKey == provider.injectedType.lookupKey,
       );
-      final asFuture = resolved.isAsynchronous(_visitedPreInstantiations);
+      final asFuture = resolved.asynchronous(_visitedPreInstantiations);
 
       // TODO: show warning if injected type and dep type are not both
       // asynchronous or both not asynchronous
@@ -354,10 +355,10 @@ class _ComponentBuilder {
 
       final providerClassName =
           _providerClassName(provider.injectedType.lookupKey).decapitalize();
-      final isProvider = provider.injectedType.isProvider;
-      final ref = isProvider
+      final ref = provider.injectedType.isProvider
           ? refer(providerClassName)
           : refer('$providerClassName.get()');
+
       final method = MethodBuilder()
         ..name = provider.methodName
         ..returns = returnType
@@ -412,15 +413,12 @@ class _ProviderBuilder {
   /// Fields to hold references to dependencies used by the provider.
   final List<FieldBuilder> fields = <FieldBuilder>[];
 
-  /// The field names used for the dependencies.
-  // final Map<InjectedType, String> fieldNames = <InjectedType, String>{};
-
   factory _ProviderBuilder(
     Uri libraryUri,
     ResolvedDependency dependency,
     Set<ResolvedDependency> dependencies,
   ) {
-    final isAsynchronous = dependency.isAsynchronous(dependencies);
+    final isAsynchronous = dependency.asynchronous(dependencies);
     return _ProviderBuilder._(
       libraryUri,
       dependency,
@@ -533,8 +531,9 @@ class _ProviderBuilder {
     final namedArguments = <String, Expression>{};
 
     for (final injected in dep.dependencies.where((dep) => !dep.isAssisted)) {
-      final resolved =
-          dependencies.firstWhere((dep) => dep.lookupKey == injected.lookupKey);
+      final resolved = dependencies.firstWhere(
+        (dep) => dep.lookupKey == injected.lookupKey,
+      );
       final resolvedIsNullable = resolved.isNullable;
       final injectedIsNullable = injected.isNullable;
       if (!injectedIsNullable && resolvedIsNullable) {
@@ -549,7 +548,7 @@ class _ProviderBuilder {
       final fieldName = type.decapitalize();
       final isProvider = injected.isProvider;
       final ref = isProvider ? refer(fieldName) : refer('$fieldName.get()');
-      final isAsynchronous = injected.isAsynchronous(dependencies);
+      final isAsynchronous = injected.asynchronous(dependencies);
       if (injected.isNamed) {
         namedArguments[injected.name!] = isAsynchronous ? ref.awaited : ref;
       } else {
@@ -587,7 +586,7 @@ class _ProviderBuilder {
       final fieldName = type.decapitalize();
       final isProvider = injected.isProvider;
       final ref = isProvider ? refer(fieldName) : refer('$fieldName.get()');
-      final isAsynchronous = injected.isAsynchronous(dependencies);
+      final isAsynchronous = injected.asynchronous(dependencies);
       if (injected.isNamed) {
         namedArguments[injected.name!] = isAsynchronous ? ref.awaited : ref;
       } else {
@@ -661,7 +660,7 @@ class _FactoryBuilder {
     Set<ResolvedDependency> dependencies,
   ) {
     final factoryClassName = _factoryClassName(dependency.lookupKey);
-    final isAsynchronous = dependency.isAsynchronous(dependencies);
+    final isAsynchronous = dependency.asynchronous(dependencies);
     return _FactoryBuilder._(
       libraryUri,
       dependency,
@@ -728,7 +727,7 @@ class _FactoryBuilder {
       }
 
       final isProvider = injected.isProvider;
-      final isAsynchronous = injected.isAsynchronous(dependencies);
+      final isAsynchronous = injected.asynchronous(dependencies);
 
       Expression argRef;
       if (isAssisted) {
@@ -793,11 +792,13 @@ class _FactoryBuilder {
   }
 }
 
-String _providerClassName(LookupKey key) => '_${key.toClassName()}\$Provider';
+String _providerClassName(LookupKey key) =>
+    '_${key.toClassName().capitalize()}\$Provider';
 
-String _factoryClassName(LookupKey key) => '_${key.toClassName()}\$Factory';
+String _factoryClassName(LookupKey key) =>
+    '_${key.toClassName().capitalize()}\$Factory';
 
-Reference _referenceForType(
+TypeReference _referenceForType(
   Uri libraryUri,
   InjectedType injectedType, {
   bool asFuture = false,
@@ -806,12 +807,11 @@ Reference _referenceForType(
   if (injectedType.isNullable) {
     keyReference = keyReference.toNullable();
   }
+  if (asFuture || injectedType.isFeature) {
+    keyReference = keyReference.toFuture();
+  }
   if (injectedType.isProvider) {
-    return FunctionType(
-      (functionType) => functionType..returnType = keyReference,
-    );
-  } else if (asFuture || injectedType.isFeature) {
-    return keyReference.toFuture();
+    keyReference = keyReference.toProvider();
   }
   return keyReference;
 }
@@ -842,29 +842,28 @@ TypeReference _reference(Uri libraryUri, SymbolPath symbolPath) =>
 
 extension _ResolvedDependencyExtension on ResolvedDependency {
   /// Whether this or one of its dependencies is asynchronous.
-  /// [dependencies] list of all known dependencies to look up.
-  bool isAsynchronous(Set<ResolvedDependency> dependencies) {
-    final dependency = this;
-    if (dependency is DependencyProvidedByModule && dependency.isAsynchronous) {
+  /// [knownDependencies] list of all known dependencies to look up.
+  bool asynchronous(Set<ResolvedDependency> knownDependencies) {
+    if (isAsynchronous) {
       return true;
     }
 
-    return dependency.dependencies
+    return dependencies
         .where((dep) => !dep.isAssisted)
         .map(
-          (dep) => dependencies.firstWhereOrNull(
+          (dep) => knownDependencies.firstWhereOrNull(
             (element) => dep.lookupKey == element.lookupKey,
           ),
         )
-        .any((dep) => dep?.isAsynchronous(dependencies) ?? false);
+        .any((dep) => dep?.asynchronous(knownDependencies) ?? false);
   }
 }
 
 extension _InjectedTypeExtension on InjectedType {
-  bool isAsynchronous(Set<ResolvedDependency> dependencies) {
+  bool asynchronous(Set<ResolvedDependency> dependencies) {
     return dependencies
             .firstWhereOrNull((element) => lookupKey == element.lookupKey)
-            ?.isAsynchronous(dependencies) ??
+            ?.asynchronous(dependencies) ??
         false;
   }
 }
@@ -872,19 +871,31 @@ extension _InjectedTypeExtension on InjectedType {
 extension _TypeReferenceExtension on TypeReference {
   TypeReference toNullable() => (toBuilder()..isNullable = true).build();
 
-  TypeReference toFuture() => TypeReference(
-        (b) => b
-          ..symbol = 'Future'
-          ..url = 'dart:async'
-          ..types.add(this),
-      );
+  TypeReference toFuture() {
+    if (symbol == 'Future' && url == 'dart:async') {
+      return this;
+    }
 
-  TypeReference toProvider() => TypeReference(
-        (b) => b
-          ..symbol = 'Provider'
-          ..url = 'package:inject/inject.dart'
-          ..types.add(this),
-      );
+    return TypeReference(
+      (b) => b
+        ..symbol = 'Future'
+        ..url = 'dart:async'
+        ..types.add(this),
+    );
+  }
+
+  TypeReference toProvider() {
+    if (symbol == 'Provider' && url == 'package:inject/inject.dart') {
+      return this;
+    }
+
+    return TypeReference(
+      (b) => b
+        ..symbol = 'Provider'
+        ..url = 'package:inject/inject.dart'
+        ..types.add(this),
+    );
+  }
 }
 
 extension Capitalize on String {

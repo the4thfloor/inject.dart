@@ -6,15 +6,24 @@ part of 'injected_type.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-InjectedType _$InjectedTypeFromJson(Map<String, dynamic> json) => InjectedType(
-      LookupKey.fromJson(json['lookupKey'] as Map<String, dynamic>),
-      name: json['name'] as String?,
-      isNullable: json['isNullable'] as bool?,
-      isRequired: json['isRequired'] as bool?,
-      isNamed: json['isNamed'] as bool?,
-      isProvider: json['isProvider'] as bool?,
-      isFeature: json['isFeature'] as bool?,
-      isAssisted: json['isAssisted'] as bool?,
+InjectedType _$InjectedTypeFromJson(Map<String, dynamic> json) =>
+    $checkedCreate(
+      'InjectedType',
+      json,
+      ($checkedConvert) {
+        final val = InjectedType(
+          $checkedConvert('lookupKey',
+              (v) => LookupKey.fromJson(v as Map<String, dynamic>)),
+          name: $checkedConvert('name', (v) => v as String?),
+          isNullable: $checkedConvert('isNullable', (v) => v as bool?),
+          isRequired: $checkedConvert('isRequired', (v) => v as bool?),
+          isNamed: $checkedConvert('isNamed', (v) => v as bool?),
+          isProvider: $checkedConvert('isProvider', (v) => v as bool?),
+          isFeature: $checkedConvert('isFeature', (v) => v as bool?),
+          isAssisted: $checkedConvert('isAssisted', (v) => v as bool?),
+        );
+        return val;
+      },
     );
 
 Map<String, dynamic> _$InjectedTypeToJson(InjectedType instance) =>

@@ -111,10 +111,10 @@ class ComponentGraphResolver {
           lookupKey,
           provider.injectedType.isNullable,
           provider.isSingleton,
+          provider.isAsynchronous,
           provider.dependencies,
           module.clazz,
           provider.name,
-          provider.isAsynchronous,
         );
       }
     }

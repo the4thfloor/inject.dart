@@ -75,16 +75,16 @@ class ProviderSummary {
     String name,
     ProviderKind kind,
     InjectedType injectedType, {
-    bool singleton = false,
-    bool asynchronous = false,
+    bool isSingleton = false,
+    bool isAsynchronous = false,
     List<InjectedType> dependencies = const [],
   }) {
     return ProviderSummary._(
       name,
       kind,
       injectedType,
-      singleton,
-      asynchronous,
+      isSingleton,
+      isAsynchronous,
       List<InjectedType>.unmodifiable(dependencies),
     );
   }

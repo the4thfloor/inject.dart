@@ -57,17 +57,6 @@ class _LibraryVisitor extends RecursiveElementVisitor<void> {
 
   _LibraryVisitor(this._injectLibraryVisitor);
 
-  // @override
-  // void visitLibraryImportElement(LibraryImportElement element) {
-  //   print('import: ${element.importedLibrary?.source.uri}');
-  //   element.importedLibrary?.exportedLibraries.forEach((element) {
-  //     print('exportedLibraries: ${element.source.uri}');
-  //     element.exportedLibraries.forEach((element) {
-  //       print('  exportedLibraries: ${element.source.uri}');
-  //     });
-  //   });
-  // }
-
   @override
   void visitClassElement(ClassElement element) {
     var isInjectable = false;

@@ -48,7 +48,7 @@ void main() {
           LookupKey(SymbolPath.parseAbsoluteUri('asset:foo/foo.dart#Foo')),
         );
         final componentSummary = ComponentSummary(
-          SymbolPath('foo', 'foo.dart', 'FooComponent'),
+          const SymbolPath('foo', 'foo.dart', 'FooComponent'),
           [SymbolPath.parseAbsoluteUri('asset:foo/foo.dart#FooModule')],
           [
             ProviderSummary(
@@ -82,7 +82,7 @@ void main() {
           ),
         );
         final componentSummary = ComponentSummary(
-          SymbolPath('foo', 'foo.dart', 'FooComponent'),
+          const SymbolPath('foo', 'foo.dart', 'FooComponent'),
           [
             SymbolPath.parseAbsoluteUri('asset:foo/foo.dart#FooModule'),
           ],
@@ -157,10 +157,10 @@ void main() {
 
   group('$Cycle', () {
     test('has order-independent hashCode and operator==', () {
-      final sA = LookupKey(SymbolPath('package', 'path.dart', 'A'));
-      final sB = LookupKey(SymbolPath('package', 'path.dart', 'B'));
-      final sC = LookupKey(SymbolPath('package', 'path.dart', 'C'));
-      final sD = LookupKey(SymbolPath('package', 'path.dart', 'D'));
+      const sA = LookupKey(SymbolPath('package', 'path.dart', 'A'));
+      const sB = LookupKey(SymbolPath('package', 'path.dart', 'B'));
+      const sC = LookupKey(SymbolPath('package', 'path.dart', 'C'));
+      const sD = LookupKey(SymbolPath('package', 'path.dart', 'D'));
 
       final cycle1 = Cycle([sA, sB, sC, sA]);
       final cycle2 = Cycle([sB, sC, sA, sB]);

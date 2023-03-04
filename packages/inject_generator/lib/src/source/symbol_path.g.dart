@@ -6,10 +6,17 @@ part of 'symbol_path.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-SymbolPath _$SymbolPathFromJson(Map<String, dynamic> json) => SymbolPath(
-      json['package'] as String,
-      json['path'] as String,
-      json['symbol'] as String,
+SymbolPath _$SymbolPathFromJson(Map<String, dynamic> json) => $checkedCreate(
+      'SymbolPath',
+      json,
+      ($checkedConvert) {
+        final val = SymbolPath(
+          $checkedConvert('package', (v) => v as String?),
+          $checkedConvert('path', (v) => v as String?),
+          $checkedConvert('symbol', (v) => v as String),
+        );
+        return val;
+      },
     );
 
 Map<String, dynamic> _$SymbolPathToJson(SymbolPath instance) =>

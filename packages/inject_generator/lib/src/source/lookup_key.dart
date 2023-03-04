@@ -58,8 +58,20 @@ class LookupKey {
   String toClassName() {
     final qualifierString = qualifier != null ? qualifier!.symbol : '';
     final typeArgumentsString =
-        typeArguments?.map((e) => e.symbol).join() ?? '';
+        typeArguments?.map((e) => e.symbol.capitalize()).join() ?? '';
     return '${root.symbol}${qualifierString.capitalize()}$typeArgumentsString';
+  }
+
+  LookupKey toFeature() {
+    if (root == SymbolPath.feature) {
+      return this;
+    }
+
+    return LookupKey(
+      SymbolPath.feature,
+      qualifier: qualifier,
+      typeArguments: [root],
+    );
   }
 
   Map<String, dynamic> toJson() => _$LookupKeyToJson(this);

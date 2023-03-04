@@ -12,7 +12,7 @@ import '../source/injected_type.dart';
 import '../source/lookup_key.dart';
 import '../source/symbol_path.dart';
 
-/// Constructs a serializable path to [element].
+/// Constructs a serializable path to [type].
 SymbolPath getSymbolPath(DartType type) {
   final element = type.element!;
 
@@ -36,38 +36,40 @@ InjectedType getInjectedType(
   bool? named,
   SymbolPath? qualifier,
   bool? assisted,
-}) {
-  if (type is InterfaceType &&
-      type.element.name == 'Provider' &&
-      type.element.library.source.uri ==
-          Uri.parse('package:inject/src/api/provider.dart')) {
-    final providedType = type.typeArguments.firstOrNull;
-    if (providedType == null || providedType.isDynamic) {
-      throw 'Generic type for `${type.getDisplayString(withNullability: false)} $name` not specified.';
-    }
-
-    return InjectedType(
-      LookupKey.fromDartType(providedType, qualifier: qualifier),
+}) =>
+    InjectedType(
+      LookupKey.fromDartType(_reducedType(type, name), qualifier: qualifier),
       name: name,
-      isNullable: type.isNullable(),
+      isNullable: type.isNullable,
       isRequired: required,
       isNamed: named,
-      isProvider: true,
+      isProvider: type.isProvider,
       isFeature: type.isDartAsyncFuture,
       isAssisted: assisted,
     );
+
+// Removing [Provider] and [Feature] and use its type argument.
+//
+// We cannot inject the [Provider] class because it is neither a Dart core
+// class nor is it user-implemented.
+//
+// We also do not inject [Feature]s. We find out whether the injected type
+// needs to be provided asynchronously or not, and if it needs to be provided
+// asynchronously, we wrap the injected type in a [Feature].
+DartType _reducedType(DartType type, String? name) {
+  if (!type.isProvider && !type.isDartAsyncFuture) {
+    return type;
   }
 
-  return InjectedType(
-    LookupKey.fromDartType(type, qualifier: qualifier),
-    name: name,
-    isNullable: type.isNullable(),
-    isRequired: required,
-    isNamed: named,
-    isProvider: false,
-    isFeature: type.isDartAsyncFuture,
-    isAssisted: assisted,
-  );
+  if (type is! ParameterizedType) {
+    throw 'Generic type for `${type.getDisplayString(withNullability: false)} $name` not specified.';
+  }
+
+  final providedType = (type).typeArguments.firstOrNull;
+  if (providedType == null || providedType.isDynamic) {
+    throw 'Generic type for `${type.getDisplayString(withNullability: false)} $name` not specified.';
+  }
+  return _reducedType(providedType, name);
 }
 
 bool _hasAnnotation(Element element, SymbolPath annotationSymbol) {
@@ -231,5 +233,10 @@ ElementAnnotation? getAssistedInjectAnnotation(Element e) =>
     _getAnnotation(e, SymbolPath.assistedInject);
 
 extension IsNullable on DartType {
-  bool isNullable() => nullabilitySuffix == NullabilitySuffix.question;
+  bool get isNullable => nullabilitySuffix == NullabilitySuffix.question;
+
+  bool get isProvider =>
+      element?.name == 'Provider' &&
+      element?.library?.source.uri ==
+          Uri.parse('package:inject/src/api/provider.dart');
 }
