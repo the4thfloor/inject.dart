@@ -62,10 +62,6 @@ class ProviderSummary {
   /// Whether or not this provider provides a singleton.
   final bool isSingleton;
 
-  /// Factory used to create an instance of [injectedType].
-  /// Only for ConstructorProvider and currently only used for Assisted Inject.
-  final LookupKey? factory;
-
   /// Whether this provider is annotated with `@asynchronous`.
   final bool isAsynchronous;
 
@@ -79,7 +75,6 @@ class ProviderSummary {
     ProviderKind kind,
     InjectedType injectedType, {
     bool singleton = false,
-    LookupKey? factory,
     bool asynchronous = false,
     List<InjectedType> dependencies = const [],
   }) {
@@ -88,7 +83,6 @@ class ProviderSummary {
       kind,
       injectedType,
       singleton,
-      factory,
       asynchronous,
       List<InjectedType>.unmodifiable(dependencies),
     );
@@ -99,7 +93,6 @@ class ProviderSummary {
     this.kind,
     this.injectedType,
     this.isSingleton,
-    this.factory,
     this.isAsynchronous,
     this.dependencies,
   );
@@ -112,8 +105,6 @@ class ProviderSummary {
     final kind = json['kind'] as String;
     final injectedType = InjectedType.fromJson(json['injectedType']);
     final singleton = json['singleton'] as bool;
-    final factory =
-        json['factory'] != null ? LookupKey.fromJson(json['factory']) : null;
     final asynchronous = json['asynchronous'] as bool;
     final dependencies = json['dependencies']
         .cast<Map<String, dynamic>>()
@@ -124,7 +115,6 @@ class ProviderSummary {
       providerKindFromName(kind),
       injectedType,
       singleton: singleton,
-      factory: factory,
       asynchronous: asynchronous,
       dependencies: dependencies,
     );
@@ -137,7 +127,6 @@ class ProviderSummary {
       'kind': provideKindName(kind),
       'injectedType': injectedType,
       'singleton': isSingleton,
-      'factory': factory,
       'asynchronous': isAsynchronous,
       'dependencies': dependencies
     };

@@ -105,7 +105,7 @@ ElementAnnotation? _getAnnotation(
 
   return orElse != null
       ? orElse()
-      : throw 'Annotation $annotationSymbol not found on element $element';
+      : throw 'Annotation ${annotationSymbol.toHumanReadableString()} not found on element $element';
 }
 
 /// Determines if [clazz] is an injectable class.
