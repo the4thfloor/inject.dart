@@ -74,45 +74,34 @@ class BuilderLogger {
   /// Constructor.
   const BuilderLogger(this._inputId);
 
-  /// Logs a warning adding [element]'s source information to the message.
-  void warning(Element? element, String message) {
-    builderContext.rawLogger.warning(_constructMessage(element, message));
-  }
-
-  /// Logs a warning adding [element]'s source information to the message.
+  /// Logs a info adding [element]'s source information to the message.
   void info(Element? element, String message) {
-    builderContext.rawLogger.info(_constructMessage(element, message));
+    builderContext.rawLogger.info(constructMessage(_inputId, element, message));
   }
+}
 
-  /// Logs a warning adding [element]'s source information to the message.
-  void severe(Element? element, String message) {
-    builderContext.rawLogger.severe(_constructMessage(element, message));
-  }
-
-  String _constructMessage(Element? element, String message) {
-    ElementDeclarationResult? elementDeclaration;
-    if (element != null && element.kind != ElementKind.DYNAMIC) {
-      final parsedLibrary =
-          element.library?.session.getParsedLibraryByElement(element.library!);
-      if (parsedLibrary is ParsedLibraryResult) {
-        elementDeclaration = parsedLibrary.getElementDeclaration(element);
-      }
+String constructMessage(AssetId inputId, Element? element, String message) {
+  ElementDeclarationResult? elementDeclaration;
+  if (element != null && element.kind != ElementKind.DYNAMIC) {
+    final parsedLibrary =
+        element.library?.session.getParsedLibraryByElement(element.library!);
+    if (parsedLibrary is ParsedLibraryResult) {
+      elementDeclaration = parsedLibrary.getElementDeclaration(element);
     }
-    String sourceLocation;
-    String source;
-
-    if (elementDeclaration == null || element?.source == null) {
-      sourceLocation = 'at unknown source location:';
-      source = '.';
-    } else {
-      final offset = elementDeclaration.node.offset;
-      final location =
-          elementDeclaration.parsedUnit?.lineInfo.getLocation(offset);
-      final code = elementDeclaration.node.toSource();
-      sourceLocation = 'at $location:';
-      source = ':\n\n$code';
-    }
-
-    return '$_inputId $sourceLocation $message$source';
   }
+  String? sourceLocation;
+  String source;
+
+  if (elementDeclaration == null || element?.source == null) {
+    sourceLocation = 'at unknown source location';
+    source = '.';
+  } else {
+    final offset = elementDeclaration.node.offset;
+    sourceLocation =
+        elementDeclaration.parsedUnit?.lineInfo.getLocation(offset).toString();
+    final code = elementDeclaration.node.toSource();
+    source = ':\n\n$code';
+  }
+
+  return '${inputId.uri} $sourceLocation: $message$source';
 }

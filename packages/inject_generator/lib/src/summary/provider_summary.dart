@@ -77,7 +77,7 @@ class ProviderSummary {
     InjectedType injectedType, {
     bool isSingleton = false,
     bool isAsynchronous = false,
-    List<InjectedType> dependencies = const [],
+    Iterable<InjectedType> dependencies = const [],
   }) {
     return ProviderSummary._(
       name,

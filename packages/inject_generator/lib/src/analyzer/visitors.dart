@@ -90,13 +90,15 @@ class _LibraryVisitor extends RecursiveElementVisitor<void> {
         isComponent ? 'component' : null,
       ].whereNotNull();
 
-      builderContext.log.severe(
-        element,
-        'A class may be an injectable, a module or an component, '
-        'but not more than one of these types. However class '
-        '${element.name} was found to be ${types.join(' and ')}',
+      throw StateError(
+        constructMessage(
+          builderContext.buildStep.inputId,
+          element,
+          'A class may be an injectable, a module or an component, '
+          'but not more than one of these types. However class '
+          '${element.name} was found to be ${types.join(' and ')}',
+        ),
       );
-      return;
     }
 
     if (isInjectable) {
@@ -104,9 +106,12 @@ class _LibraryVisitor extends RecursiveElementVisitor<void> {
       final asynchronous = hasAsynchronousAnnotation(element) ||
           element.constructors.any(hasAsynchronousAnnotation);
       if (asynchronous) {
-        builderContext.log.severe(
-          element,
-          'Classes and constructors cannot be annotated with @Asynchronous().',
+        throw StateError(
+          constructMessage(
+            builderContext.buildStep.inputId,
+            element,
+            'Classes and constructors cannot be annotated with @Asynchronous().',
+          ),
         );
       }
       _injectLibraryVisitor.visitInjectable(
@@ -221,14 +226,20 @@ class _AnnotatedClassVisitor extends GeneralizingElementVisitor<void> {
         qualifier: hasQualifier(method) ? extractQualifier(method) : null,
       );
     } else if (_classVisitor._isForComponent && hasProvidesAnnotation(method)) {
-      builderContext.log.warning(
-        method,
-        '@provides annotation is not supported for components',
+      throw StateError(
+        constructMessage(
+          builderContext.buildStep.inputId,
+          method,
+          '@provides annotation is not supported for components',
+        ),
       );
     } else if (!_classVisitor._isForComponent && hasInjectAnnotation(method)) {
-      builderContext.log.warning(
-        method,
-        '@inject annotation is not supported for modules',
+      throw StateError(
+        constructMessage(
+          builderContext.buildStep.inputId,
+          method,
+          '@inject annotation is not supported for modules',
+        ),
       );
     }
   }
@@ -239,9 +250,12 @@ class _AnnotatedClassVisitor extends GeneralizingElementVisitor<void> {
       final singleton = hasSingletonAnnotation(field);
       final asynchronous = hasAsynchronousAnnotation(field);
       if (asynchronous) {
-        builderContext.log.severe(
-          field,
-          'Getters cannot be annotated with @Asynchronous().',
+        throw StateError(
+          constructMessage(
+            builderContext.buildStep.inputId,
+            field,
+            'Getters cannot be annotated with @Asynchronous().',
+          ),
         );
       }
       _classVisitor.visitProvideGetter(
@@ -253,15 +267,21 @@ class _AnnotatedClassVisitor extends GeneralizingElementVisitor<void> {
       );
     } else if (_classVisitor._isForComponent &&
         hasProvidesAnnotation(field.getter!)) {
-      builderContext.log.warning(
-        field.getter!,
-        '@provides annotation is not supported for components',
+      throw StateError(
+        constructMessage(
+          builderContext.buildStep.inputId,
+          field.getter!,
+          '@provides annotation is not supported for components',
+        ),
       );
     } else if (!_classVisitor._isForComponent &&
         hasInjectAnnotation(field.getter!)) {
-      builderContext.log.warning(
-        field.getter!,
-        '@inject annotation is not supported for modules',
+      throw StateError(
+        constructMessage(
+          builderContext.buildStep.inputId,
+          field.getter!,
+          '@inject annotation is not supported for modules',
+        ),
       );
     }
     return;

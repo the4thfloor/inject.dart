@@ -23,7 +23,7 @@ class ComponentSummary {
   factory ComponentSummary(
     SymbolPath clazz,
     List<SymbolPath> modules,
-    List<ProviderSummary> providers,
+    Iterable<ProviderSummary> providers,
   ) {
     return ComponentSummary._(
       clazz,

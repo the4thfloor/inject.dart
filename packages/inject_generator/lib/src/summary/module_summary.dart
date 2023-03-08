@@ -19,7 +19,7 @@ class ModuleSummary {
   factory ModuleSummary(
     SymbolPath clazz,
     bool hasDefaultConstructor,
-    List<ProviderSummary> providers,
+    Iterable<ProviderSummary> providers,
   ) {
     if (providers.isEmpty) {
       throw ArgumentError.value(

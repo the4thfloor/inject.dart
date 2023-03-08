@@ -89,12 +89,16 @@ ElementAnnotation? _getAnnotation(
 
     if (type == null) {
       final pathToAnnotation = annotationSymbol.toHumanReadableString();
-      builderContext.log.severe(
-        annotation.element ?? element,
-        'While looking for annotation $pathToAnnotation on "$element", '
-        'failed to resolve annotation value. A common cause of this error is '
-        'a misspelling or a failure to resolve the import where the '
-        'annotation comes from.',
+
+      throw StateError(
+        constructMessage(
+          builderContext.buildStep.inputId,
+          annotation.element ?? element,
+          'While looking for annotation $pathToAnnotation on "$element", '
+          'failed to resolve annotation value. A common cause of this error is '
+          'a misspelling or a failure to resolve the import where the '
+          'annotation comes from.',
+        ),
       );
     } else if (getSymbolPath(type) == annotationSymbol) {
       return annotation;
@@ -144,12 +148,16 @@ bool isSingletonClass(ClassElement clazz) {
     if (hasInjectAnnotation(clazz)) {
       isSingleton = true;
     } else {
-      builderContext.log.severe(
+      throw StateError(
+        constructMessage(
+          builderContext.buildStep.inputId,
           clazz,
           'A class cannot be annotated with `@singleton` '
           'without also being annotated `@inject`. '
           'Did you forget to add an `@inject` annotation '
-          'to class ${clazz.name}?');
+          'to class ${clazz.name}?',
+        ),
+      );
     }
   }
   for (final constructor in clazz.constructors) {
@@ -157,12 +165,15 @@ bool isSingletonClass(ClassElement clazz) {
       if (hasInjectAnnotation(constructor)) {
         isSingleton = true;
       } else {
-        builderContext.log.severe(
-            constructor,
-            'A constructor cannot be annotated with `@Singleton()` '
-            'without also being annotated `@Inject()`. '
-            'Did you forget to add an `@Inject()` annotation '
-            'to the constructor ${constructor.name}?');
+        throw StateError(
+          constructMessage(
+              builderContext.buildStep.inputId,
+              constructor,
+              'A constructor cannot be annotated with `@Singleton()` '
+              'without also being annotated `@Inject()`. '
+              'Did you forget to add an `@Inject()` annotation '
+              'to the constructor ${constructor.name}?'),
+        );
       }
     }
   }

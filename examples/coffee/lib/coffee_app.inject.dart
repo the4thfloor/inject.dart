@@ -74,7 +74,7 @@ class _PowerOutlet$Provider
   final _i2.DripCoffeeModule _module;
 
   @override
-  _i4.Future<_i7.PowerOutlet> get() async => _module.providePowerOutlet();
+  _i4.Future<_i7.PowerOutlet> get() async => await _module.providePowerOutlet();
 }
 
 class _Electricity$Provider
@@ -107,7 +107,7 @@ class _Heater$Provider implements _i3.Provider<_i4.Future<_i8.Heater>> {
 
   @override
   _i4.Future<_i8.Heater> get() async =>
-      _module.provideHeater(await _electricity$Provider.get());
+      await _module.provideHeater(await _electricity$Provider.get());
 }
 
 class _Thermosiphon$Provider

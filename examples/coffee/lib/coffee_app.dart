@@ -24,6 +24,6 @@ abstract class Coffee {
   @inject
   Future<CoffeeMaker> getCoffeeMaker();
 
-  // TODO: why is this processed even when it isn't annotated?
+  //TODO: why is this processed even when it isn't annotated?
   Provider<Future<Thermosiphon>> get thermosiphon;
 }
