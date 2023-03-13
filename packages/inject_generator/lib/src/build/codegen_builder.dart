@@ -350,10 +350,15 @@ class _ComponentBuilder {
         );
       }
 
+      // Factories are never asynchronous themselves,
+      // even if their create method is asynchronous.
+      final asynchronous = resolved is! DependencyProvidedByFactory &&
+          provider.injectedType.asynchronous(_orderedDependencies);
+
       final returnType = _referenceForType(
         libraryUri,
         provider.injectedType,
-        asFuture: provider.injectedType.asynchronous(_orderedDependencies),
+        asFuture: asynchronous,
       );
 
       final providerClassName =
