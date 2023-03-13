@@ -13,7 +13,7 @@ abstract class Component {
   AnnotatedConstructorFactory get annotatedConstructorFactory;
 }
 
-@AssistedInject(AnnotatedClassFactory)
+@assistedInject
 class AnnotatedClass {
   final Foo foo;
   final Bar bar;
@@ -30,7 +30,7 @@ class AnnotatedConstructor {
   final Foo foo;
   final Bar bar;
 
-  @AssistedInject(AnnotatedConstructorFactory)
+  @assistedInject
   const AnnotatedConstructor(this.foo, {@assisted required this.bar});
 }
 

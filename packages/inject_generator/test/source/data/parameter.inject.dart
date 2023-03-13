@@ -80,7 +80,7 @@ class _Inject4Factory$Factory implements _i1.Inject4Factory {
   final _Dependency1$Provider _dependency1$Provider;
 
   @override
-  _i1.Inject4 create(_i1.FoDependency2o2 foo) => _i1.Inject4(
+  _i1.Inject4 create(_i1.Dependency2 foo) => _i1.Inject4(
         foo,
         _dependency1$Provider.get(),
         foo3: _dependency1$Provider.get(),

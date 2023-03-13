@@ -5,6 +5,7 @@
 part of inject.src.summary;
 
 /// Result of analyzing a `@AssistedFactory()` annotated-class.
+@JsonSerializable()
 class FactorySummary {
   /// Location of the analyzed class.
   final SymbolPath clazz;
@@ -15,23 +16,14 @@ class FactorySummary {
   /// Create a new summary of a AssistedInject factory [clazz].
   const FactorySummary(this.clazz, this.factory);
 
-  /// Returns a new instance from the JSON encoding of an instance.
-  ///
-  /// See also [FactorySummary.toJson].
-  factory FactorySummary.fromJson(Uri assetUri, Map<String, dynamic> json) {
-    final name = json['name'] as String;
-    final factory = FactoryMethodSummary.fromJson(json['factory']);
-    final clazz = SymbolPath.fromAbsoluteUri(assetUri, name);
-    return FactorySummary(clazz, factory);
-  }
+  factory FactorySummary.fromJson(Map<String, dynamic> json) =>
+      _$FactorySummaryFromJson(json);
 
-  /// Serializes this summary to JSON.
-  Map<String, dynamic> toJson() {
-    return {'name': clazz.symbol, 'factory': factory};
-  }
+  Map<String, dynamic> toJson() => _$FactorySummaryToJson(this);
 }
 
 /// Contains information about a AssistedInject factory method.
+@JsonSerializable()
 class FactoryMethodSummary {
   /// Name of the annotated method.
   final String name;
@@ -45,25 +37,8 @@ class FactoryMethodSummary {
 
   const FactoryMethodSummary(this.name, this.createdType, this.parameters);
 
-  /// Returns a new instance from the JSON encoding of an instance.
-  ///
-  /// See also [FactorySummary.toJson].
-  factory FactoryMethodSummary.fromJson(Map<String, dynamic> json) {
-    final name = json['name'] as String;
-    final injectedType = InjectedType.fromJson(json['createdType']);
-    final parameters = json['parameters']
-        .cast<Map<String, dynamic>>()
-        .map<InjectedType>(InjectedType.fromJson)
-        .toList();
-    return FactoryMethodSummary(name, injectedType, parameters);
-  }
+  factory FactoryMethodSummary.fromJson(Map<String, dynamic> json) =>
+      _$FactoryMethodSummaryFromJson(json);
 
-  /// Serializes this summary to JSON.
-  Map<String, dynamic> toJson() {
-    return {
-      'name': name,
-      'createdType': createdType,
-      'parameters': parameters,
-    };
-  }
+  Map<String, dynamic> toJson() => _$FactoryMethodSummaryToJson(this);
 }

@@ -6,21 +6,26 @@ import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/dart/element/nullability_suffix.dart';
 import 'package:analyzer/dart/element/type.dart';
 import 'package:collection/collection.dart';
+import 'package:source_gen/source_gen.dart';
 
 import '../context.dart';
 import '../source/injected_type.dart';
 import '../source/lookup_key.dart';
 import '../source/symbol_path.dart';
 
-/// Constructs a serializable path to [element].
-SymbolPath getSymbolPath(Element element) {
-  if (element is TypeDefiningElement && element.kind == ElementKind.DYNAMIC) {
+/// Constructs a serializable path to [type].
+SymbolPath getSymbolPath(DartType type) {
+  final element = type.element!;
+
+  // if (element is TypeDefiningElement && element.kind == ElementKind.DYNAMIC) {
+  if (type.isDynamic) {
     throw ArgumentError('Dynamic element type not supported. This is a '
         'package:inject bug. Please report it.');
   }
+
   return SymbolPath.fromAbsoluteUri(
     element.library!.source.uri,
-    element.name,
+    typeNameOf(type),
   );
 }
 
@@ -28,50 +33,46 @@ SymbolPath getSymbolPath(Element element) {
 InjectedType getInjectedType(
   DartType type, {
   String? name,
+  SymbolPath? qualifier,
   bool? required,
   bool? named,
-  SymbolPath? qualifier,
+  bool? singleton,
   bool? assisted,
-}) {
-  if (type is FunctionType) {
-    if (type.parameters.isNotEmpty) {
-      builderContext.log.severe(
-          type.element,
-          'Only no-arg typedefs are supported, '
-          'and no-arg typedefs are treated as providers of the return type. ');
-      throw ArgumentError();
-    }
-    if (type.returnType.isDynamic) {
-      builderContext.log.severe(
-          type.element,
-          'Cannot create a provider of type dynamic. '
-          'Your function type did not include a return type.');
-      throw ArgumentError();
-    }
-    return InjectedType(
-      LookupKey.fromDartType(type.returnType, qualifier: qualifier),
+}) =>
+    InjectedType(
+      LookupKey.fromDartType(_reducedType(type, name), qualifier: qualifier),
       name: name,
+      isNullable: type.isNullable,
       isRequired: required,
       isNamed: named,
-      isProvider: true,
+      isProvider: type.isProvider,
+      isSingleton: singleton,
+      isAsynchronous: type.isDartAsyncFuture,
       isAssisted: assisted,
     );
+
+// Removing [Provider] and [Feature] and use its type argument.
+//
+// We cannot inject the [Provider] class because it is neither a Dart core
+// class nor is it user-implemented.
+//
+// We also do not inject [Feature]s. We find out whether the injected type
+// needs to be provided asynchronously or not, and if it needs to be provided
+// asynchronously, we wrap the injected type in a [Feature].
+DartType _reducedType(DartType type, String? name) {
+  if (!type.isProvider && !type.isDartAsyncFuture) {
+    return type;
   }
 
-  final asyncFuture = type.isDartAsyncFuture;
-  final futureType = asyncFuture && type is ParameterizedType
-      ? type.typeArguments.firstOrNull
-      : null;
+  if (type is! ParameterizedType) {
+    throw 'Generic type for `${type.getDisplayString(withNullability: false)} $name` not specified.';
+  }
 
-  return InjectedType(
-    LookupKey.fromDartType(futureType ?? type, qualifier: qualifier),
-    name: name,
-    isRequired: required,
-    isNamed: named,
-    isProvider: false,
-    isFeature: asyncFuture,
-    isAssisted: assisted,
-  );
+  final providedType = (type).typeArguments.firstOrNull;
+  if (providedType == null || providedType.isDynamic) {
+    throw 'Generic type for `${type.getDisplayString(withNullability: false)} $name` not specified.';
+  }
+  return _reducedType(providedType, name);
 }
 
 bool _hasAnnotation(Element element, SymbolPath annotationSymbol) {
@@ -87,18 +88,22 @@ ElementAnnotation? _getAnnotation(
 
   for (var i = 0; i < resolvedMetadata.length; i++) {
     final annotation = resolvedMetadata[i];
-    final valueElement = annotation.computeConstantValue()?.type?.element;
+    final type = annotation.computeConstantValue()?.type;
 
-    if (valueElement == null) {
+    if (type == null) {
       final pathToAnnotation = annotationSymbol.toHumanReadableString();
-      builderContext.log.severe(
-        annotation.element ?? element,
-        'While looking for annotation $pathToAnnotation on "$element", '
-        'failed to resolve annotation value. A common cause of this error is '
-        'a misspelling or a failure to resolve the import where the '
-        'annotation comes from.',
+
+      throw StateError(
+        constructMessage(
+          builderContext.buildStep.inputId,
+          annotation.element ?? element,
+          'While looking for annotation $pathToAnnotation on "$element", '
+          'failed to resolve annotation value. A common cause of this error is '
+          'a misspelling or a failure to resolve the import where the '
+          'annotation comes from.',
+        ),
       );
-    } else if (getSymbolPath(valueElement) == annotationSymbol) {
+    } else if (getSymbolPath(type) == annotationSymbol) {
       return annotation;
     }
   }
@@ -146,12 +151,16 @@ bool isSingletonClass(ClassElement clazz) {
     if (hasInjectAnnotation(clazz)) {
       isSingleton = true;
     } else {
-      builderContext.log.severe(
+      throw StateError(
+        constructMessage(
+          builderContext.buildStep.inputId,
           clazz,
           'A class cannot be annotated with `@singleton` '
           'without also being annotated `@inject`. '
           'Did you forget to add an `@inject` annotation '
-          'to class ${clazz.name}?');
+          'to class ${clazz.name}?',
+        ),
+      );
     }
   }
   for (final constructor in clazz.constructors) {
@@ -159,12 +168,15 @@ bool isSingletonClass(ClassElement clazz) {
       if (hasInjectAnnotation(constructor)) {
         isSingleton = true;
       } else {
-        builderContext.log.severe(
-            constructor,
-            'A constructor cannot be annotated with `@Singleton()` '
-            'without also being annotated `@Inject()`. '
-            'Did you forget to add an `@Inject()` annotation '
-            'to the constructor ${constructor.name}?');
+        throw StateError(
+          constructMessage(
+              builderContext.buildStep.inputId,
+              constructor,
+              'A constructor cannot be annotated with `@Singleton()` '
+              'without also being annotated `@Inject()`. '
+              'Did you forget to add an `@Inject()` annotation '
+              'to the constructor ${constructor.name}?'),
+        );
       }
     }
   }
@@ -235,5 +247,10 @@ ElementAnnotation? getAssistedInjectAnnotation(Element e) =>
     _getAnnotation(e, SymbolPath.assistedInject);
 
 extension IsNullable on DartType {
-  bool isNullable() => nullabilitySuffix == NullabilitySuffix.question;
+  bool get isNullable => nullabilitySuffix == NullabilitySuffix.question;
+
+  bool get isProvider =>
+      element?.name == 'Provider' &&
+      element?.library?.source.uri ==
+          Uri.parse('package:inject/src/api/provider.dart');
 }

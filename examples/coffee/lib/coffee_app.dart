@@ -9,6 +9,7 @@ import 'package:inject/inject.dart';
 import 'coffee_app.inject.dart' as g;
 import 'src/coffee_maker.dart';
 import 'src/drip_coffee_module.dart';
+import 'src/thermosiphon.dart';
 
 /// An example component class.
 ///
@@ -22,4 +23,7 @@ abstract class Coffee {
   /// An accessor to an object that an application may use.
   @inject
   Future<CoffeeMaker> getCoffeeMaker();
+
+  //TODO: why is this processed even when it isn't annotated?
+  Provider<Future<Thermosiphon>> get thermosiphon;
 }

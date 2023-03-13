@@ -34,11 +34,11 @@ class InjectCodegenBuilder extends AbstractInjectBuilder {
   String get outputExtension => 'dart';
 
   @override
-  Future<String> buildOutput(BuildStep buildStep) {
-    return runInContext<String>(buildStep, () => _buildInContext(buildStep));
+  Future<String?> buildOutput(BuildStep buildStep) {
+    return runInContext<String?>(buildStep, () => _buildInContext(buildStep));
   }
 
-  Future<String> _buildInContext(BuildStep buildStep) async {
+  Future<String?> _buildInContext(BuildStep buildStep) async {
     // We initially read in our <name>.inject.summary JSON blob, parse it, and
     // use it to generate a "{className}$Component" Dart class for each @component
     // annotation that was processed and put in the summary.
@@ -48,7 +48,7 @@ class InjectCodegenBuilder extends AbstractInjectBuilder {
         .then((json) => LibrarySummary.fromJson(json));
 
     if (summary.components.isEmpty) {
-      return '';
+      return null;
     }
 
     // If we require additional summaries (modules, etc) in other libraries we
@@ -68,6 +68,7 @@ class InjectCodegenBuilder extends AbstractInjectBuilder {
       // summary and get back an object graph.
       final resolver = ComponentGraphResolver(reader, component);
       final graph = await resolver.resolve();
+      // graph.debug();
 
       // Add to the file.
       final tuple =
@@ -147,9 +148,8 @@ class _ComponentBuilder {
   /// Dependencies instantiated eagerly during initialization of the component.
   final BlockBuilder preInstantiations = BlockBuilder();
 
-  /// Dependencies already visited during graph traversal.
-  final Set<ResolvedDependency> _visitedPreInstantiations =
-      <ResolvedDependency>{};
+  /// Sorted dependencies handled by this component.
+  final Set<ResolvedDependency> _orderedDependencies = <ResolvedDependency>{};
 
   /// Fields (modules, singletons) on the component class.
   final List<FieldBuilder> fields = <FieldBuilder>[];
@@ -217,7 +217,7 @@ class _ComponentBuilder {
         ..constructors.addAll([factoryConstructor.build(), constructor.build()])
         ..methods.addAll(methods.map((b) => b.build())),
     );
-    return Tuple2(clazz, _visitedPreInstantiations);
+    return Tuple2(clazz, _orderedDependencies);
   }
 
   // generates the factory and the private constructor.
@@ -277,8 +277,9 @@ class _ComponentBuilder {
   void _generateInitializeMethod() {
     final body = BlockBuilder();
 
-    for (final dependency in _visitedPreInstantiations) {
-      final providerClassName = _providerClassName(dependency.lookupKey);
+    for (final dependency in _orderedDependencies) {
+      final providerClassName =
+          _providerClassName(dependency.injectedType.lookupKey);
       final fieldName = providerClassName.decapitalize();
       fields.add(
         FieldBuilder()
@@ -328,16 +329,19 @@ class _ComponentBuilder {
   // Generate getters/methods for all types the component provides.
   void _generateComponentProviders() {
     for (final provider in graph.providers) {
-      final resolved = _visitedPreInstantiations.firstWhere(
-        (element) => element.lookupKey == provider.injectedType.lookupKey,
+      final resolved = _orderedDependencies.firstWhereOrNull(
+        (element) =>
+            element.injectedType.lookupKey == provider.injectedType.lookupKey,
       );
-      final asFuture = resolved.isAsynchronous(_visitedPreInstantiations);
+      if (resolved == null) {
+        throw _UnresolvedDependencyForComponentError(
+          component: summary.clazz,
+          injected: provider.injectedType.lookupKey,
+        );
+      }
 
-      // TODO: show warning if injected type and dep type are not both
-      // asynchronous or both not asynchronous
-
-      final resolvedIsNullable = resolved.lookupKey.isNullable;
-      final injectedIsNullable = provider.injectedType.lookupKey.isNullable;
+      final resolvedIsNullable = resolved.injectedType.isNullable;
+      final injectedIsNullable = provider.injectedType.isNullable;
       if (!injectedIsNullable && resolvedIsNullable) {
         _logNullabilityMismatchDependency(
           dependency: provider.injectedType,
@@ -346,26 +350,37 @@ class _ComponentBuilder {
         );
       }
 
+      // Factories are never asynchronous themselves,
+      // even if their create method is asynchronous.
+      final asynchronous = resolved is! DependencyProvidedByFactory &&
+          provider.injectedType.asynchronous(_orderedDependencies);
+
       final returnType = _referenceForType(
         libraryUri,
         provider.injectedType,
-        asFuture: asFuture,
+        asFuture: asynchronous,
       );
+
       final providerClassName =
-          _providerClassName(provider.injectedType.lookupKey);
+          _providerClassName(provider.injectedType.lookupKey).decapitalize();
+      final ref = provider.injectedType.isProvider
+          ? refer(providerClassName)
+          : refer('$providerClassName.get()');
+
       final method = MethodBuilder()
         ..name = provider.methodName
         ..returns = returnType
         ..type = provider.isGetter ? MethodType.getter : null
         ..lambda = true
-        ..body = refer('${providerClassName.decapitalize()}.get()').code
+        ..body = ref.code
         ..annotations.add(refer('override'));
       methods.add(method);
     }
   }
 
+  // Sorts all dependencies so that all can be fulfilled.
   void _collectDependencies(ResolvedDependency? dep) {
-    if (dep == null || _visitedPreInstantiations.contains(dep)) {
+    if (dep == null || _orderedDependencies.contains(dep)) {
       return;
     }
 
@@ -373,7 +388,7 @@ class _ComponentBuilder {
       _collectDependencies(graph.mergedDependencies[depDep.lookupKey]);
     }
 
-    _visitedPreInstantiations.add(dep);
+    _orderedDependencies.add(dep);
   }
 }
 
@@ -392,9 +407,6 @@ class _ProviderBuilder {
   /// All dependencies of all components.
   final Set<ResolvedDependency> dependencies;
 
-  /// Whether it is an asynchronous provider or not.
-  final bool asynchronous;
-
   /// The constructor of the generated provider class.
   ///
   /// If a module provides the dependency, the constructor has a parameter of
@@ -407,20 +419,15 @@ class _ProviderBuilder {
   /// Fields to hold references to dependencies used by the provider.
   final List<FieldBuilder> fields = <FieldBuilder>[];
 
-  /// The field names used for the dependencies.
-  // final Map<InjectedType, String> fieldNames = <InjectedType, String>{};
-
   factory _ProviderBuilder(
     Uri libraryUri,
     ResolvedDependency dependency,
     Set<ResolvedDependency> dependencies,
   ) {
-    final isAsynchronous = dependency.isAsynchronous(dependencies);
     return _ProviderBuilder._(
       libraryUri,
       dependency,
       dependencies,
-      isAsynchronous,
     );
   }
 
@@ -428,33 +435,47 @@ class _ProviderBuilder {
     this.libraryUri,
     this.dependency,
     this.dependencies,
-    this.asynchronous,
   );
 
   Class build() {
     _generateConstructor();
-    if (dependency is DependencyProvidedByModule) {
-      _buildProvidedByModule(dependency as DependencyProvidedByModule);
-    } else if (dependency is DependencyProvidedByInjectable) {
-      _buildProvidedByInjectable(dependency as DependencyProvidedByInjectable);
-    } else if (dependency is DependencyProvidedByFactory) {
-      _buildProvidedByFactory(dependency as DependencyProvidedByFactory);
-    }
 
-    final providerType = _referenceForKey(libraryUri, dependency.lookupKey);
-    final returnType = asynchronous ? providerType.toFuture() : providerType;
+    var asynchronous = false;
+    if (dependency is DependencyProvidedByModule) {
+      asynchronous = _buildProvidedByModule(
+        dependency as DependencyProvidedByModule,
+      );
+    } else if (dependency is DependencyProvidedByInjectable) {
+      asynchronous = _buildProvidedByInjectable(
+        dependency as DependencyProvidedByInjectable,
+      );
+    } else if (dependency is DependencyProvidedByFactory) {
+      asynchronous = _buildProvidedByFactory(
+        dependency as DependencyProvidedByFactory,
+      );
+    }
+    asynchronous = asynchronous || dependency.injectedType.isAsynchronous;
+
+    var providerType =
+        _referenceForKey(libraryUri, dependency.injectedType.lookupKey);
+    if (dependency.injectedType.isNullable) {
+      providerType = providerType.toNullable();
+    }
+    if (asynchronous) {
+      providerType = providerType.toFuture();
+    }
 
     methodBuilder
       ..name = 'get'
-      ..returns = returnType
+      ..returns = providerType
       ..annotations.add(refer('override'))
       ..lambda = true
       ..modifier = asynchronous ? MethodModifier.async : null;
 
     return Class(
       (b) => b
-        ..name = _providerClassName(dependency.lookupKey)
-        ..implements.add(returnType.toProvider())
+        ..name = _providerClassName(dependency.injectedType.lookupKey)
+        ..implements.add(providerType.toProvider())
         ..constructors.add(constructor.build())
         ..fields.addAll(fields.map((b) => b.build()))
         ..methods.add(methodBuilder.build()),
@@ -467,6 +488,16 @@ class _ProviderBuilder {
     final seen = <LookupKey>[];
     for (final injected
         in dependency.dependencies.where((dep) => !dep.isAssisted)) {
+      final resolved = dependencies.firstWhereOrNull(
+        (element) => element.injectedType.lookupKey == injected.lookupKey,
+      );
+      if (resolved == null) {
+        throw _UnresolvedDependencyForProviderError(
+          requestedBy: dependency.injectedType.lookupKey,
+          injected: injected.lookupKey,
+        );
+      }
+
       if (seen.contains(injected.lookupKey)) {
         continue;
       }
@@ -490,7 +521,8 @@ class _ProviderBuilder {
     }
   }
 
-  void _buildProvidedByModule(DependencyProvidedByModule dep) {
+  bool _buildProvidedByModule(DependencyProvidedByModule dep) {
+    var asynchronous = false;
     const moduleFieldName = '_module';
     fields.add(
       FieldBuilder()
@@ -506,7 +538,7 @@ class _ProviderBuilder {
       ),
     );
 
-    final isSingleton = dep.isSingleton;
+    final isSingleton = dep.injectedType.isSingleton;
     const singletonFieldName = '_singleton';
     if (isSingleton) {
       constructor.constant = false;
@@ -515,9 +547,8 @@ class _ProviderBuilder {
           ..name = singletonFieldName
           ..type = _reference(
             libraryUri,
-            dep.lookupKey.root,
-            isNullable: true,
-          ),
+            dep.injectedType.lookupKey.root,
+          ).toNullable(),
       );
     }
 
@@ -525,10 +556,11 @@ class _ProviderBuilder {
     final namedArguments = <String, Expression>{};
 
     for (final injected in dep.dependencies.where((dep) => !dep.isAssisted)) {
-      final resolved =
-          dependencies.firstWhere((dep) => dep.lookupKey == injected.lookupKey);
-      final resolvedIsNullable = resolved.lookupKey.isNullable;
-      final injectedIsNullable = injected.lookupKey.isNullable;
+      final resolved = dependencies.firstWhere(
+        (dep) => dep.injectedType.lookupKey == injected.lookupKey,
+      );
+      final resolvedIsNullable = resolved.injectedType.isNullable;
+      final injectedIsNullable = injected.isNullable;
       if (!injectedIsNullable && resolvedIsNullable) {
         _logNullabilityMismatchDependency(
           dependency: injected,
@@ -539,25 +571,35 @@ class _ProviderBuilder {
 
       final type = _providerClassName(injected.lookupKey);
       final fieldName = type.decapitalize();
-      final ref = refer('$fieldName.get()');
-      final isAsynchronous = injected.isAsynchronous(dependencies);
+      final isProvider = injected.isProvider;
+      final ref = isProvider ? refer(fieldName) : refer('$fieldName.get()');
+      final injectAsynchronously = injected.asynchronous(dependencies);
+      asynchronous = injectAsynchronously || asynchronous;
       if (injected.isNamed) {
-        namedArguments[injected.name!] = isAsynchronous ? ref.awaited : ref;
+        namedArguments[injected.name!] =
+            injectAsynchronously ? ref.awaited : ref;
       } else {
-        positionalArguments.add(isAsynchronous ? ref.awaited : ref);
+        positionalArguments.add(injectAsynchronously ? ref.awaited : ref);
       }
     }
 
-    final provider = refer('$moduleFieldName.${dep.methodName}')
+    var provider = refer('$moduleFieldName.${dep.methodName}')
         .call(positionalArguments, namedArguments);
-    methodBuilder.body = (isSingleton
-            ? refer(singletonFieldName).assignNullAware(provider)
-            : provider)
-        .code;
+    if (dep.injectedType.isAsynchronous) {
+      provider = provider.awaited;
+    }
+    if (isSingleton) {
+      provider = refer(singletonFieldName).assignNullAware(provider);
+    }
+
+    methodBuilder.body = provider.code;
+
+    return asynchronous;
   }
 
-  void _buildProvidedByInjectable(DependencyProvidedByInjectable dep) {
-    final isSingleton = dep.isSingleton;
+  bool _buildProvidedByInjectable(DependencyProvidedByInjectable dep) {
+    var asynchronous = false;
+    final isSingleton = dep.injectedType.isSingleton;
     const singletonFieldName = '_singleton';
     if (isSingleton) {
       constructor.constant = false;
@@ -566,9 +608,8 @@ class _ProviderBuilder {
           ..name = singletonFieldName
           ..type = _reference(
             libraryUri,
-            dep.lookupKey.root,
-            isNullable: true,
-          ),
+            dep.injectedType.lookupKey.root,
+          ).toNullable(),
       );
     }
 
@@ -577,24 +618,30 @@ class _ProviderBuilder {
     for (final injected in dep.dependencies.where((dep) => !dep.isAssisted)) {
       final type = _providerClassName(injected.lookupKey);
       final fieldName = type.decapitalize();
-      final ref = refer('$fieldName.get()');
-      final isAsynchronous = injected.isAsynchronous(dependencies);
+      final isProvider = injected.isProvider;
+      final ref = isProvider ? refer(fieldName) : refer('$fieldName.get()');
+      final injectAsynchronously = injected.asynchronous(dependencies);
+      asynchronous = injectAsynchronously || asynchronous;
       if (injected.isNamed) {
-        namedArguments[injected.name!] = isAsynchronous ? ref.awaited : ref;
+        namedArguments[injected.name!] =
+            injectAsynchronously ? ref.awaited : ref;
       } else {
-        positionalArguments.add(isAsynchronous ? ref.awaited : ref);
+        positionalArguments.add(injectAsynchronously ? ref.awaited : ref);
       }
     }
 
-    final provider = _reference(libraryUri, dep.lookupKey.root)
+    var provider = _reference(libraryUri, dep.injectedType.lookupKey.root)
         .call(positionalArguments, namedArguments);
-    methodBuilder.body = (isSingleton
-            ? refer(singletonFieldName).assignNullAware(provider)
-            : provider)
-        .code;
+    if (isSingleton) {
+      provider = refer(singletonFieldName).assignNullAware(provider);
+    }
+
+    methodBuilder.body = provider.code;
+
+    return asynchronous;
   }
 
-  void _buildProvidedByFactory(DependencyProvidedByFactory dep) {
+  bool _buildProvidedByFactory(DependencyProvidedByFactory dep) {
     constructor.constant = false;
 
     const fieldName = '_factory';
@@ -603,9 +650,8 @@ class _ProviderBuilder {
         ..name = fieldName
         ..type = _reference(
           libraryUri,
-          dep.lookupKey.root,
-          isNullable: true,
-        ),
+          dep.injectedType.lookupKey.root,
+        ).toNullable(),
     );
 
     final params = dep.dependencies
@@ -617,9 +663,11 @@ class _ProviderBuilder {
         .toList();
     methodBuilder.body = refer(fieldName)
         .assignNullAware(
-          refer(_factoryClassName(dep.lookupKey)).call(params),
+          refer(_factoryClassName(dep.injectedType.lookupKey)).call(params),
         )
         .code;
+
+    return false;
   }
 }
 
@@ -652,14 +700,15 @@ class _FactoryBuilder {
     DependencyProvidedByFactory dependency,
     Set<ResolvedDependency> dependencies,
   ) {
-    final factoryClassName = _factoryClassName(dependency.lookupKey);
-    final isAsynchronous = dependency.isAsynchronous(dependencies);
+    final factoryClassName =
+        _factoryClassName(dependency.injectedType.lookupKey);
+    final isAsynchronous = dependency.asynchronous(dependencies);
     return _FactoryBuilder._(
       libraryUri,
       dependency,
       dependencies,
       factoryClassName,
-      _referenceForKey(libraryUri, dependency.lookupKey),
+      _referenceForKey(libraryUri, dependency.injectedType.lookupKey),
       isAsynchronous,
     );
   }
@@ -677,13 +726,13 @@ class _FactoryBuilder {
   Class build() {
     final createdType = _referenceForKey(
       libraryUri,
-      dependency.summary.factory.createdType.lookupKey,
+      dependency.createdType.injectedType.lookupKey,
     );
 
     final constructor = ConstructorBuilder()..constant = true;
     final fields = <FieldBuilder>[];
     final createMethod = MethodBuilder()
-      ..name = dependency.summary.factory.name
+      ..name = dependency.methodName
       ..returns = asynchronous ? createdType.toFuture() : createdType
       ..annotations.add(refer('override'))
       ..modifier = asynchronous ? MethodModifier.async : null;
@@ -693,16 +742,31 @@ class _FactoryBuilder {
     final seen = <LookupKey>[];
 
     // generate constructor, fields and arguments for the create method from
-    // injected dependencies
-    for (final injected in dependency.injectable.constructor.dependencies) {
+    // createdType dependencies
+    for (final injected in dependency.createdType.dependencies) {
       final isSeen = seen.contains(injected.lookupKey);
       seen.add(injected.lookupKey);
 
+      final isAssisted = injected.isAssisted;
       final providerFieldName =
           _providerClassName(injected.lookupKey).decapitalize();
 
+      //
       // add not assisted dependencies as constructor parameter
-      if (!isSeen && !injected.isAssisted) {
+      //
+
+      if (!isSeen && !isAssisted) {
+        final resolved = dependencies.firstWhereOrNull(
+          (element) => element.injectedType.lookupKey == injected.lookupKey,
+        );
+        if (resolved == null) {
+          throw _UnresolvedDependencyForFactoryError(
+            factory: dependency.factoryClass,
+            requestedBy: dependency.injectedType.lookupKey,
+            injected: injected.lookupKey,
+          );
+        }
+
         constructor.requiredParameters.add(
           Parameter(
             (b) => b
@@ -718,40 +782,60 @@ class _FactoryBuilder {
         );
       }
 
-      // all dependencies for the body of the create method
-      final argRef = injected.isAssisted
-          ? refer(injected.name!)
-          : injected.isAsynchronous(dependencies)
-              ? refer('$providerFieldName.get()').awaited
-              : refer('$providerFieldName.get()');
+      //
+      // generate create method parameters
+      //
+
+      if (isAssisted) {
+        var type = _referenceForKey(libraryUri, injected.lookupKey);
+        if (injected.isNullable) {
+          type = type.toNullable();
+        }
+
+        if (injected.isRequired && !injected.isNamed) {
+          createMethod.requiredParameters.add(
+            Parameter(
+              (b) => b
+                ..name = injected.name!
+                ..type = type,
+            ),
+          );
+        } else {
+          createMethod.optionalParameters.add(
+            Parameter(
+              (b) => b
+                ..name = injected.name!
+                ..named = injected.isNamed
+                ..required = injected.isRequired
+                ..type = type,
+            ),
+          );
+        }
+      }
+
+      //
+      // generate arguments to create the type
+      //
+
+      final isProvider = injected.isProvider;
+      final isAsynchronous = injected.asynchronous(dependencies);
+      Expression argRef;
+      if (isAssisted) {
+        argRef = refer(injected.name!);
+      } else {
+        if (isProvider) {
+          argRef = refer(providerFieldName);
+        } else if (isAsynchronous) {
+          argRef = refer('$providerFieldName.get()').awaited;
+        } else {
+          argRef = refer('$providerFieldName.get()');
+        }
+      }
 
       if (injected.isNamed) {
         namedArguments[injected.name!] = argRef;
       } else {
         positionalArguments.add(argRef);
-      }
-    }
-
-    // generate create method parameters
-    for (final parameter in dependency.summary.factory.parameters) {
-      if (parameter.isRequired && !parameter.isNamed) {
-        createMethod.requiredParameters.add(
-          Parameter(
-            (b) => b
-              ..name = parameter.name!
-              ..type = _referenceForKey(libraryUri, parameter.lookupKey),
-          ),
-        );
-      } else {
-        createMethod.optionalParameters.add(
-          Parameter(
-            (b) => b
-              ..name = parameter.name!
-              ..named = parameter.isNamed
-              ..required = parameter.isRequired
-              ..type = _referenceForKey(libraryUri, parameter.lookupKey),
-          ),
-        );
       }
     }
 
@@ -770,69 +854,80 @@ class _FactoryBuilder {
   }
 }
 
-String _providerClassName(LookupKey key) => '_${key.toClassName()}\$Provider';
+String _providerClassName(LookupKey key) =>
+    '_${key.toClassName().capitalize()}\$Provider';
 
-String _factoryClassName(LookupKey key) => '_${key.toClassName()}\$Factory';
+String _factoryClassName(LookupKey key) =>
+    '_${key.toClassName().capitalize()}\$Factory';
 
-Reference _referenceForType(
+TypeReference _referenceForType(
   Uri libraryUri,
   InjectedType injectedType, {
   bool asFuture = false,
 }) {
-  final keyReference = _referenceForKey(libraryUri, injectedType.lookupKey);
+  var keyReference = _referenceForKey(libraryUri, injectedType.lookupKey);
+  if (injectedType.isNullable) {
+    keyReference = keyReference.toNullable();
+  }
+  if (asFuture || injectedType.isAsynchronous) {
+    keyReference = keyReference.toFuture();
+  }
   if (injectedType.isProvider) {
-    return FunctionType(
-      (functionType) => functionType..returnType = keyReference,
-    );
-  } else if (asFuture || injectedType.isFeature) {
-    return keyReference.toFuture();
+    keyReference = keyReference.toProvider();
   }
   return keyReference;
 }
 
-TypeReference _referenceForKey(Uri libraryUri, LookupKey key) => _reference(
-      libraryUri,
-      key.root,
-      isNullable: key.isNullable,
-    );
+TypeReference _referenceForKey(Uri libraryUri, LookupKey key) {
+  final ref = _reference(libraryUri, key.root);
 
-TypeReference _reference(
-  Uri libraryUri,
-  SymbolPath symbolPath, {
-  bool isNullable = false,
-}) =>
+  final typeArguments = key.typeArguments;
+  if (typeArguments == null || typeArguments.isEmpty) {
+    return ref;
+  }
+
+  return (ref.toBuilder()
+        ..types.addAll(
+          typeArguments
+              .map((typeArgument) => _reference(libraryUri, typeArgument))
+              .toList(),
+        ))
+      .build();
+}
+
+TypeReference _reference(Uri libraryUri, SymbolPath symbolPath) =>
     TypeReference(
       (b) => b
         ..symbol = symbolPath.symbol
-        ..url = symbolPath.toDartUri(relativeTo: libraryUri).toString()
-        ..isNullable = isNullable,
+        ..url = symbolPath.toDartUri(relativeTo: libraryUri).toString(),
     );
 
 extension _ResolvedDependencyExtension on ResolvedDependency {
   /// Whether this or one of its dependencies is asynchronous.
-  /// [dependencies] list of all known dependencies to look up.
-  bool isAsynchronous(Set<ResolvedDependency> dependencies) {
-    final dependency = this;
-    if (dependency is DependencyProvidedByModule && dependency.isAsynchronous) {
+  /// [knownDependencies] list of all known dependencies to look up.
+  bool asynchronous(Iterable<ResolvedDependency> knownDependencies) {
+    if (injectedType.isAsynchronous) {
       return true;
     }
 
-    return dependency.dependencies
+    return dependencies
         .where((dep) => !dep.isAssisted)
         .map(
-          (dep) => dependencies.firstWhereOrNull(
-            (element) => dep.lookupKey == element.lookupKey,
+          (dep) => knownDependencies.firstWhereOrNull(
+            (element) => dep.lookupKey == element.injectedType.lookupKey,
           ),
         )
-        .any((dep) => dep?.isAsynchronous(dependencies) ?? false);
+        .any((dep) => dep?.asynchronous(knownDependencies) ?? false);
   }
 }
 
 extension _InjectedTypeExtension on InjectedType {
-  bool isAsynchronous(Set<ResolvedDependency> dependencies) {
+  bool asynchronous(Iterable<ResolvedDependency> dependencies) {
     return dependencies
-            .firstWhereOrNull((element) => lookupKey == element.lookupKey)
-            ?.isAsynchronous(dependencies) ??
+            .firstWhereOrNull(
+              (element) => lookupKey == element.injectedType.lookupKey,
+            )
+            ?.asynchronous(dependencies) ??
         false;
   }
 }
@@ -840,19 +935,31 @@ extension _InjectedTypeExtension on InjectedType {
 extension _TypeReferenceExtension on TypeReference {
   TypeReference toNullable() => (toBuilder()..isNullable = true).build();
 
-  TypeReference toFuture() => TypeReference(
-        (b) => b
-          ..symbol = 'Future'
-          ..url = 'dart:async'
-          ..types.add(this),
-      );
+  TypeReference toFuture() {
+    if (symbol == 'Future' && url == 'dart:async') {
+      return this;
+    }
 
-  TypeReference toProvider() => TypeReference(
-        (b) => b
-          ..symbol = 'Provider'
-          ..url = 'package:inject/inject.dart'
-          ..types.add(this),
-      );
+    return TypeReference(
+      (b) => b
+        ..symbol = 'Future'
+        ..url = 'dart:async'
+        ..types.add(this),
+    );
+  }
+
+  TypeReference toProvider() {
+    if (symbol == 'Provider' && url == 'package:inject/inject.dart') {
+      return this;
+    }
+
+    return TypeReference(
+      (b) => b
+        ..symbol = 'Provider'
+        ..url = 'package:inject/inject.dart'
+        ..types.add(this),
+    );
+  }
 }
 
 extension Capitalize on String {
@@ -885,9 +992,9 @@ void _logNullabilityMismatchDependency({
   if (resolved is DependencyProvidedByModule) {
     resolvedSymbolPath = resolved.moduleClass;
   } else if (resolved is DependencyProvidedByFactory) {
-    resolvedSymbolPath = resolved.injectable.clazz;
+    resolvedSymbolPath = resolved.injectedType.lookupKey.root;
   } else {
-    resolvedSymbolPath = resolved.lookupKey.root;
+    resolvedSymbolPath = resolved.injectedType.lookupKey.root;
   }
 
   builderContext.rawLogger.severe(
@@ -911,29 +1018,24 @@ These classes were found at the following paths:
 ''');
 }
 
-/// Logs an error message for a dependency that can not be resolved.
-///
-/// Since the DI graph can not be created with an unfulfilled dependency, this
-/// logs a severe error.
-void _logUnresolvedDependency({
-  required ComponentSummary componentSummary,
-  required InjectedType dependency,
-  required ResolvedDependency requestedBy,
-}) {
-  final componentClassName = componentSummary.clazz.symbol;
-  final dependencyClassName = dependency.lookupKey.toPrettyString();
+/// Error for a dependency that can not be resolved.
+class _UnresolvedDependencyForComponentError extends Error {
+  final String componentClassName;
+  final String dependencyClassName;
+  final Uri pathToComponent;
+  final Uri pathToInjected;
 
-  final SymbolPath requestedByClassName;
-  if (requestedBy is DependencyProvidedByModule) {
-    requestedByClassName = requestedBy.moduleClass;
-  } else if (requestedBy is DependencyProvidedByFactory) {
-    requestedByClassName = requestedBy.injectable.clazz;
-  } else {
-    requestedByClassName = requestedBy.lookupKey.root;
-  }
+  _UnresolvedDependencyForComponentError({
+    required SymbolPath component,
+    required LookupKey injected,
+  })  : componentClassName = component.symbol,
+        dependencyClassName = injected.toPrettyString(),
+        pathToComponent = component.toAbsoluteUri().removeFragment(),
+        pathToInjected = injected.root.toAbsoluteUri().removeFragment();
 
-  builderContext.rawLogger.severe(
-      '''Could not find a way to provide "$dependencyClassName" for component "$componentClassName" which is injected in "${requestedByClassName.symbol}".
+  @override
+  String toString() {
+    return '''Could not find a way to provide "$dependencyClassName" for component "$componentClassName".
 
 To fix this, check that at least one of the following is true:
 
@@ -945,10 +1047,91 @@ To fix this, check that at least one of the following is true:
 
 These classes were found at the following paths:
 
-- Component "$componentClassName": ${componentSummary.clazz.toAbsoluteUri().removeFragment()}.
+- Component "$componentClassName": $pathToComponent}.
 
-- Injected class "$dependencyClassName": ${dependency.lookupKey.root.toAbsoluteUri().removeFragment()}.
+- Injected class "$dependencyClassName": $pathToInjected}.
 
-- Injected in class "${requestedByClassName.symbol}": ${requestedByClassName.toAbsoluteUri().removeFragment()}.
-''');
+''';
+  }
+}
+
+/// Error for a dependency that can not be resolved.
+class _UnresolvedDependencyForProviderError extends Error {
+  final String requestedByClassName;
+  final String dependencyClassName;
+  final Uri pathToRequestedBy;
+  final Uri pathToInjected;
+
+  _UnresolvedDependencyForProviderError({
+    required LookupKey requestedBy,
+    required LookupKey injected,
+  })  : requestedByClassName = requestedBy.toPrettyString(),
+        dependencyClassName = injected.toPrettyString(),
+        pathToRequestedBy = requestedBy.root.toAbsoluteUri().removeFragment(),
+        pathToInjected = injected.root.toAbsoluteUri().removeFragment();
+
+  @override
+  String toString() {
+    return '''Could not find a way to provide "$dependencyClassName" for class "$requestedByClassName".
+
+To fix this, check that at least one of the following is true:
+
+- Ensure that $dependencyClassName's class declaration or constructor is annotated with @inject.
+
+- Ensure the constructor is empty or all parameters are provided.
+
+- Ensure you created a module that provides "$dependencyClassName".
+
+These classes were found at the following paths:
+
+- Class "$requestedByClassName": $pathToRequestedBy}.
+
+- Injected class "$dependencyClassName": $pathToInjected}.
+
+''';
+  }
+}
+
+/// Error for a dependency that can not be resolved.
+class _UnresolvedDependencyForFactoryError extends Error {
+  final String factoryClassName;
+  final String requestedByClassName;
+  final String dependencyClassName;
+  final Uri pathToFactory;
+  final Uri pathToRequestedBy;
+  final Uri pathToInjected;
+
+  _UnresolvedDependencyForFactoryError({
+    required SymbolPath factory,
+    required LookupKey requestedBy,
+    required LookupKey injected,
+  })  : factoryClassName = factory.symbol,
+        requestedByClassName = requestedBy.toPrettyString(),
+        dependencyClassName = injected.toPrettyString(),
+        pathToFactory = factory.toAbsoluteUri().removeFragment(),
+        pathToRequestedBy = requestedBy.root.toAbsoluteUri().removeFragment(),
+        pathToInjected = injected.root.toAbsoluteUri().removeFragment();
+
+  @override
+  String toString() {
+    return '''Could not find a way to provide "$dependencyClassName" for class "$requestedByClassName" created by factory "$factoryClassName".
+
+To fix this, check that at least one of the following is true:
+
+- Ensure that $dependencyClassName's class declaration or constructor is annotated with @inject.
+
+- Ensure the constructor is empty or all parameters are provided.
+
+- Ensure you created a module that provides "$dependencyClassName".
+
+These classes were found at the following paths:
+
+- Factory "$factoryClassName": $pathToFactory}.
+
+- Class "$requestedByClassName": $pathToRequestedBy}.
+
+- Injected class "$dependencyClassName": $pathToInjected}.
+
+''';
+  }
 }

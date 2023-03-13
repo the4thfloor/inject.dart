@@ -23,13 +23,13 @@ abstract class AbstractInjectBuilder implements Builder {
   Future<void> build(BuildStep buildStep) async {
     final outputFile = buildStep.inputId.changeExtension('.$outputExtension');
     final outputContents = await buildOutput(buildStep);
-    if (outputContents.isNotEmpty) {
+    if (outputContents != null && outputContents.isNotEmpty) {
       await buildStep.writeAsString(outputFile, outputContents);
     }
   }
 
   /// Implement in order to return the output file.
-  Future<String> buildOutput(BuildStep buildStep);
+  Future<String?> buildOutput(BuildStep buildStep);
 
   @override
   Map<String, List<String>> get buildExtensions => {

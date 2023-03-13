@@ -47,5 +47,6 @@ class _Bar$Provider implements _i3.Provider<_i2.Future<_i1.Bar>> {
   final _i1.BarModule _module;
 
   @override
-  _i2.Future<_i1.Bar> get() async => _module.getBar(foo: _foo$Provider.get());
+  _i2.Future<_i1.Bar> get() async =>
+      await _module.getBar(foo: _foo$Provider.get());
 }

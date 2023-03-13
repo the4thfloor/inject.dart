@@ -3,70 +3,78 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:analyzer/dart/element/type.dart';
+import 'package:collection/collection.dart';
+import 'package:json_annotation/json_annotation.dart';
 
 import '../analyzer/utils.dart';
 import '../build/codegen_builder.dart';
 import 'symbol_path.dart';
 
+part 'lookup_key.g.dart';
+
+const _listEquality = ListEquality();
+
 /// A representation of a key in the dependency injection graph.
 ///
-/// Equality of all the fields indicate that two types are the same.
+/// Equality of all the fields indicate that two types are the same.///
+@JsonSerializable()
 class LookupKey {
   /// [SymbolPath] of the root type.
   ///
   /// For example, for the type `@qualifier A<B, C>`, this will be `A`.
   final SymbolPath root;
 
-  /// Return `true` if the type is nullable.
-  final bool isNullable;
-
   /// Optional qualifier for the type.
   final SymbolPath? qualifier;
 
-  const LookupKey(this.root, {this.isNullable = false, this.qualifier});
+  final List<SymbolPath>? typeArguments;
 
-  /// Returns a new instance from the JSON encoding of an instance.
-  ///
-  /// See also [LookupKey.toJson].
-  factory LookupKey.fromJson(Map<String, dynamic> json) {
-    return LookupKey(
-      SymbolPath.fromAbsoluteUri(Uri.parse(json['root'])),
-      isNullable: json['isNullable'],
-      qualifier: json['qualifier'] == null
-          ? null
-          : SymbolPath.fromAbsoluteUri(Uri.parse(json['qualifier'])),
-    );
-  }
+  const LookupKey(this.root, {this.qualifier, this.typeArguments});
+
+  factory LookupKey.fromJson(Map<String, dynamic> json) =>
+      _$LookupKeyFromJson(json);
 
   factory LookupKey.fromDartType(DartType type, {SymbolPath? qualifier}) =>
       LookupKey(
-        getSymbolPath(type.element!),
-        isNullable: type.isNullable(),
+        getSymbolPath(type),
         qualifier: qualifier,
+        typeArguments:
+            type is ParameterizedType && type.typeArguments.isNotEmpty
+                ? type.typeArguments
+                    .map((typeArgument) => getSymbolPath(typeArgument))
+                    .toList()
+                : null,
       );
 
   /// A human-readable representation of the dart Symbol of this type.
   String toPrettyString() {
     final qualifierString = qualifier != null ? '${qualifier!.symbol}@' : '';
-    final nullableString = isNullable ? '?' : '';
-    return '$qualifierString${root.symbol}$nullableString';
+    final typeArgumentsString = typeArguments?.isNotEmpty == true
+        ? "<${typeArguments?.map((e) => e.symbol).join(', ')}>"
+        : '';
+    return '$qualifierString${root.symbol}$typeArgumentsString';
   }
 
   String toClassName() {
     final qualifierString = qualifier != null ? qualifier!.symbol : '';
-    return '${root.symbol}${qualifierString.capitalize()}';
+    final typeArgumentsString =
+        typeArguments?.map((e) => e.symbol.capitalize()).join() ?? '';
+    return '${root.symbol}${qualifierString.capitalize()}$typeArgumentsString';
   }
 
-  /// Returns the JSON encoding of this instance.
-  ///
-  /// See also [LookupKey.fromJson].
-  Map<String, dynamic> toJson() {
-    return {
-      'root': root.toAbsoluteUri().toString(),
-      'isNullable': isNullable,
-      'qualifier': qualifier?.toAbsoluteUri().toString(),
-    };
+  LookupKey toFeature() {
+    if (root == SymbolPath.feature) {
+      return this;
+    }
+
+    return LookupKey(
+      SymbolPath.feature,
+      qualifier: qualifier,
+      typeArguments: [root],
+    );
   }
+
+  Map<String, dynamic> toJson() => _$LookupKeyToJson(this);
 
   @override
   bool operator ==(Object other) =>
@@ -74,8 +82,15 @@ class LookupKey {
       other is LookupKey &&
           runtimeType == other.runtimeType &&
           root == other.root &&
-          qualifier == other.qualifier;
+          qualifier == other.qualifier &&
+          _listEquality.equals(typeArguments, other.typeArguments);
 
   @override
-  int get hashCode => root.hashCode ^ qualifier.hashCode;
+  int get hashCode =>
+      root.hashCode ^ qualifier.hashCode ^ _listEquality.hash(typeArguments);
+
+  @override
+  String toString() {
+    return 'LookupKey{${toPrettyString()}';
+  }
 }

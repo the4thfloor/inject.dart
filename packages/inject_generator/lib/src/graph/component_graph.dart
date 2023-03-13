@@ -3,7 +3,10 @@
 // BSD-style license that can be found in the LICENSE file.
 part of inject.src.graph;
 
+const _listEquality = ListEquality();
+
 /// A provider defined on an `@Component` class.
+@immutable
 class ComponentProvider {
   /// The type this provides.
   final InjectedType injectedType;
@@ -14,24 +17,19 @@ class ComponentProvider {
   /// Whether this provider is a getter.
   final bool isGetter;
 
-  ComponentProvider._(this.injectedType, this.methodName, this.isGetter);
+  const ComponentProvider._(this.injectedType, this.methodName, this.isGetter);
 }
 
 /// A dependency resolved to a concrete provider.
 abstract class ResolvedDependency {
-  /// The key of the dependency.
-  final LookupKey lookupKey;
-
-  /// Whether or not this dependency is a singleton.
-  final bool isSingleton;
+  /// The type this provides.
+  final InjectedType injectedType;
 
   /// Transitive dependencies.
   final List<InjectedType> dependencies;
 
-  /// Constructor.
   const ResolvedDependency(
-    this.lookupKey,
-    this.isSingleton,
+    this.injectedType,
     this.dependencies,
   );
 
@@ -40,13 +38,15 @@ abstract class ResolvedDependency {
       identical(this, other) ||
       other is ResolvedDependency &&
           runtimeType == other.runtimeType &&
-          lookupKey == other.lookupKey;
+          injectedType == other.injectedType &&
+          _listEquality.equals(dependencies, other.dependencies);
 
   @override
-  int get hashCode => lookupKey.hashCode;
+  int get hashCode => injectedType.hashCode ^ _listEquality.hash(dependencies);
 }
 
 /// A dependency provided by a module class.
+@immutable
 class DependencyProvidedByModule extends ResolvedDependency {
   /// Module that provides the dependency.
   final SymbolPath moduleClass;
@@ -54,46 +54,47 @@ class DependencyProvidedByModule extends ResolvedDependency {
   /// Name of the method in the class.
   final String methodName;
 
-  /// Whether this provider is annotated with `@asynchronous`.
-  final bool isAsynchronous;
-
-  DependencyProvidedByModule._(
-    super.lookupKey,
-    super.singleton,
+  const DependencyProvidedByModule._(
+    super.injectedType,
     super.dependencies,
     this.moduleClass,
     this.methodName,
-    this.isAsynchronous,
   );
 }
 
 /// A dependency provided by an injectable class.
+@immutable
 class DependencyProvidedByInjectable extends ResolvedDependency {
-  /// Summary about the injectable class.
-  final InjectableSummary summary;
-
-  DependencyProvidedByInjectable._(this.summary)
-      : super(
-          LookupKey(summary.clazz, isNullable: false),
-          summary.constructor.isSingleton,
-          summary.constructor.dependencies,
-        );
+  const DependencyProvidedByInjectable._(
+    super.injectedType,
+    super.dependencies,
+  );
 }
 
 /// A dependency provided by an factory class.
+@immutable
 class DependencyProvidedByFactory extends ResolvedDependency {
-  /// Summary about the factory.
-  final FactorySummary summary;
+  /// Factory that provides the dependency.
+  final SymbolPath factoryClass;
 
-  /// Summary about the created class.
-  final InjectableSummary injectable;
+  /// Name of the method in the class.
+  final String methodName;
 
-  DependencyProvidedByFactory._(this.summary, this.injectable)
-      : super(
-          LookupKey(summary.clazz, isNullable: false),
-          false,
-          injectable.constructor.dependencies,
-        );
+  /// Type this factory creates.
+  final ProviderSummary createdType;
+
+  /// Manually injected parameters to create an instance of [createdType].
+  /// These are the @assisted-annotated constructor parameters of [createdType].
+  final List<InjectedType> factoryParameters;
+
+  const DependencyProvidedByFactory._(
+    super.injectedType,
+    super.dependencies,
+    this.factoryClass,
+    this.methodName,
+    this.createdType,
+    this.factoryParameters,
+  );
 }
 
 /// All of the data that is needed to generate an `@Component` class.
@@ -112,4 +113,48 @@ class ComponentGraph {
     this.providers,
     this.mergedDependencies,
   );
+
+  void debug() {
+    final buffer = StringBuffer()
+      ..writeln('graph:')
+      ..writeln('   includeModules:');
+    for (final summary in includeModules) {
+      buffer
+        ..writeln('      module:')
+        ..writeln('         ${summary.clazz.symbol}')
+        ..writeln('         provides:')
+        ..writeAll(
+          summary.providers
+              .map(
+                (provider) => provider.injectedType.lookupKey.toPrettyString(),
+              )
+              .map((className) => '            $className\n'),
+        );
+    }
+
+    buffer
+      ..writeln('   providers:')
+      ..writeln('      injectedType:');
+    providers
+        .map((summary) => summary.injectedType.lookupKey.toPrettyString())
+        .map((prettyString) => '         $prettyString')
+        .forEach(buffer.writeln);
+
+    buffer.writeln('   mergedDependencies:');
+    for (final dependency in mergedDependencies.entries) {
+      buffer
+        ..writeln('      dependency:')
+        ..writeln(
+          '         ${dependency.key.toPrettyString()}',
+        )
+        ..writeln('         depends on:')
+        ..writeAll(
+          dependency.value.dependencies
+              .map((injectedType) => injectedType.lookupKey.toPrettyString())
+              .map((className) => '            $className\n'),
+        );
+    }
+
+    print(buffer);
+  }
 }

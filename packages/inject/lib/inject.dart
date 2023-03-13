@@ -12,7 +12,7 @@ export 'src/api/annotations.dart'
         Qualifier,
         assisted,
         assistedFactory,
-        AssistedInject,
+        assistedInject,
         asynchronous,
         component,
         inject,

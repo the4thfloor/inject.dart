@@ -1,12 +1,13 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'coffee_app.dart' as _i1;
 import 'src/drip_coffee_module.dart' as _i2;
-import 'dart:async' as _i3;
-import 'src/coffee_maker.dart' as _i4;
-import 'package:inject/inject.dart' as _i5;
-import 'src/electric_heater.dart' as _i6;
-import 'src/heater.dart' as _i7;
-import 'src/pump.dart' as _i8;
+import 'package:inject/inject.dart' as _i3;
+import 'dart:async' as _i4;
+import 'src/thermosiphon.dart' as _i5;
+import 'src/coffee_maker.dart' as _i6;
+import 'src/electric_heater.dart' as _i7;
+import 'src/heater.dart' as _i8;
+import 'src/pump.dart' as _i9;
 
 class Coffee$Component implements _i1.Coffee {
   factory Coffee$Component.create({_i2.DripCoffeeModule? dripCoffeeModule}) =>
@@ -23,6 +24,8 @@ class Coffee$Component implements _i1.Coffee {
   late final _Electricity$Provider _electricity$Provider;
 
   late final _Heater$Provider _heater$Provider;
+
+  late final _Thermosiphon$Provider _thermosiphon$Provider;
 
   late final _Pump$Provider _pump$Provider;
 
@@ -42,6 +45,7 @@ class Coffee$Component implements _i1.Coffee {
       _electricity$Provider,
       _dripCoffeeModule,
     );
+    _thermosiphon$Provider = _Thermosiphon$Provider(_heater$Provider);
     _pump$Provider = _Pump$Provider(
       _heater$Provider,
       _dripCoffeeModule,
@@ -57,21 +61,24 @@ class Coffee$Component implements _i1.Coffee {
   }
 
   @override
-  _i3.Future<_i4.CoffeeMaker> getCoffeeMaker() => _coffeeMaker$Provider.get();
+  _i3.Provider<_i4.Future<_i5.Thermosiphon>> get thermosiphon =>
+      _thermosiphon$Provider;
+  @override
+  _i4.Future<_i6.CoffeeMaker> getCoffeeMaker() => _coffeeMaker$Provider.get();
 }
 
 class _PowerOutlet$Provider
-    implements _i5.Provider<_i3.Future<_i6.PowerOutlet>> {
+    implements _i3.Provider<_i4.Future<_i7.PowerOutlet>> {
   const _PowerOutlet$Provider(this._module);
 
   final _i2.DripCoffeeModule _module;
 
   @override
-  _i3.Future<_i6.PowerOutlet> get() async => _module.providePowerOutlet();
+  _i4.Future<_i7.PowerOutlet> get() async => await _module.providePowerOutlet();
 }
 
 class _Electricity$Provider
-    implements _i5.Provider<_i3.Future<_i6.Electricity>> {
+    implements _i3.Provider<_i4.Future<_i7.Electricity>> {
   _Electricity$Provider(
     this._powerOutlet$Provider,
     this._module,
@@ -81,14 +88,14 @@ class _Electricity$Provider
 
   final _i2.DripCoffeeModule _module;
 
-  _i6.Electricity? _singleton;
+  _i7.Electricity? _singleton;
 
   @override
-  _i3.Future<_i6.Electricity> get() async => _singleton ??=
+  _i4.Future<_i7.Electricity> get() async => _singleton ??=
       _module.provideElectricity(await _powerOutlet$Provider.get());
 }
 
-class _Heater$Provider implements _i5.Provider<_i3.Future<_i7.Heater>> {
+class _Heater$Provider implements _i3.Provider<_i4.Future<_i8.Heater>> {
   const _Heater$Provider(
     this._electricity$Provider,
     this._module,
@@ -99,11 +106,22 @@ class _Heater$Provider implements _i5.Provider<_i3.Future<_i7.Heater>> {
   final _i2.DripCoffeeModule _module;
 
   @override
-  _i3.Future<_i7.Heater> get() async =>
-      _module.provideHeater(await _electricity$Provider.get());
+  _i4.Future<_i8.Heater> get() async =>
+      await _module.provideHeater(await _electricity$Provider.get());
 }
 
-class _Pump$Provider implements _i5.Provider<_i3.Future<_i8.Pump>> {
+class _Thermosiphon$Provider
+    implements _i3.Provider<_i4.Future<_i5.Thermosiphon>> {
+  const _Thermosiphon$Provider(this._heater$Provider);
+
+  final _Heater$Provider _heater$Provider;
+
+  @override
+  _i4.Future<_i5.Thermosiphon> get() async =>
+      _i5.Thermosiphon(await _heater$Provider.get());
+}
+
+class _Pump$Provider implements _i3.Provider<_i4.Future<_i9.Pump>> {
   const _Pump$Provider(
     this._heater$Provider,
     this._module,
@@ -114,11 +132,11 @@ class _Pump$Provider implements _i5.Provider<_i3.Future<_i8.Pump>> {
   final _i2.DripCoffeeModule _module;
 
   @override
-  _i3.Future<_i8.Pump> get() async =>
+  _i4.Future<_i9.Pump> get() async =>
       _module.providePump(await _heater$Provider.get());
 }
 
-class _StringBrandName$Provider implements _i5.Provider<String> {
+class _StringBrandName$Provider implements _i3.Provider<String> {
   const _StringBrandName$Provider(this._module);
 
   final _i2.DripCoffeeModule _module;
@@ -127,7 +145,7 @@ class _StringBrandName$Provider implements _i5.Provider<String> {
   String get() => _module.provideBrand();
 }
 
-class _StringModelName$Provider implements _i5.Provider<String> {
+class _StringModelName$Provider implements _i3.Provider<String> {
   const _StringModelName$Provider(this._module);
 
   final _i2.DripCoffeeModule _module;
@@ -137,7 +155,7 @@ class _StringModelName$Provider implements _i5.Provider<String> {
 }
 
 class _CoffeeMaker$Provider
-    implements _i5.Provider<_i3.Future<_i4.CoffeeMaker>> {
+    implements _i3.Provider<_i4.Future<_i6.CoffeeMaker>> {
   const _CoffeeMaker$Provider(
     this._heater$Provider,
     this._pump$Provider,
@@ -154,7 +172,7 @@ class _CoffeeMaker$Provider
   final _StringModelName$Provider _stringModelName$Provider;
 
   @override
-  _i3.Future<_i4.CoffeeMaker> get() async => _i4.CoffeeMaker(
+  _i4.Future<_i6.CoffeeMaker> get() async => _i6.CoffeeMaker(
         await _heater$Provider.get(),
         await _pump$Provider.get(),
         _stringBrandName$Provider.get(),

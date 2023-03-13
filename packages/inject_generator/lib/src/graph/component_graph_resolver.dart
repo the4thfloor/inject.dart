@@ -106,107 +106,82 @@ class ComponentGraphResolver {
     // all keys that are explicitly provided.
     for (final module in allModules) {
       for (final provider in module.providers) {
-        final lookupKey = _extractLookupKey(provider.injectedType);
+        final lookupKey = provider.injectedType.lookupKey;
         providersByModules[lookupKey] = DependencyProvidedByModule._(
-          lookupKey,
-          provider.isSingleton,
+          provider.injectedType,
           provider.dependencies,
           module.clazz,
           provider.name,
-          provider.isAsynchronous,
         );
-      }
-    }
-
-    final providersByFactory = <LookupKey, DependencyProvidedByFactory>{};
-
-    Future<List<InjectedType>?> addFactoryIfExists(
-      LookupKey key, {
-      required InjectableSummary injectableSummary,
-      required SymbolPath requestedBy,
-    }) async {
-      final isSeen = providersByFactory.containsKey(key);
-      if (isSeen) {
-        return null;
-      }
-
-      final factorySummaries =
-          (await _readFromPath(key.root, requestedBy: requestedBy)).factories;
-      final factorySummary = factorySummaries.firstWhereOrNull(
-        (s) => s.clazz == key.root,
-      );
-      if (factorySummary != null) {
-        providersByFactory[key] =
-            DependencyProvidedByFactory._(factorySummary, injectableSummary);
-
-        final createdType = factorySummary.factory.createdType.lookupKey.root;
-        final createdTypeLib = (await _readFromPath(
-          createdType,
-          requestedBy: factorySummary.clazz,
-        ));
-        final resolved = createdTypeLib.injectables
-            .firstWhereOrNull((element) => element.clazz == createdType);
-        return resolved?.constructor.dependencies
-            .where((dep) => !dep.isAssisted)
-            .toList();
-      } else {
-        builderContext.rawLogger.severe(
-          'Failed to locate factory for injectable ${requestedBy.toAbsoluteUri()} ',
-        );
-        return null;
       }
     }
 
     final providersByInjectables =
         <LookupKey, DependencyProvidedByInjectable>{};
-
-    var count = 0;
+    final providersByFactory = <LookupKey, DependencyProvidedByFactory>{};
 
     Future<void> addInjectableIfExists(
       LookupKey key, {
       required SymbolPath requestedBy,
     }) async {
-      count = count + 1;
-      if (count > 25) {
-        return;
-      }
-
-      final isProvidedByAModule = providersByModules.containsKey(key);
-      final isSeen = providersByInjectables.containsKey(key);
-      if (isProvidedByAModule || isSeen) {
+      final isSeen = providersByModules.containsKey(key) ||
+          providersByFactory.containsKey(factory) ||
+          providersByInjectables.containsKey(key);
+      if (isSeen) {
         return;
       }
 
       if (!key.root.isGlobal) {
         final lib = await _readFromPath(key.root, requestedBy: requestedBy);
-        for (final injectable in lib.injectables) {
-          final factory = injectable.factory;
-          if (factory != null) {
-            final dependencies = await addFactoryIfExists(
-              factory,
-              injectableSummary: injectable,
+
+        for (final injectable in lib.injectables
+            .where((injectable) => injectable.clazz == key.root)) {
+          providersByInjectables[key] = DependencyProvidedByInjectable._(
+            injectable.constructor.injectedType,
+            injectable.constructor.dependencies,
+          );
+          for (final dependency in injectable.constructor.dependencies) {
+            await addInjectableIfExists(
+              dependency.lookupKey,
               requestedBy: injectable.clazz,
             );
-
-            if (dependencies != null) {
-              for (final dependency in dependencies) {
-                await addInjectableIfExists(
-                  dependency.lookupKey,
-                  requestedBy: factory.root,
-                );
-              }
-            }
           }
+        }
 
-          if (injectable.clazz == key.root) {
-            providersByInjectables[key] =
-                DependencyProvidedByInjectable._(injectable);
-            for (final dependency in injectable.constructor.dependencies) {
+        for (final factory
+            in lib.factories.where((factory) => factory.clazz == key.root)) {
+          final injectable = factory.factory.createdType.lookupKey;
+          final injectableSummaries =
+              (await _readFromPath(injectable.root, requestedBy: requestedBy))
+                  .assistedInjectables;
+          final injectableSummary = injectableSummaries.firstWhereOrNull(
+            (s) => s.clazz == injectable.root,
+          );
+
+          if (injectableSummary != null) {
+            final dependencies = injectableSummary.constructor.dependencies
+                .where((dependency) => !dependency.isAssisted)
+                .toList();
+
+            providersByFactory[key] = DependencyProvidedByFactory._(
+              InjectedType(key),
+              dependencies,
+              factory.clazz,
+              factory.factory.name,
+              injectableSummary.constructor,
+              factory.factory.parameters,
+            );
+
+            for (final dependency in dependencies) {
               await addInjectableIfExists(
                 dependency.lookupKey,
-                requestedBy: injectable.clazz,
+                requestedBy: injectable.root,
               );
             }
+          } else {
+            builderContext.rawLogger.severe(
+              'Failed to locate factory for injectable ${requestedBy.toAbsoluteUri()} ',
+            );
           }
         }
       }
@@ -224,6 +199,13 @@ class ComponentGraphResolver {
           );
         }
       }
+    }
+
+    for (final componentProvider in _componentSummary.providers) {
+      await addInjectableIfExists(
+        componentProvider.injectedType.lookupKey,
+        requestedBy: _componentSummary.clazz,
+      );
     }
 
     for (final componentProvider in _componentSummary.providers) {
@@ -310,15 +292,6 @@ class ComponentGraphResolver {
 
       checkForCycles(dependency);
     }
-  }
-
-  static LookupKey _extractLookupKey(InjectedType injectedType) {
-    if (injectedType != InjectedType(injectedType.lookupKey)) {
-      throw ArgumentError('Extracting the LookupKey from an InjectedType that '
-          'has additional metadata. This is a dart:inject bug. '
-          'Please file a bug.');
-    }
-    return injectedType.lookupKey;
   }
 }
 

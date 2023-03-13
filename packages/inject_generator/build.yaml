@@ -13,3 +13,9 @@ builders:
     build_extensions: { ".dart": [ ".inject.dart" ] }
     auto_apply: dependents
     build_to: source
+#targets:
+#  $default:
+#    builders:
+#      json_serializable:
+#        options:
+#          checked: true

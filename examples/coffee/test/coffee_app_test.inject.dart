@@ -78,7 +78,7 @@ class _PowerOutlet$Provider
   final _i2.DripCoffeeModule _module;
 
   @override
-  _i3.Future<_i6.PowerOutlet> get() async => _module.providePowerOutlet();
+  _i3.Future<_i6.PowerOutlet> get() async => await _module.providePowerOutlet();
 }
 
 class _Electricity$Provider

@@ -6,6 +6,7 @@ part of inject.src.summary;
 
 /// JSON-serializable subset of code analysis information about an component
 /// class pertaining to an component class.
+@JsonSerializable()
 class ComponentSummary {
   /// Location of the analyzed class.
   final SymbolPath clazz;
@@ -22,7 +23,7 @@ class ComponentSummary {
   factory ComponentSummary(
     SymbolPath clazz,
     List<SymbolPath> modules,
-    List<ProviderSummary> providers,
+    Iterable<ProviderSummary> providers,
   ) {
     return ComponentSummary._(
       clazz,
@@ -33,31 +34,8 @@ class ComponentSummary {
 
   const ComponentSummary._(this.clazz, this.modules, this.providers);
 
-  /// Returns a new instance from the JSON encoding of an instance.
-  ///
-  /// See also [ComponentSummary.toJson].
-  factory ComponentSummary.fromJson(Uri assetUri, Map<String, dynamic> json) {
-    final name = json['name'] as String;
-    final List<SymbolPath> modules = json['modules']
-        .cast<String>()
-        .map(Uri.parse)
-        .map<SymbolPath>((e) => SymbolPath.fromAbsoluteUri(e))
-        .toList();
-    final List<ProviderSummary> providers = json['providers']
-        .cast<Map<String, dynamic>>()
-        .map<ProviderSummary>(ProviderSummary.fromJson)
-        .toList();
-    final clazz = SymbolPath.fromAbsoluteUri(assetUri, name);
-    return ComponentSummary(clazz, modules, providers);
-  }
+  factory ComponentSummary.fromJson(Map<String, dynamic> json) =>
+      _$ComponentSummaryFromJson(json);
 
-  /// Serializes this summary to JSON.
-  Map<String, dynamic> toJson() {
-    return {
-      'name': clazz.symbol,
-      'modules':
-          modules.map((summary) => summary.toAbsoluteUri().toString()).toList(),
-      'providers': providers,
-    };
-  }
+  Map<String, dynamic> toJson() => _$ComponentSummaryToJson(this);
 }

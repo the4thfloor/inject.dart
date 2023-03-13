@@ -96,14 +96,12 @@ class Inject {
 
 /// Annotates a class or the constructor of a class that will be created via
 /// assisted injection.
+const assistedInject = AssistedInject._();
+
+/// **INTERNAL ONLY**: Might be exposed if we add flags or other properties.
+@visibleForTesting
 class AssistedInject {
-  /// The [Type] of the [AssistedFactory] for this class.
-  final Type factory;
-
-  // ignore: public_member_api_docs
-  const factory AssistedInject(Type factory) = AssistedInject._;
-
-  const AssistedInject._(this.factory);
+  const AssistedInject._();
 }
 
 /// Annotates a parameter for an assisted injection constructor.

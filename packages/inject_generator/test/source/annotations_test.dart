@@ -1,6 +1,5 @@
 import 'package:build/build.dart';
 import 'package:inject_generator/src/source/symbol_path.dart';
-import 'package:logging/logging.dart';
 import 'package:test/test.dart';
 
 import '../utils.dart';
@@ -26,23 +25,23 @@ void main() {
 
       expect(
         component.clazz,
-        SymbolPath(rootPackage, testFilePath, 'ComponentWithoutModule'),
+        const SymbolPath(rootPackage, testFilePath, 'ComponentWithoutModule'),
       );
       expect(component.providers.length, 1);
       expect(component.providers[0].name, 'getBar');
       expect(
         component.providers[0].injectedType.lookupKey.root,
-        SymbolPath(rootPackage, testFilePath, 'Bar'),
+        const SymbolPath(rootPackage, testFilePath, 'Bar'),
       );
 
       expect(summary.injectables.length, 2);
       expect(
         summary.injectables[0].clazz,
-        SymbolPath(rootPackage, testFilePath, 'Bar'),
+        const SymbolPath(rootPackage, testFilePath, 'Bar'),
       );
       expect(
         summary.injectables[1].clazz,
-        SymbolPath(rootPackage, testFilePath, 'Foo'),
+        const SymbolPath(rootPackage, testFilePath, 'Foo'),
       );
 
       final asset = stb.content.entries.first;
@@ -70,13 +69,13 @@ void main() {
 
       expect(
         component.clazz,
-        SymbolPath(rootPackage, testFilePath, 'ComponentWithModule'),
+        const SymbolPath(rootPackage, testFilePath, 'ComponentWithModule'),
       );
       expect(component.providers.length, 1);
       expect(component.providers[0].name, 'bar');
       expect(
         component.providers[0].injectedType.lookupKey.root,
-        SymbolPath(rootPackage, testFilePath, 'Bar'),
+        const SymbolPath(rootPackage, testFilePath, 'Bar'),
       );
 
       expect(summary.injectables.length, 0);
@@ -91,36 +90,38 @@ void main() {
       const testFilePath = 'test/source/data/component_with_provides.dart';
       final testAssetId = AssetId(rootPackage, testFilePath);
       final tb = SummaryTestBed(inputAssetId: testAssetId);
-      await tb.run();
-
-      tb
-        ..printLog()
-        ..expectLogRecord(
-          Level.WARNING,
-          '@provides annotation is not supported for components',
-        )
-        ..expectLogRecord(
-          Level.SEVERE,
-          'component class must declare at least one @inject-annotated provider',
-        );
+      expect(
+        () async => tb.run(),
+        throwsA(
+          predicate(
+            (e) =>
+                e is StateError &&
+                e.message.contains(
+                  '@provides annotation is not supported for components',
+                ),
+          ),
+        ),
+      );
+      tb.printLog();
     });
 
     test('module with @inject', () async {
       const testFilePath = 'test/source/data/module_with_inject.dart';
       final testAssetId = AssetId(rootPackage, testFilePath);
       final tb = SummaryTestBed(inputAssetId: testAssetId);
-      await tb.run();
-
-      tb
-        ..printLog()
-        ..expectLogRecord(
-          Level.WARNING,
-          '@inject annotation is not supported for modules',
-        )
-        ..expectLogRecord(
-          Level.SEVERE,
-          'module class must declare at least one @provides-annotated provider',
-        );
+      expect(
+        () async => tb.run(),
+        throwsA(
+          predicate(
+            (e) =>
+                e is StateError &&
+                e.message.contains(
+                  '@inject annotation is not supported for modules',
+                ),
+          ),
+        ),
+      );
+      tb.printLog();
     });
 
     test('module method with async provider', () async {
@@ -142,14 +143,15 @@ void main() {
       final module = summary.modules[0];
       expect(
         module.clazz,
-        SymbolPath(rootPackage, testFilePath, 'BarModule'),
+        const SymbolPath(rootPackage, testFilePath, 'BarModule'),
       );
       expect(module.providers.length, 1);
-      expect(module.providers[0].isAsynchronous, true);
+      expect(module.providers[0].name, 'getBar');
       expect(
         module.providers[0].injectedType.lookupKey.root,
-        SymbolPath(rootPackage, testFilePath, 'Bar'),
+        const SymbolPath(rootPackage, testFilePath, 'Bar'),
       );
+      expect(module.providers[0].injectedType.isAsynchronous, true);
 
       final asset = stb.content.entries.first;
       final ctb = CodegenTestBed(inputAssetId: asset.key, input: asset.value);
@@ -175,24 +177,31 @@ void main() {
       final module = summary.modules[0];
       expect(
         module.clazz,
-        SymbolPath(rootPackage, testFilePath, 'BarModule'),
+        const SymbolPath(rootPackage, testFilePath, 'BarModule'),
       );
       expect(module.providers.length, 1);
-      expect(module.providers[0].isSingleton, true);
+      expect(module.providers[0].name, 'bar');
       expect(
         module.providers[0].injectedType.lookupKey.root,
-        SymbolPath(rootPackage, testFilePath, 'Bar'),
+        const SymbolPath(rootPackage, testFilePath, 'Bar'),
       );
+      expect(module.providers[0].injectedType.isSingleton, true);
 
       expect(summary.injectables.length, 2);
       final injectable0 = summary.injectables[0];
       final injectable1 = summary.injectables[1];
 
-      expect(injectable0.clazz, SymbolPath(rootPackage, testFilePath, 'Foo'));
-      expect(injectable0.constructor.isSingleton, true);
+      expect(
+        injectable0.clazz,
+        const SymbolPath(rootPackage, testFilePath, 'Foo'),
+      );
+      expect(injectable0.constructor.injectedType.isSingleton, true);
 
-      expect(injectable1.clazz, SymbolPath(rootPackage, testFilePath, 'Foo2'));
-      expect(injectable1.constructor.isSingleton, true);
+      expect(
+        injectable1.clazz,
+        const SymbolPath(rootPackage, testFilePath, 'Foo2'),
+      );
+      expect(injectable1.constructor.injectedType.isSingleton, true);
 
       final asset = stb.content.entries.first;
       final ctb = CodegenTestBed(inputAssetId: asset.key, input: asset.value);
@@ -218,65 +227,84 @@ void main() {
       final component = summary.components[0];
       expect(
         component.clazz,
-        SymbolPath(rootPackage, testFilePath, 'Component'),
+        const SymbolPath(rootPackage, testFilePath, 'Component'),
       );
       expect(component.providers.length, 2);
       expect(component.providers[0].name, 'annotatedClassFactory');
       expect(
         component.providers[0].injectedType.lookupKey.root,
-        SymbolPath(rootPackage, testFilePath, 'AnnotatedClassFactory'),
+        const SymbolPath(rootPackage, testFilePath, 'AnnotatedClassFactory'),
       );
       expect(component.providers[1].name, 'annotatedConstructorFactory');
       expect(
         component.providers[1].injectedType.lookupKey.root,
-        SymbolPath(rootPackage, testFilePath, 'AnnotatedConstructorFactory'),
+        const SymbolPath(
+          rootPackage,
+          testFilePath,
+          'AnnotatedConstructorFactory',
+        ),
       );
 
-      /////
+      expect(summary.injectables.length, 1);
+      final foo = summary.injectables[0];
+      expect(foo.clazz, const SymbolPath(rootPackage, testFilePath, 'Foo'));
 
-      expect(summary.injectables.length, 3);
-      final annotatedClass = summary.injectables[0];
-      final annotatedConstructor = summary.injectables[1];
-      final foo = summary.injectables[2];
+      expect(summary.factories.length, 2);
+      final annotatedClassFactory = summary.factories[0];
+      final annotatedConstructorFactory = summary.factories[1];
+
+      expect(
+        annotatedClassFactory.clazz,
+        const SymbolPath(rootPackage, testFilePath, 'AnnotatedClassFactory'),
+      );
+      expect(
+        annotatedClassFactory.factory.createdType.lookupKey.root,
+        const SymbolPath(rootPackage, testFilePath, 'AnnotatedClass'),
+      );
+
+      expect(
+        annotatedConstructorFactory.clazz,
+        const SymbolPath(
+          rootPackage,
+          testFilePath,
+          'AnnotatedConstructorFactory',
+        ),
+      );
+      expect(
+        annotatedConstructorFactory.factory.createdType.lookupKey.root,
+        const SymbolPath(rootPackage, testFilePath, 'AnnotatedConstructor'),
+      );
+
+      expect(summary.assistedInjectables.length, 2);
+      final annotatedClass = summary.assistedInjectables[0];
+      final annotatedConstructor = summary.assistedInjectables[1];
 
       expect(
         annotatedClass.clazz,
-        SymbolPath(rootPackage, testFilePath, 'AnnotatedClass'),
+        const SymbolPath(rootPackage, testFilePath, 'AnnotatedClass'),
       );
-      expect(
-        annotatedClass.factory!.root,
-        SymbolPath(rootPackage, testFilePath, 'AnnotatedClassFactory'),
-      );
+      expect(annotatedClass.constructor.injectedType.isAssisted, true);
       expect(annotatedClass.constructor.dependencies.length, 2);
       expect(
         annotatedClass.constructor.dependencies[0].lookupKey.root,
-        SymbolPath(rootPackage, testFilePath, 'Foo'),
+        const SymbolPath(rootPackage, testFilePath, 'Foo'),
       );
-      expect(
-        annotatedClass.constructor.dependencies[0].isAssisted,
-        false,
-      );
+      expect(annotatedClass.constructor.dependencies[0].isAssisted, false);
       expect(
         annotatedClass.constructor.dependencies[1].lookupKey.root,
-        SymbolPath(rootPackage, testFilePath, 'Bar'),
+        const SymbolPath(rootPackage, testFilePath, 'Bar'),
       );
-      expect(
-        annotatedClass.constructor.dependencies[1].isAssisted,
-        true,
-      );
+      expect(annotatedClass.constructor.dependencies[1].isAssisted, true);
 
       expect(
         annotatedConstructor.clazz,
-        SymbolPath(rootPackage, testFilePath, 'AnnotatedConstructor'),
+        const SymbolPath(rootPackage, testFilePath, 'AnnotatedConstructor'),
       );
-      expect(
-        annotatedConstructor.factory!.root,
-        SymbolPath(rootPackage, testFilePath, 'AnnotatedConstructorFactory'),
-      );
+      expect(annotatedConstructor.constructor.injectedType.isAssisted, true);
       expect(annotatedConstructor.constructor.dependencies.length, 2);
       expect(
         annotatedConstructor.constructor.dependencies[0].lookupKey.root,
-        SymbolPath(rootPackage, testFilePath, 'Foo'),
+        const SymbolPath(rootPackage, testFilePath, 'Foo'),
       );
       expect(
         annotatedConstructor.constructor.dependencies[0].isAssisted,
@@ -284,25 +312,9 @@ void main() {
       );
       expect(
         annotatedConstructor.constructor.dependencies[1].lookupKey.root,
-        SymbolPath(rootPackage, testFilePath, 'Bar'),
+        const SymbolPath(rootPackage, testFilePath, 'Bar'),
       );
-      expect(
-        annotatedConstructor.constructor.dependencies[1].isAssisted,
-        true,
-      );
-
-      expect(foo.clazz, SymbolPath(rootPackage, testFilePath, 'Foo'));
-      expect(foo.factory, isNull);
-
-      expect(summary.factories.length, 2);
-      expect(
-        summary.factories[0].clazz,
-        SymbolPath(rootPackage, testFilePath, 'AnnotatedClassFactory'),
-      );
-      expect(
-        summary.factories[1].clazz,
-        SymbolPath(rootPackage, testFilePath, 'AnnotatedConstructorFactory'),
-      );
+      expect(annotatedConstructor.constructor.dependencies[1].isAssisted, true);
 
       final asset = stb.content.entries.first;
       final ctb = CodegenTestBed(inputAssetId: asset.key, input: asset.value);
