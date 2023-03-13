@@ -13,14 +13,11 @@ class InjectableSummary {
   /// Summary about the constructor annotated with `@Inject()`.
   final ProviderSummary constructor;
 
-  /// The factory of an class annotated with `@AssistedInject()`..
-  final LookupKey? factory;
-
   /// Constructor.
   ///
   /// [clazz] is the path to the injectable class. [constructor] carries summary
   /// about the constructor annotated with `@Inject()`.
-  const InjectableSummary(this.clazz, this.constructor, this.factory);
+  const InjectableSummary(this.clazz, this.constructor);
 
   factory InjectableSummary.fromJson(Map<String, dynamic> json) =>
       _$InjectableSummaryFromJson(json);

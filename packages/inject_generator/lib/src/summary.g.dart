@@ -21,10 +21,8 @@ ComponentSummary _$ComponentSummaryFromJson(Map<String, dynamic> json) =>
                   .toList()),
           $checkedConvert(
               'providers',
-              (v) => (v as List<dynamic>)
-                  .map((e) =>
-                      ProviderSummary.fromJson(e as Map<String, dynamic>))
-                  .toList()),
+              (v) => (v as List<dynamic>).map(
+                  (e) => ProviderSummary.fromJson(e as Map<String, dynamic>))),
         );
         return val;
       },
@@ -96,11 +94,6 @@ InjectableSummary _$InjectableSummaryFromJson(Map<String, dynamic> json) =>
               'clazz', (v) => SymbolPath.fromJson(v as Map<String, dynamic>)),
           $checkedConvert('constructor',
               (v) => ProviderSummary.fromJson(v as Map<String, dynamic>)),
-          $checkedConvert(
-              'factory',
-              (v) => v == null
-                  ? null
-                  : LookupKey.fromJson(v as Map<String, dynamic>)),
         );
         return val;
       },
@@ -110,7 +103,6 @@ Map<String, dynamic> _$InjectableSummaryToJson(InjectableSummary instance) =>
     <String, dynamic>{
       'clazz': instance.clazz,
       'constructor': instance.constructor,
-      'factory': instance.factory,
     };
 
 LibrarySummary _$LibrarySummaryFromJson(Map<String, dynamic> json) =>
@@ -144,6 +136,14 @@ LibrarySummary _$LibrarySummaryFromJson(Map<String, dynamic> json) =>
                           InjectableSummary.fromJson(e as Map<String, dynamic>))
                       .toList() ??
                   const []),
+          assistedInjectables: $checkedConvert(
+              'assistedInjectables',
+              (v) =>
+                  (v as List<dynamic>?)
+                      ?.map((e) =>
+                          InjectableSummary.fromJson(e as Map<String, dynamic>))
+                      .toList() ??
+                  const []),
           factories: $checkedConvert(
               'factories',
               (v) =>
@@ -163,6 +163,7 @@ Map<String, dynamic> _$LibrarySummaryToJson(LibrarySummary instance) =>
       'components': instance.components,
       'modules': instance.modules,
       'injectables': instance.injectables,
+      'assistedInjectables': instance.assistedInjectables,
       'factories': instance.factories,
     };
 
@@ -177,10 +178,8 @@ ModuleSummary _$ModuleSummaryFromJson(Map<String, dynamic> json) =>
           $checkedConvert('hasDefaultConstructor', (v) => v as bool),
           $checkedConvert(
               'providers',
-              (v) => (v as List<dynamic>)
-                  .map((e) =>
-                      ProviderSummary.fromJson(e as Map<String, dynamic>))
-                  .toList()),
+              (v) => (v as List<dynamic>).map(
+                  (e) => ProviderSummary.fromJson(e as Map<String, dynamic>))),
         );
         return val;
       },
@@ -203,17 +202,11 @@ ProviderSummary _$ProviderSummaryFromJson(Map<String, dynamic> json) =>
           $checkedConvert('kind', (v) => $enumDecode(_$ProviderKindEnumMap, v)),
           $checkedConvert('injectedType',
               (v) => InjectedType.fromJson(v as Map<String, dynamic>)),
-          isSingleton:
-              $checkedConvert('isSingleton', (v) => v as bool? ?? false),
-          isAsynchronous:
-              $checkedConvert('isAsynchronous', (v) => v as bool? ?? false),
           dependencies: $checkedConvert(
               'dependencies',
               (v) =>
-                  (v as List<dynamic>?)
-                      ?.map((e) =>
-                          InjectedType.fromJson(e as Map<String, dynamic>))
-                      .toList() ??
+                  (v as List<dynamic>?)?.map((e) =>
+                      InjectedType.fromJson(e as Map<String, dynamic>)) ??
                   const []),
         );
         return val;
@@ -225,8 +218,6 @@ Map<String, dynamic> _$ProviderSummaryToJson(ProviderSummary instance) =>
       'name': instance.name,
       'kind': _$ProviderKindEnumMap[instance.kind]!,
       'injectedType': instance.injectedType,
-      'isSingleton': instance.isSingleton,
-      'isAsynchronous': instance.isAsynchronous,
       'dependencies': instance.dependencies,
     };
 

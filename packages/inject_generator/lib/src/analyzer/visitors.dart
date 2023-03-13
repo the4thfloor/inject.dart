@@ -30,6 +30,9 @@ abstract class InjectLibraryVisitor {
   /// If [clazz] is annotated with `@singleton`, then [singleton] is true.
   void visitInjectable(ClassElement clazz, bool singleton);
 
+  /// Called when [clazz] is annotated with `@assistedInject`.
+  void visitAssistedInjectable(ClassElement clazz);
+
   /// Called when [clazz] is annotated with `@assistedFactory`.
   void visitAssistedFactory(ClassElement clazz);
 
@@ -60,13 +63,18 @@ class _LibraryVisitor extends RecursiveElementVisitor<void> {
   @override
   void visitClassElement(ClassElement element) {
     var isInjectable = false;
+    var isAssistedInjectable = false;
     var isAssistedFactory = false;
     var isModule = false;
     var isComponent = false;
 
     var count = 0;
-    if (isInjectableClass(element) || isAssistedInjectableClass(element)) {
+    if (isInjectableClass(element)) {
       isInjectable = true;
+      count++;
+    }
+    if (isAssistedInjectableClass(element)) {
+      isAssistedInjectable = true;
       count++;
     }
     if (isAssistedFactoryClass(element)) {
@@ -118,6 +126,30 @@ class _LibraryVisitor extends RecursiveElementVisitor<void> {
         element,
         singleton,
       );
+    }
+    if (isAssistedInjectable) {
+      final singleton = isSingletonClass(element);
+      if (singleton) {
+        throw StateError(
+          constructMessage(
+            builderContext.buildStep.inputId,
+            element,
+            'Classes and constructors cannot be annotated with @Singleton().',
+          ),
+        );
+      }
+      final asynchronous = hasAsynchronousAnnotation(element) ||
+          element.constructors.any(hasAsynchronousAnnotation);
+      if (asynchronous) {
+        throw StateError(
+          constructMessage(
+            builderContext.buildStep.inputId,
+            element,
+            'Classes and constructors cannot be annotated with @Asynchronous().',
+          ),
+        );
+      }
+      _injectLibraryVisitor.visitAssistedInjectable(element);
     }
     if (isAssistedFactory) {
       _injectLibraryVisitor.visitAssistedFactory(element);
@@ -295,8 +327,8 @@ abstract class FactoryClassVisitor extends GeneralizingElementVisitor<void> {
   }
 
   @override
-  void visitMethodElement(MethodElement method) {
-    visitFactoryMethod(method);
+  void visitMethodElement(MethodElement element) {
+    visitFactoryMethod(element);
   }
 
   void visitFactoryMethod(MethodElement method);

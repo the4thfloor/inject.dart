@@ -148,9 +148,8 @@ class _ComponentBuilder {
   /// Dependencies instantiated eagerly during initialization of the component.
   final BlockBuilder preInstantiations = BlockBuilder();
 
-  /// Dependencies already visited during graph traversal.
-  final Set<ResolvedDependency> _visitedPreInstantiations =
-      <ResolvedDependency>{};
+  /// Sorted dependencies handled by this component.
+  final Set<ResolvedDependency> _orderedDependencies = <ResolvedDependency>{};
 
   /// Fields (modules, singletons) on the component class.
   final List<FieldBuilder> fields = <FieldBuilder>[];
@@ -218,7 +217,7 @@ class _ComponentBuilder {
         ..constructors.addAll([factoryConstructor.build(), constructor.build()])
         ..methods.addAll(methods.map((b) => b.build())),
     );
-    return Tuple2(clazz, _visitedPreInstantiations);
+    return Tuple2(clazz, _orderedDependencies);
   }
 
   // generates the factory and the private constructor.
@@ -278,8 +277,9 @@ class _ComponentBuilder {
   void _generateInitializeMethod() {
     final body = BlockBuilder();
 
-    for (final dependency in _visitedPreInstantiations) {
-      final providerClassName = _providerClassName(dependency.lookupKey);
+    for (final dependency in _orderedDependencies) {
+      final providerClassName =
+          _providerClassName(dependency.injectedType.lookupKey);
       final fieldName = providerClassName.decapitalize();
       fields.add(
         FieldBuilder()
@@ -329,8 +329,9 @@ class _ComponentBuilder {
   // Generate getters/methods for all types the component provides.
   void _generateComponentProviders() {
     for (final provider in graph.providers) {
-      final resolved = _visitedPreInstantiations.firstWhereOrNull(
-        (element) => element.lookupKey == provider.injectedType.lookupKey,
+      final resolved = _orderedDependencies.firstWhereOrNull(
+        (element) =>
+            element.injectedType.lookupKey == provider.injectedType.lookupKey,
       );
       if (resolved == null) {
         throw _UnresolvedDependencyForComponentError(
@@ -339,7 +340,7 @@ class _ComponentBuilder {
         );
       }
 
-      final resolvedIsNullable = resolved.isNullable;
+      final resolvedIsNullable = resolved.injectedType.isNullable;
       final injectedIsNullable = provider.injectedType.isNullable;
       if (!injectedIsNullable && resolvedIsNullable) {
         _logNullabilityMismatchDependency(
@@ -352,7 +353,7 @@ class _ComponentBuilder {
       final returnType = _referenceForType(
         libraryUri,
         provider.injectedType,
-        asFuture: provider.injectedType.asynchronous(_visitedPreInstantiations),
+        asFuture: provider.injectedType.asynchronous(_orderedDependencies),
       );
 
       final providerClassName =
@@ -372,8 +373,9 @@ class _ComponentBuilder {
     }
   }
 
+  // Sorts all dependencies so that all can be fulfilled.
   void _collectDependencies(ResolvedDependency? dep) {
-    if (dep == null || _visitedPreInstantiations.contains(dep)) {
+    if (dep == null || _orderedDependencies.contains(dep)) {
       return;
     }
 
@@ -381,7 +383,7 @@ class _ComponentBuilder {
       _collectDependencies(graph.mergedDependencies[depDep.lookupKey]);
     }
 
-    _visitedPreInstantiations.add(dep);
+    _orderedDependencies.add(dep);
   }
 }
 
@@ -447,10 +449,11 @@ class _ProviderBuilder {
         dependency as DependencyProvidedByFactory,
       );
     }
-    asynchronous = asynchronous || dependency.isAsynchronous;
+    asynchronous = asynchronous || dependency.injectedType.isAsynchronous;
 
-    var providerType = _referenceForKey(libraryUri, dependency.lookupKey);
-    if (dependency.isNullable) {
+    var providerType =
+        _referenceForKey(libraryUri, dependency.injectedType.lookupKey);
+    if (dependency.injectedType.isNullable) {
       providerType = providerType.toNullable();
     }
     if (asynchronous) {
@@ -466,7 +469,7 @@ class _ProviderBuilder {
 
     return Class(
       (b) => b
-        ..name = _providerClassName(dependency.lookupKey)
+        ..name = _providerClassName(dependency.injectedType.lookupKey)
         ..implements.add(providerType.toProvider())
         ..constructors.add(constructor.build())
         ..fields.addAll(fields.map((b) => b.build()))
@@ -481,11 +484,11 @@ class _ProviderBuilder {
     for (final injected
         in dependency.dependencies.where((dep) => !dep.isAssisted)) {
       final resolved = dependencies.firstWhereOrNull(
-        (element) => element.lookupKey == injected.lookupKey,
+        (element) => element.injectedType.lookupKey == injected.lookupKey,
       );
       if (resolved == null) {
         throw _UnresolvedDependencyForProviderError(
-          requestedBy: dependency.lookupKey,
+          requestedBy: dependency.injectedType.lookupKey,
           injected: injected.lookupKey,
         );
       }
@@ -530,7 +533,7 @@ class _ProviderBuilder {
       ),
     );
 
-    final isSingleton = dep.isSingleton;
+    final isSingleton = dep.injectedType.isSingleton;
     const singletonFieldName = '_singleton';
     if (isSingleton) {
       constructor.constant = false;
@@ -539,7 +542,7 @@ class _ProviderBuilder {
           ..name = singletonFieldName
           ..type = _reference(
             libraryUri,
-            dep.lookupKey.root,
+            dep.injectedType.lookupKey.root,
           ).toNullable(),
       );
     }
@@ -549,9 +552,9 @@ class _ProviderBuilder {
 
     for (final injected in dep.dependencies.where((dep) => !dep.isAssisted)) {
       final resolved = dependencies.firstWhere(
-        (dep) => dep.lookupKey == injected.lookupKey,
+        (dep) => dep.injectedType.lookupKey == injected.lookupKey,
       );
-      final resolvedIsNullable = resolved.isNullable;
+      final resolvedIsNullable = resolved.injectedType.isNullable;
       final injectedIsNullable = injected.isNullable;
       if (!injectedIsNullable && resolvedIsNullable) {
         _logNullabilityMismatchDependency(
@@ -577,7 +580,7 @@ class _ProviderBuilder {
 
     var provider = refer('$moduleFieldName.${dep.methodName}')
         .call(positionalArguments, namedArguments);
-    if (dep.isAsynchronous) {
+    if (dep.injectedType.isAsynchronous) {
       provider = provider.awaited;
     }
     if (isSingleton) {
@@ -591,7 +594,7 @@ class _ProviderBuilder {
 
   bool _buildProvidedByInjectable(DependencyProvidedByInjectable dep) {
     var asynchronous = false;
-    final isSingleton = dep.isSingleton;
+    final isSingleton = dep.injectedType.isSingleton;
     const singletonFieldName = '_singleton';
     if (isSingleton) {
       constructor.constant = false;
@@ -600,7 +603,7 @@ class _ProviderBuilder {
           ..name = singletonFieldName
           ..type = _reference(
             libraryUri,
-            dep.lookupKey.root,
+            dep.injectedType.lookupKey.root,
           ).toNullable(),
       );
     }
@@ -622,7 +625,7 @@ class _ProviderBuilder {
       }
     }
 
-    var provider = _reference(libraryUri, dep.lookupKey.root)
+    var provider = _reference(libraryUri, dep.injectedType.lookupKey.root)
         .call(positionalArguments, namedArguments);
     if (isSingleton) {
       provider = refer(singletonFieldName).assignNullAware(provider);
@@ -642,7 +645,7 @@ class _ProviderBuilder {
         ..name = fieldName
         ..type = _reference(
           libraryUri,
-          dep.lookupKey.root,
+          dep.injectedType.lookupKey.root,
         ).toNullable(),
     );
 
@@ -655,7 +658,7 @@ class _ProviderBuilder {
         .toList();
     methodBuilder.body = refer(fieldName)
         .assignNullAware(
-          refer(_factoryClassName(dep.lookupKey)).call(params),
+          refer(_factoryClassName(dep.injectedType.lookupKey)).call(params),
         )
         .code;
 
@@ -692,14 +695,15 @@ class _FactoryBuilder {
     DependencyProvidedByFactory dependency,
     Set<ResolvedDependency> dependencies,
   ) {
-    final factoryClassName = _factoryClassName(dependency.lookupKey);
+    final factoryClassName =
+        _factoryClassName(dependency.injectedType.lookupKey);
     final isAsynchronous = dependency.asynchronous(dependencies);
     return _FactoryBuilder._(
       libraryUri,
       dependency,
       dependencies,
       factoryClassName,
-      _referenceForKey(libraryUri, dependency.lookupKey),
+      _referenceForKey(libraryUri, dependency.injectedType.lookupKey),
       isAsynchronous,
     );
   }
@@ -717,13 +721,13 @@ class _FactoryBuilder {
   Class build() {
     final createdType = _referenceForKey(
       libraryUri,
-      dependency.summary.factory.createdType.lookupKey,
+      dependency.createdType.injectedType.lookupKey,
     );
 
     final constructor = ConstructorBuilder()..constant = true;
     final fields = <FieldBuilder>[];
     final createMethod = MethodBuilder()
-      ..name = dependency.summary.factory.name
+      ..name = dependency.methodName
       ..returns = asynchronous ? createdType.toFuture() : createdType
       ..annotations.add(refer('override'))
       ..modifier = asynchronous ? MethodModifier.async : null;
@@ -733,8 +737,8 @@ class _FactoryBuilder {
     final seen = <LookupKey>[];
 
     // generate constructor, fields and arguments for the create method from
-    // injected dependencies
-    for (final injected in dependency.injectable.constructor.dependencies) {
+    // createdType dependencies
+    for (final injected in dependency.createdType.dependencies) {
       final isSeen = seen.contains(injected.lookupKey);
       seen.add(injected.lookupKey);
 
@@ -742,15 +746,18 @@ class _FactoryBuilder {
       final providerFieldName =
           _providerClassName(injected.lookupKey).decapitalize();
 
+      //
       // add not assisted dependencies as constructor parameter
+      //
+
       if (!isSeen && !isAssisted) {
         final resolved = dependencies.firstWhereOrNull(
-          (element) => element.lookupKey == injected.lookupKey,
+          (element) => element.injectedType.lookupKey == injected.lookupKey,
         );
         if (resolved == null) {
           throw _UnresolvedDependencyForFactoryError(
-            factory: dependency.summary.clazz,
-            requestedBy: dependency.summary.factory.createdType.lookupKey,
+            factory: dependency.factoryClass,
+            requestedBy: dependency.injectedType.lookupKey,
             injected: injected.lookupKey,
           );
         }
@@ -770,9 +777,43 @@ class _FactoryBuilder {
         );
       }
 
+      //
+      // generate create method parameters
+      //
+
+      if (isAssisted) {
+        var type = _referenceForKey(libraryUri, injected.lookupKey);
+        if (injected.isNullable) {
+          type = type.toNullable();
+        }
+
+        if (injected.isRequired && !injected.isNamed) {
+          createMethod.requiredParameters.add(
+            Parameter(
+              (b) => b
+                ..name = injected.name!
+                ..type = type,
+            ),
+          );
+        } else {
+          createMethod.optionalParameters.add(
+            Parameter(
+              (b) => b
+                ..name = injected.name!
+                ..named = injected.isNamed
+                ..required = injected.isRequired
+                ..type = type,
+            ),
+          );
+        }
+      }
+
+      //
+      // generate arguments to create the type
+      //
+
       final isProvider = injected.isProvider;
       final isAsynchronous = injected.asynchronous(dependencies);
-
       Expression argRef;
       if (isAssisted) {
         argRef = refer(injected.name!);
@@ -790,34 +831,6 @@ class _FactoryBuilder {
         namedArguments[injected.name!] = argRef;
       } else {
         positionalArguments.add(argRef);
-      }
-    }
-
-    // generate create method parameters
-    for (final parameter in dependency.summary.factory.parameters) {
-      var type = _referenceForKey(libraryUri, parameter.lookupKey);
-      if (parameter.isNullable) {
-        type = type.toNullable();
-      }
-
-      if (parameter.isRequired && !parameter.isNamed) {
-        createMethod.requiredParameters.add(
-          Parameter(
-            (b) => b
-              ..name = parameter.name!
-              ..type = type,
-          ),
-        );
-      } else {
-        createMethod.optionalParameters.add(
-          Parameter(
-            (b) => b
-              ..name = parameter.name!
-              ..named = parameter.isNamed
-              ..required = parameter.isRequired
-              ..type = type,
-          ),
-        );
       }
     }
 
@@ -851,7 +864,7 @@ TypeReference _referenceForType(
   if (injectedType.isNullable) {
     keyReference = keyReference.toNullable();
   }
-  if (asFuture || injectedType.isFeature) {
+  if (asFuture || injectedType.isAsynchronous) {
     keyReference = keyReference.toFuture();
   }
   if (injectedType.isProvider) {
@@ -887,8 +900,8 @@ TypeReference _reference(Uri libraryUri, SymbolPath symbolPath) =>
 extension _ResolvedDependencyExtension on ResolvedDependency {
   /// Whether this or one of its dependencies is asynchronous.
   /// [knownDependencies] list of all known dependencies to look up.
-  bool asynchronous(Set<ResolvedDependency> knownDependencies) {
-    if (isAsynchronous) {
+  bool asynchronous(Iterable<ResolvedDependency> knownDependencies) {
+    if (injectedType.isAsynchronous) {
       return true;
     }
 
@@ -896,7 +909,7 @@ extension _ResolvedDependencyExtension on ResolvedDependency {
         .where((dep) => !dep.isAssisted)
         .map(
           (dep) => knownDependencies.firstWhereOrNull(
-            (element) => dep.lookupKey == element.lookupKey,
+            (element) => dep.lookupKey == element.injectedType.lookupKey,
           ),
         )
         .any((dep) => dep?.asynchronous(knownDependencies) ?? false);
@@ -904,9 +917,11 @@ extension _ResolvedDependencyExtension on ResolvedDependency {
 }
 
 extension _InjectedTypeExtension on InjectedType {
-  bool asynchronous(Set<ResolvedDependency> dependencies) {
+  bool asynchronous(Iterable<ResolvedDependency> dependencies) {
     return dependencies
-            .firstWhereOrNull((element) => lookupKey == element.lookupKey)
+            .firstWhereOrNull(
+              (element) => lookupKey == element.injectedType.lookupKey,
+            )
             ?.asynchronous(dependencies) ??
         false;
   }
@@ -972,9 +987,9 @@ void _logNullabilityMismatchDependency({
   if (resolved is DependencyProvidedByModule) {
     resolvedSymbolPath = resolved.moduleClass;
   } else if (resolved is DependencyProvidedByFactory) {
-    resolvedSymbolPath = resolved.injectable.clazz;
+    resolvedSymbolPath = resolved.injectedType.lookupKey.root;
   } else {
-    resolvedSymbolPath = resolved.lookupKey.root;
+    resolvedSymbolPath = resolved.injectedType.lookupKey.root;
   }
 
   builderContext.rawLogger.severe(

@@ -13,7 +13,6 @@ import 'package:collection/collection.dart';
 import '../analyzer/utils.dart';
 import '../analyzer/visitors.dart';
 import '../context.dart';
-import '../source/lookup_key.dart';
 import '../source/symbol_path.dart';
 import '../summary.dart';
 import 'abstract_builder.dart';
@@ -36,10 +35,20 @@ class InjectSummaryBuilder extends AbstractInjectBuilder {
       final components = <ComponentSummary>[];
       final modules = <ModuleSummary>[];
       final injectables = <InjectableSummary>[];
+      final assistedInjectables = <InjectableSummary>[];
       final factories = <FactorySummary>[];
-      _SummaryBuilderVisitor(components, modules, injectables, factories)
-          .visitLibrary(lib);
-      if (components.isEmpty && modules.isEmpty && injectables.isEmpty) {
+      _SummaryBuilderVisitor(
+        components,
+        modules,
+        injectables,
+        assistedInjectables,
+        factories,
+      ).visitLibrary(lib);
+      if (components.isEmpty &&
+          modules.isEmpty &&
+          injectables.isEmpty &&
+          assistedInjectables.isEmpty &&
+          factories.isEmpty) {
         return null;
       }
       summary = LibrarySummary(
@@ -47,6 +56,7 @@ class InjectSummaryBuilder extends AbstractInjectBuilder {
         components: components,
         modules: modules,
         injectables: injectables,
+        assistedInjectables: assistedInjectables,
         factories: factories,
       );
     } else {
@@ -82,23 +92,21 @@ class _SummaryBuilderVisitor extends InjectLibraryVisitor {
   final List<ComponentSummary> _components;
   final List<ModuleSummary> _modules;
   final List<InjectableSummary> _injectables;
+  final List<InjectableSummary> _assistedInjectables;
   final List<FactorySummary> _factories;
 
   const _SummaryBuilderVisitor(
     this._components,
     this._modules,
     this._injectables,
+    this._assistedInjectables,
     this._factories,
   );
 
   @override
   void visitInjectable(ClassElement clazz, bool singleton) {
-    final classIsAnnotated =
-        hasInjectAnnotation(clazz) || hasAssistedInjectAnnotation(clazz);
-    final annotatedConstructors = [
-      ...clazz.constructors.where(hasInjectAnnotation),
-      ...clazz.constructors.where(hasAssistedInjectAnnotation)
-    ];
+    final classIsAnnotated = hasInjectAnnotation(clazz);
+    final annotatedConstructors = clazz.constructors.where(hasInjectAnnotation);
 
     if (classIsAnnotated && annotatedConstructors.isNotEmpty) {
       throw StateError(
@@ -106,8 +114,7 @@ class _SummaryBuilderVisitor extends InjectLibraryVisitor {
           builderContext.buildStep.inputId,
           clazz,
           'has @inject annotation on both the class and on one of the '
-          'constructors or factories. Please annotate one or the other, '
-          'but not both.',
+          'constructors. Please annotate one or the other,  but not both.',
         ),
       );
     }
@@ -134,31 +141,93 @@ class _SummaryBuilderVisitor extends InjectLibraryVisitor {
     }
 
     ProviderSummary? constructorSummary;
-    LookupKey? factory;
     if (annotatedConstructors.length == 1) {
       // Use the explicitly annotated constructor.
       constructorSummary = _createConstructorProviderSummary(
         annotatedConstructors.single,
         singleton,
+        false,
       );
-      factory = _extractFactory(annotatedConstructors.single);
     } else if (classIsAnnotated) {
       if (clazz.constructors.length <= 1) {
         // This is the case of a default or an only constructor.
         constructorSummary = _createConstructorProviderSummary(
           clazz.constructors.single,
           singleton,
+          false,
         );
-        factory = _extractFactory(clazz);
       }
     }
 
     if (constructorSummary != null) {
       _injectables.add(
+        InjectableSummary(getSymbolPath(clazz.thisType), constructorSummary),
+      );
+    }
+  }
+
+  @override
+  void visitAssistedInjectable(ClassElement clazz) {
+    final classIsAnnotated = hasAssistedInjectAnnotation(clazz);
+    final annotatedConstructors =
+        clazz.constructors.where(hasAssistedInjectAnnotation);
+
+    if (classIsAnnotated && annotatedConstructors.isNotEmpty) {
+      throw StateError(
+        constructMessage(
+          builderContext.buildStep.inputId,
+          clazz,
+          'has @assistedInject annotation on both the class and on one of the '
+          'constructors. Please annotate one or the other,  but not both.',
+        ),
+      );
+    }
+
+    if (classIsAnnotated && clazz.constructors.length > 1) {
+      throw StateError(
+        constructMessage(
+          builderContext.buildStep.inputId,
+          clazz,
+          'has more than one constructor. Please annotate one of the '
+          'constructors instead of the class.',
+        ),
+      );
+    }
+
+    if (annotatedConstructors.length > 1) {
+      throw StateError(
+        constructMessage(
+          builderContext.buildStep.inputId,
+          clazz,
+          'no more than one constructor may be annotated with @assistedInject.',
+        ),
+      );
+    }
+
+    ProviderSummary? constructorSummary;
+    if (annotatedConstructors.length == 1) {
+      // Use the explicitly annotated constructor.
+      constructorSummary = _createConstructorProviderSummary(
+        annotatedConstructors.single,
+        false,
+        true,
+      );
+    } else if (classIsAnnotated) {
+      if (clazz.constructors.length <= 1) {
+        // This is the case of a default or an only constructor.
+        constructorSummary = _createConstructorProviderSummary(
+          clazz.constructors.single,
+          false,
+          true,
+        );
+      }
+    }
+
+    if (constructorSummary != null) {
+      _assistedInjectables.add(
         InjectableSummary(
           getSymbolPath(clazz.thisType),
           constructorSummary,
-          factory,
         ),
       );
     }
@@ -219,27 +288,27 @@ class _SummaryBuilderVisitor extends InjectLibraryVisitor {
         ),
       );
     }
-    final providers = visitor._providers.where((ps) {
-      if (ps.isAsynchronous) {
-        throw StateError(
-          constructMessage(
-            builderContext.buildStep.inputId,
-            clazz,
-            'component class must not declare @asynchronous-annotated providers',
-          ),
-        );
-      }
-      return true;
-    });
-    final summary =
-        ComponentSummary(getSymbolPath(clazz.thisType), modules, providers);
+    final summary = ComponentSummary(
+      getSymbolPath(clazz.thisType),
+      modules,
+      visitor._providers,
+    );
     _components.add(summary);
   }
 
   @override
   void visitModule(ClassElement clazz) {
     final visitor = _ProviderSummaryVisitor(false)..visitClass(clazz);
-    final providers = visitor._providers.where((ps) {
+    if (visitor._providers.isEmpty) {
+      throw StateError(
+        constructMessage(
+          builderContext.buildStep.inputId,
+          clazz,
+          'module class must declare at least one @provides-annotated provider',
+        ),
+      );
+    }
+    for (final ps in visitor._providers) {
       if (ps.kind == ProviderKind.getter) {
         throw StateError(
           constructMessage(
@@ -250,22 +319,12 @@ class _SummaryBuilderVisitor extends InjectLibraryVisitor {
           ),
         );
       }
-      return true;
-    });
-    if (providers.isEmpty) {
-      throw StateError(
-        constructMessage(
-          builderContext.buildStep.inputId,
-          clazz,
-          'module class must declare at least one @provides-annotated provider',
-        ),
-      );
     }
 
     final summary = ModuleSummary(
       getSymbolPath(clazz.thisType),
       clazz.hasDefaultConstructor(),
-      providers,
+      visitor._providers,
     );
     _modules.add(summary);
   }
@@ -300,7 +359,7 @@ class _FactorySummaryVisitor extends FactoryClassVisitor {
 
     final summary = FactoryMethodSummary(
       method.name,
-      getInjectedType(returnType),
+      getInjectedType(returnType, assisted: true),
       method.parameters
           .map((p) {
             if (p.type.isDynamic) {
@@ -381,9 +440,7 @@ class _ProviderSummaryVisitor extends InjectClassVisitor {
     final summary = ProviderSummary(
       method.name,
       ProviderKind.method,
-      getInjectedType(returnType, qualifier: qualifier),
-      isSingleton: singleton,
-      isAsynchronous: asynchronous,
+      getInjectedType(returnType, qualifier: qualifier, singleton: singleton),
       dependencies: method.parameters.map((p) {
         if (isForComponent) {
           throw StateError(
@@ -411,9 +468,10 @@ class _ProviderSummaryVisitor extends InjectClassVisitor {
         return getInjectedType(
           p.type,
           name: p.name,
+          qualifier: hasQualifier(p) ? extractQualifier(p) : null,
           required: p.isRequired,
           named: p.isNamed,
-          qualifier: hasQualifier(p) ? extractQualifier(p) : null,
+          assisted: hasAssistedAnnotation(p),
         );
       }).whereNotNull(),
     );
@@ -431,8 +489,7 @@ class _ProviderSummaryVisitor extends InjectClassVisitor {
     final summary = ProviderSummary(
       field.name,
       ProviderKind.getter,
-      getInjectedType(returnType, qualifier: qualifier),
-      isSingleton: singleton,
+      getInjectedType(returnType, qualifier: qualifier, singleton: singleton),
       dependencies: const [],
     );
     _providers.add(summary);
@@ -462,14 +519,18 @@ void _checkReturnType(
 
 ProviderSummary _createConstructorProviderSummary(
   ConstructorElement element,
-  bool isSingleton,
+  bool singleton,
+  bool assisted,
 ) {
   final returnType = element.enclosingElement.thisType;
   return ProviderSummary(
     element.name,
     ProviderKind.constructor,
-    getInjectedType(returnType),
-    isSingleton: isSingleton,
+    getInjectedType(
+      returnType,
+      singleton: singleton,
+      assisted: assisted,
+    ),
     dependencies: element.parameters.map((p) {
       SymbolPath? qualifier;
       if (hasQualifier(p)) {
@@ -508,28 +569,13 @@ ProviderSummary _createConstructorProviderSummary(
       return getInjectedType(
         p.type,
         name: p.name,
+        qualifier: qualifier,
         required: p.isRequired,
         named: p.isNamed,
-        qualifier: qualifier,
         assisted: hasAssistedAnnotation(p),
       );
     }).whereNotNull(),
   );
-}
-
-LookupKey? _extractFactory(Element element) {
-  if (!hasAssistedInjectAnnotation(element)) {
-    return null;
-  }
-
-  final annotation = getAssistedInjectAnnotation(element);
-  final factory = annotation?.computeConstantValue()?.getField('factory');
-  final type = factory?.toTypeValue();
-  if (type == null) {
-    return null;
-  }
-
-  return LookupKey.fromDartType(type);
 }
 
 String _librarySummaryToJson(LibrarySummary library) {

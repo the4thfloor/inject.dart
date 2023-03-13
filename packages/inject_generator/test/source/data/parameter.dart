@@ -55,9 +55,9 @@ class Inject3 {
   Inject3(this.factory);
 }
 
-@AssistedInject(Inject4Factory)
+@assistedInject
 class Inject4 {
-  final FoDependency2o2 foo;
+  final Dependency2 foo;
   final Dependency1? foo2;
   final Dependency1? foo3;
   final Dependency1? foo4;
@@ -67,10 +67,10 @@ class Inject4 {
 
 @assistedFactory
 abstract class Inject4Factory {
-  Inject4 create(FoDependency2o2 foo);
+  Inject4 create(Dependency2 foo);
 }
 
 @inject
 class Dependency1 {}
 
-class FoDependency2o2 {}
+class Dependency2 {}

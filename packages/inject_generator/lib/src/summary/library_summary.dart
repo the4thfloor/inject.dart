@@ -25,17 +25,19 @@ class LibrarySummary {
   /// Injectable classes.
   final List<InjectableSummary> injectables;
 
+  /// Assisted injectable classes.
+  final List<InjectableSummary> assistedInjectables;
+
   /// AssistedInject factory classes.
   final List<FactorySummary> factories;
 
   /// Constructor.
-  ///
-  /// [assetUri], [components] and [modules] must not be `null`.
   factory LibrarySummary(
     Uri assetUri, {
     List<ComponentSummary> components = const [],
     List<ModuleSummary> modules = const [],
     List<InjectableSummary> injectables = const [],
+    List<InjectableSummary> assistedInjectables = const [],
     List<FactorySummary> factories = const [],
   }) {
     return LibrarySummary._(
@@ -43,6 +45,7 @@ class LibrarySummary {
       components,
       modules,
       injectables,
+      assistedInjectables,
       factories,
     );
   }
@@ -52,6 +55,7 @@ class LibrarySummary {
     this.components,
     this.modules,
     this.injectables,
+    this.assistedInjectables,
     this.factories,
   );
 

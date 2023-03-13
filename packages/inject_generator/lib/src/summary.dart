@@ -8,10 +8,8 @@
 library inject.src.summary;
 
 import 'package:json_annotation/json_annotation.dart';
-import 'package:quiver/collection.dart';
 
 import 'source/injected_type.dart';
-import 'source/lookup_key.dart';
 import 'source/symbol_path.dart';
 
 part 'summary.g.dart';

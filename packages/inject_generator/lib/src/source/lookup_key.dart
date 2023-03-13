@@ -88,4 +88,9 @@ class LookupKey {
   @override
   int get hashCode =>
       root.hashCode ^ qualifier.hashCode ^ _listEquality.hash(typeArguments);
+
+  @override
+  String toString() {
+    return 'LookupKey{${toPrettyString()}';
+  }
 }

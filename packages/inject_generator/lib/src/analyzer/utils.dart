@@ -6,6 +6,7 @@ import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/dart/element/nullability_suffix.dart';
 import 'package:analyzer/dart/element/type.dart';
 import 'package:collection/collection.dart';
+import 'package:source_gen/source_gen.dart';
 
 import '../context.dart';
 import '../source/injected_type.dart';
@@ -24,7 +25,7 @@ SymbolPath getSymbolPath(DartType type) {
 
   return SymbolPath.fromAbsoluteUri(
     element.library!.source.uri,
-    element.name,
+    typeNameOf(type),
   );
 }
 
@@ -32,9 +33,10 @@ SymbolPath getSymbolPath(DartType type) {
 InjectedType getInjectedType(
   DartType type, {
   String? name,
+  SymbolPath? qualifier,
   bool? required,
   bool? named,
-  SymbolPath? qualifier,
+  bool? singleton,
   bool? assisted,
 }) =>
     InjectedType(
@@ -44,7 +46,8 @@ InjectedType getInjectedType(
       isRequired: required,
       isNamed: named,
       isProvider: type.isProvider,
-      isFeature: type.isDartAsyncFuture,
+      isSingleton: singleton,
+      isAsynchronous: type.isDartAsyncFuture,
       isAssisted: assisted,
     );
 

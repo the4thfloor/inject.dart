@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:analyzer/dart/analysis/features.dart';
+import 'package:inject/inject.dart';
 import 'package:json_annotation/json_annotation.dart';
 
 import 'lookup_key.dart';
@@ -27,15 +29,18 @@ class InjectedType {
   /// Return `true` if it is a named parameter. Otherwise `false` for a positional parameter.
   final bool isNamed;
 
-  /// True if the user is trying to inject [LookupKey] using a function type. If
+  /// True if the user is trying to inject [LookupKey] using [Provider]. If
   /// false, the user is trying to inject the type directly.
   final bool isProvider;
 
-  /// True if the user is trying to inject [LookupKey] with a Feature.
-  /// If false, the user is trying to inject the type directly.
-  final bool isFeature;
+  /// Return `true` if it is annotated with [singleton]
+  final bool isSingleton;
 
-  /// True if the user wants to inject it manually via assisted inject.
+  /// Return `true` if it is annotated with [asynchronous] or
+  /// [LookupKey] is wrapped with a [Feature].
+  final bool isAsynchronous;
+
+  /// Return `true` if it is annotated with [assistedInject]
   final bool isAssisted;
 
   factory InjectedType(
@@ -45,30 +50,33 @@ class InjectedType {
     bool? isRequired,
     bool? isNamed,
     bool? isProvider,
-    bool? isFeature,
+    bool? isSingleton,
+    bool? isAsynchronous,
     bool? isAssisted,
   }) =>
       InjectedType._(
-        lookupKey,
-        name,
-        isNullable ?? false,
-        isRequired ?? false,
-        isNamed ?? false,
-        isProvider ?? false,
-        isFeature ?? false,
-        isAssisted ?? false,
+        lookupKey: lookupKey,
+        name: name,
+        isNullable: isNullable ?? false,
+        isRequired: isRequired ?? false,
+        isNamed: isNamed ?? false,
+        isProvider: isProvider ?? false,
+        isSingleton: isSingleton ?? false,
+        isAsynchronous: isAsynchronous ?? false,
+        isAssisted: isAssisted ?? false,
       );
 
-  const InjectedType._(
-    this.lookupKey,
-    this.name,
-    this.isNullable,
-    this.isRequired,
-    this.isNamed,
-    this.isProvider,
-    this.isFeature,
-    this.isAssisted,
-  );
+  const InjectedType._({
+    required this.lookupKey,
+    required this.name,
+    required this.isNullable,
+    required this.isRequired,
+    required this.isNamed,
+    required this.isProvider,
+    required this.isSingleton,
+    required this.isAsynchronous,
+    required this.isAssisted,
+  });
 
   factory InjectedType.fromJson(Map<String, dynamic> json) =>
       _$InjectedTypeFromJson(json);
@@ -86,7 +94,8 @@ class InjectedType {
           isRequired == other.isRequired &&
           isNamed == other.isNamed &&
           isProvider == other.isProvider &&
-          isFeature == other.isFeature &&
+          isSingleton == other.isSingleton &&
+          isAsynchronous == other.isAsynchronous &&
           isAssisted == other.isAssisted;
 
   @override
@@ -97,11 +106,7 @@ class InjectedType {
       isRequired.hashCode ^
       isNamed.hashCode ^
       isProvider.hashCode ^
-      isFeature.hashCode ^
+      isSingleton.hashCode ^
+      isAsynchronous.hashCode ^
       isAssisted.hashCode;
-
-  @override
-  String toString() {
-    return 'InjectedType{lookupKey: ${lookupKey.toClassName()}, name: $name, isNullable: $isNullable}';
-  }
 }
