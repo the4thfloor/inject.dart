@@ -15,7 +15,7 @@ abstract class MyAppFactory {
 
 /// The Widget that configures your application.
 class MyApp extends StatelessWidget {
-  @AssistedInject(MyAppFactory)
+  @assistedInject
   const MyApp({
     @assisted super.key,
     required this.settingsController,

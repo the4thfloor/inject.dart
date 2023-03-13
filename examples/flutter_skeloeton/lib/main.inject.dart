@@ -1,13 +1,11 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
-import 'dart:async' as _i3;
-
-import 'package:flutter/src/foundation/key.dart' as _i7;
-import 'package:inject/inject.dart' as _i5;
-
 import 'main.dart' as _i1;
-import 'src/app.dart' as _i4;
 import 'src/settings/settings_controller.dart' as _i2;
-import 'src/settings/settings_service.dart' as _i6;
+import 'src/app.dart' as _i3;
+import 'package:inject/inject.dart' as _i4;
+import 'src/settings/settings_service.dart' as _i5;
+import 'dart:async' as _i6;
+import 'package:flutter/src/foundation/key.dart' as _i7;
 
 class MainComponent$Component implements _i1.MainComponent {
   factory MainComponent$Component.create(
@@ -37,20 +35,20 @@ class MainComponent$Component implements _i1.MainComponent {
   }
 
   @override
-  _i4.MyAppFactory get myAppFactory => _myAppFactory$Provider.get();
+  _i3.MyAppFactory get myAppFactory => _myAppFactory$Provider.get();
 }
 
-class _SettingsService$Provider implements _i5.Provider<_i6.SettingsService> {
+class _SettingsService$Provider implements _i4.Provider<_i5.SettingsService> {
   _SettingsService$Provider();
 
-  _i6.SettingsService? _singleton;
+  _i5.SettingsService? _singleton;
 
   @override
-  _i6.SettingsService get() => _singleton ??= _i6.SettingsService();
+  _i5.SettingsService get() => _singleton ??= _i5.SettingsService();
 }
 
 class _SettingsController$Provider
-    implements _i5.Provider<_i3.Future<_i2.SettingsController>> {
+    implements _i4.Provider<_i6.Future<_i2.SettingsController>> {
   _SettingsController$Provider(
     this._settingsService$Provider,
     this._module,
@@ -60,32 +58,32 @@ class _SettingsController$Provider
 
   final _i2.SettingsModule _module;
 
-  _i3.Future<_i2.SettingsController>? _singleton;
+  _i2.SettingsController? _singleton;
 
   @override
-  _i3.Future<_i2.SettingsController> get() => _singleton ??=
-      _module.settingsController(_settingsService$Provider.get());
+  _i6.Future<_i2.SettingsController> get() async => _singleton ??=
+      await _module.settingsController(_settingsService$Provider.get());
 }
 
-class _MyAppFactory$Provider implements _i5.Provider<_i4.MyAppFactory> {
+class _MyAppFactory$Provider implements _i4.Provider<_i3.MyAppFactory> {
   _MyAppFactory$Provider(this._settingsController$Provider);
 
   final _SettingsController$Provider _settingsController$Provider;
 
-  _i4.MyAppFactory? _factory;
+  _i3.MyAppFactory? _factory;
 
   @override
-  _i4.MyAppFactory get() =>
+  _i3.MyAppFactory get() =>
       _factory ??= _MyAppFactory$Factory(_settingsController$Provider);
 }
 
-class _MyAppFactory$Factory implements _i4.MyAppFactory {
+class _MyAppFactory$Factory implements _i3.MyAppFactory {
   const _MyAppFactory$Factory(this._settingsController$Provider);
 
   final _SettingsController$Provider _settingsController$Provider;
 
   @override
-  _i3.Future<_i4.MyApp> create({_i7.Key? key}) async => _i4.MyApp(
+  _i6.Future<_i3.MyApp> create({_i7.Key? key}) async => _i3.MyApp(
         key: key,
         settingsController: await _settingsController$Provider.get(),
       );
