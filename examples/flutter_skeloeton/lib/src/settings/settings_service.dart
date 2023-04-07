@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:inject/inject.dart';
+import 'package:inject_annotation/inject.dart';
 
 /// A service that stores and retrieves user settings.
 ///

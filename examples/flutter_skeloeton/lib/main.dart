@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:inject/inject.dart';
+import 'package:inject_annotation/inject.dart';
 
 import 'main.inject.dart' as g;
 import 'src/app.dart';

@@ -1,4 +1,4 @@
-import 'package:inject/inject.dart';
+import 'package:inject_annotation/inject.dart';
 
 import 'component_without_module.inject.dart' as g;
 

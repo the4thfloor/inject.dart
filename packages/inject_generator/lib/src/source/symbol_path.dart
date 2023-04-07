@@ -101,7 +101,7 @@ class SymbolPath implements Comparable<SymbolPath> {
 
   /// For standard annotations defined by `package:inject`.
   const SymbolPath._standard(this.symbol)
-      : package = 'inject',
+      : package = 'inject_annotation',
         path = 'lib/src/api/annotations.dart';
 
   /// Create a [SymbolPath] using [assetUri].

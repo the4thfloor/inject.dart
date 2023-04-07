@@ -252,5 +252,5 @@ extension IsNullable on DartType {
   bool get isProvider =>
       element?.name == 'Provider' &&
       element?.library?.source.uri ==
-          Uri.parse('package:inject/src/api/provider.dart');
+          Uri.parse('package:inject_annotation/src/api/provider.dart');
 }

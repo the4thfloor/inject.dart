@@ -4,7 +4,7 @@
 
 import 'dart:async';
 
-import 'package:inject/inject.dart';
+import 'package:inject_annotation/inject.dart';
 
 import 'electric_heater.dart';
 import 'heater.dart';

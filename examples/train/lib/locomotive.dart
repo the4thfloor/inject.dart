@@ -1,4 +1,4 @@
-import 'package:inject/inject.dart';
+import 'package:inject_annotation/inject.dart';
 
 import 'bike.dart';
 import 'common.dart';

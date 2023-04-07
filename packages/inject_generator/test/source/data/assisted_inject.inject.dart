@@ -1,6 +1,6 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'assisted_inject.dart' as _i1;
-import 'package:inject/inject.dart' as _i2;
+import 'package:inject_annotation/inject.dart' as _i2;
 
 class Component$Component implements _i1.Component {
   factory Component$Component.create() => Component$Component._();

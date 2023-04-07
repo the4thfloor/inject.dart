@@ -1,4 +1,4 @@
-name: inject
+name: inject_annotation
 version: 1.0.0-alpha
 description: Compile-time dependency injection for Dart
 homepage: https://pub.dartlang.org/packages/inject

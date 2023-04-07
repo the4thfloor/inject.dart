@@ -14,8 +14,8 @@ dependencies:
     sdk: flutter
   flutter_localizations:
     sdk: flutter
-  inject:
-    path: ../../packages/inject
+  inject_annotation:
+    path: ../../packages/inject_annotation
 
 dev_dependencies:
   flutter_test:
