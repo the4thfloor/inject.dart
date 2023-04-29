@@ -9,7 +9,7 @@ import 'package:build/build.dart';
 import 'package:code_builder/code_builder.dart';
 import 'package:collection/collection.dart';
 import 'package:dart_style/dart_style.dart';
-import 'package:inject_annotation/inject.dart';
+import 'package:inject_annotation/inject_annotation.dart';
 import 'package:tuple/tuple.dart';
 
 import '../context.dart';
@@ -916,14 +916,14 @@ extension _TypeReferenceExtension on TypeReference {
   }
 
   TypeReference toProvider() {
-    if (symbol == 'Provider' && url == 'package:inject_annotation/inject.dart') {
+    if (symbol == 'Provider' && url == 'package:inject_annotation/inject_annotation.dart') {
       return this;
     }
 
     return TypeReference(
       (b) => b
         ..symbol = 'Provider'
-        ..url = 'package:inject_annotation/inject.dart'
+        ..url = 'package:inject_annotation/inject_annotation.dart'
         ..types.add(this),
     );
   }

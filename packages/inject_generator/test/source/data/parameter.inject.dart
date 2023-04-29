@@ -1,6 +1,6 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'parameter.dart' as _i1;
-import 'package:inject_annotation/inject.dart' as _i2;
+import 'package:inject_annotation/inject_annotation.dart' as _i2;
 
 class ParameterComponent$Component implements _i1.ParameterComponent {
   factory ParameterComponent$Component.create(

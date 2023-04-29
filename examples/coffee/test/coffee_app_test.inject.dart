@@ -3,7 +3,7 @@ import 'coffee_app_test.dart' as _i1;
 import 'package:inject_example_coffee/src/drip_coffee_module.dart' as _i2;
 import 'dart:async' as _i3;
 import 'package:inject_example_coffee/src/coffee_maker.dart' as _i4;
-import 'package:inject_annotation/inject.dart' as _i5;
+import 'package:inject_annotation/inject_annotation.dart' as _i5;
 import 'package:inject_example_coffee/src/electric_heater.dart' as _i6;
 import 'package:inject_example_coffee/src/heater.dart' as _i7;
 import 'package:inject_example_coffee/src/pump.dart' as _i8;

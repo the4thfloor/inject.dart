@@ -3,7 +3,7 @@ import 'locomotive.dart' as _i1;
 import 'bike.dart' as _i2;
 import 'food.dart' as _i3;
 import 'common.dart' as _i4;
-import 'package:inject_annotation/inject.dart' as _i5;
+import 'package:inject_annotation/inject_annotation.dart' as _i5;
 
 class TrainServices$Component implements _i1.TrainServices {
   factory TrainServices$Component.create({

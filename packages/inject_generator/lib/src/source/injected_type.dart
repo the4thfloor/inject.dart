@@ -3,7 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:analyzer/dart/analysis/features.dart';
-import 'package:inject_annotation/inject.dart';
+import 'package:inject_annotation/inject_annotation.dart';
 import 'package:json_annotation/json_annotation.dart';
 
 import 'lookup_key.dart';

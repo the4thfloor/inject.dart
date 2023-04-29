@@ -1,4 +1,4 @@
-import 'package:inject_annotation/inject.dart';
+import 'package:inject_annotation/inject_annotation.dart';
 
 /// Provides common dependencies.
 @module

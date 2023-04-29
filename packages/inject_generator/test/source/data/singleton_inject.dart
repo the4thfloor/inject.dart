@@ -1,4 +1,4 @@
-import 'package:inject_annotation/inject.dart';
+import 'package:inject_annotation/inject_annotation.dart';
 
 import 'singleton_inject.inject.dart' as g;
 
