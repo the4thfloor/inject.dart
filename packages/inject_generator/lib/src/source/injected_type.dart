@@ -78,8 +78,7 @@ class InjectedType {
     required this.isAssisted,
   });
 
-  factory InjectedType.fromJson(Map<String, dynamic> json) =>
-      _$InjectedTypeFromJson(json);
+  factory InjectedType.fromJson(Map<String, dynamic> json) => _$InjectedTypeFromJson(json);
 
   Map<String, dynamic> toJson() => _$InjectedTypeToJson(this);
 

@@ -59,8 +59,7 @@ class LibrarySummary {
     this.factories,
   );
 
-  factory LibrarySummary.fromJson(Map<String, dynamic> json) =>
-      _$LibrarySummaryFromJson(json);
+  factory LibrarySummary.fromJson(Map<String, dynamic> json) => _$LibrarySummaryFromJson(json);
 
   Map<String, dynamic> toJson() => _$LibrarySummaryToJson(this);
 }

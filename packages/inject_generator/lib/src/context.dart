@@ -83,8 +83,7 @@ class BuilderLogger {
 String constructMessage(AssetId inputId, Element? element, String message) {
   ElementDeclarationResult? elementDeclaration;
   if (element != null && element.kind != ElementKind.DYNAMIC) {
-    final parsedLibrary =
-        element.library?.session.getParsedLibraryByElement(element.library!);
+    final parsedLibrary = element.library?.session.getParsedLibraryByElement(element.library!);
     if (parsedLibrary is ParsedLibraryResult) {
       elementDeclaration = parsedLibrary.getElementDeclaration(element);
     }
@@ -97,8 +96,7 @@ String constructMessage(AssetId inputId, Element? element, String message) {
     source = '.';
   } else {
     final offset = elementDeclaration.node.offset;
-    sourceLocation =
-        elementDeclaration.parsedUnit?.lineInfo.getLocation(offset).toString();
+    sourceLocation = elementDeclaration.parsedUnit?.lineInfo.getLocation(offset).toString();
     final code = elementDeclaration.node.toSource();
     source = ':\n\n$code';
   }

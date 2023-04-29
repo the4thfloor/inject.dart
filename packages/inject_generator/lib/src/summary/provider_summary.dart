@@ -55,8 +55,7 @@ class ProviderSummary {
     this.dependencies,
   );
 
-  factory ProviderSummary.fromJson(Map<String, dynamic> json) =>
-      _$ProviderSummaryFromJson(json);
+  factory ProviderSummary.fromJson(Map<String, dynamic> json) => _$ProviderSummaryFromJson(json);
 
   Map<String, dynamic> toJson() => _$ProviderSummaryToJson(this);
 }

@@ -16,8 +16,7 @@ class FactorySummary {
   /// Create a new summary of a AssistedInject factory [clazz].
   const FactorySummary(this.clazz, this.factory);
 
-  factory FactorySummary.fromJson(Map<String, dynamic> json) =>
-      _$FactorySummaryFromJson(json);
+  factory FactorySummary.fromJson(Map<String, dynamic> json) => _$FactorySummaryFromJson(json);
 
   Map<String, dynamic> toJson() => _$FactorySummaryToJson(this);
 }
@@ -37,8 +36,7 @@ class FactoryMethodSummary {
 
   const FactoryMethodSummary(this.name, this.createdType, this.parameters);
 
-  factory FactoryMethodSummary.fromJson(Map<String, dynamic> json) =>
-      _$FactoryMethodSummaryFromJson(json);
+  factory FactoryMethodSummary.fromJson(Map<String, dynamic> json) => _$FactoryMethodSummaryFromJson(json);
 
   Map<String, dynamic> toJson() => _$FactoryMethodSummaryToJson(this);
 }

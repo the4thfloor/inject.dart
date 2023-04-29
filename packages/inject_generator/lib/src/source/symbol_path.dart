@@ -27,12 +27,10 @@ class SymbolPath implements Comparable<SymbolPath> {
   static const SymbolPath inject = SymbolPath._standard('Inject');
 
   /// Path to the `@AssistedInject` annotation.
-  static const SymbolPath assistedInject =
-      SymbolPath._standard('AssistedInject');
+  static const SymbolPath assistedInject = SymbolPath._standard('AssistedInject');
 
   /// Path to the `@AssistedFactory` annotation.
-  static const SymbolPath assistedFactory =
-      SymbolPath._standard('AssistedFactory');
+  static const SymbolPath assistedFactory = SymbolPath._standard('AssistedFactory');
 
   /// Path to the `@Assisted` annotation.
   static const SymbolPath assisted = SymbolPath._standard('Assisted');
@@ -135,11 +133,7 @@ class SymbolPath implements Comparable<SymbolPath> {
     }
 
     final inSegments = libUri.path.split('/');
-    final outSegments = <String>[
-      inSegments.first,
-      'lib',
-      ...inSegments.skip(1)
-    ];
+    final outSegments = <String>[inSegments.first, 'lib', ...inSegments.skip(1)];
 
     return libUri.fragment.isNotEmpty
         ? Uri(
@@ -173,12 +167,9 @@ class SymbolPath implements Comparable<SymbolPath> {
 
   @override
   int compareTo(SymbolPath symbolPath) {
-    var order = symbolPath.package == null
-        ? 0
-        : package?.compareTo(symbolPath.package!) ?? 0;
+    var order = symbolPath.package == null ? 0 : package?.compareTo(symbolPath.package!) ?? 0;
     if (order == 0) {
-      order =
-          symbolPath.path == null ? 0 : path?.compareTo(symbolPath.path!) ?? 0;
+      order = symbolPath.path == null ? 0 : path?.compareTo(symbolPath.path!) ?? 0;
     }
     if (order == 0) {
       order = symbol.compareTo(symbolPath.symbol);
@@ -213,8 +204,7 @@ class SymbolPath implements Comparable<SymbolPath> {
       final normalizedBase = relativeTo.normalizePath();
       final baseSegments = normalizedBase.path.split('/')..removeLast();
       final targetSegments = toAbsoluteUri().path.split('/');
-      if (baseSegments.first == targetSegments.first &&
-          baseSegments[1] == targetSegments[1]) {
+      if (baseSegments.first == targetSegments.first && baseSegments[1] == targetSegments[1]) {
         // Ok, we're in the same package and in the same top-level directory.
         final relativePath = pkg_path.relative(
           targetSegments.skip(2).join('/'),
@@ -241,8 +231,7 @@ class SymbolPath implements Comparable<SymbolPath> {
   /// Absolute path to this symbol for use in log messages.
   String toHumanReadableString() => '${toDartUri()}#$symbol';
 
-  factory SymbolPath.fromJson(Map<String, dynamic> json) =>
-      _$SymbolPathFromJson(json);
+  factory SymbolPath.fromJson(Map<String, dynamic> json) => _$SymbolPathFromJson(json);
 
   Map<String, dynamic> toJson() => _$SymbolPathToJson(this);
 

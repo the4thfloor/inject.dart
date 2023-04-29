@@ -55,10 +55,7 @@ void main() {
     test('equality', () {
       expect(
         {
-          'only root': [
-            const LookupKey(typeSymbolPath1),
-            const LookupKey(typeSymbolPath1)
-          ],
+          'only root': [const LookupKey(typeSymbolPath1), const LookupKey(typeSymbolPath1)],
           'with qualifier': [
             const LookupKey(typeSymbolPath1, qualifier: qualifier),
             const LookupKey(typeSymbolPath1, qualifier: qualifier)

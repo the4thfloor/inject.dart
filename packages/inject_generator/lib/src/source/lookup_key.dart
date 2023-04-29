@@ -31,34 +31,27 @@ class LookupKey {
 
   const LookupKey(this.root, {this.qualifier, this.typeArguments});
 
-  factory LookupKey.fromJson(Map<String, dynamic> json) =>
-      _$LookupKeyFromJson(json);
+  factory LookupKey.fromJson(Map<String, dynamic> json) => _$LookupKeyFromJson(json);
 
-  factory LookupKey.fromDartType(DartType type, {SymbolPath? qualifier}) =>
-      LookupKey(
+  factory LookupKey.fromDartType(DartType type, {SymbolPath? qualifier}) => LookupKey(
         getSymbolPath(type),
         qualifier: qualifier,
-        typeArguments:
-            type is ParameterizedType && type.typeArguments.isNotEmpty
-                ? type.typeArguments
-                    .map((typeArgument) => getSymbolPath(typeArgument))
-                    .toList()
-                : null,
+        typeArguments: type is ParameterizedType && type.typeArguments.isNotEmpty
+            ? type.typeArguments.map((typeArgument) => getSymbolPath(typeArgument)).toList()
+            : null,
       );
 
   /// A human-readable representation of the dart Symbol of this type.
   String toPrettyString() {
     final qualifierString = qualifier != null ? '${qualifier!.symbol}@' : '';
-    final typeArgumentsString = typeArguments?.isNotEmpty == true
-        ? "<${typeArguments?.map((e) => e.symbol).join(', ')}>"
-        : '';
+    final typeArgumentsString =
+        typeArguments?.isNotEmpty == true ? "<${typeArguments?.map((e) => e.symbol).join(', ')}>" : '';
     return '$qualifierString${root.symbol}$typeArgumentsString';
   }
 
   String toClassName() {
     final qualifierString = qualifier != null ? qualifier!.symbol : '';
-    final typeArgumentsString =
-        typeArguments?.map((e) => e.symbol.capitalize()).join() ?? '';
+    final typeArgumentsString = typeArguments?.map((e) => e.symbol.capitalize()).join() ?? '';
     return '${root.symbol}${qualifierString.capitalize()}$typeArgumentsString';
   }
 
@@ -86,8 +79,7 @@ class LookupKey {
           _listEquality.equals(typeArguments, other.typeArguments);
 
   @override
-  int get hashCode =>
-      root.hashCode ^ qualifier.hashCode ^ _listEquality.hash(typeArguments);
+  int get hashCode => root.hashCode ^ qualifier.hashCode ^ _listEquality.hash(typeArguments);
 
   @override
   String toString() {
