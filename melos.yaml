@@ -12,38 +12,38 @@ scripts:
     exec: dart fix --apply
 
   format:
-    exec: dart format .
+    exec: dart format -l 120 .
 
   build:
     run: melos run build:dart && melos run build:flutter
   build:dart:
     run: melos exec -c 1 --fail-fast -- "dart run build_runner clean && dart run build_runner build --delete-conflicting-outputs"
-    select-package:
-      depends-on: build_runner
+    packageFilters:
+      dependsOn: build_runner
       flutter: false
   build:flutter:
     run: melos exec -c 1 --fail-fast -- "flutter pub run build_runner clean && flutter pub run build_runner build --delete-conflicting-outputs"
-    select-package:
-      depends-on: build_runner
+    packageFilters:
+      dependsOn: build_runner
       flutter: true
 
   test:
     run: melos run test:plain --no-select && melos run test:build-runner-dart --no-select && melos run test:build-runner-flutter --no-select
   test:plain:
     run: melos exec -c 1 --fail-fast -- "dart test"
-    select-package:
-      no-depends-on: build_runner
-      dir-exists: test
+    packageFilters:
+      noDependsOn: build_runner
+      dirExists: test
       flutter: false
   test:build-runner-dart:
     run: melos exec -c 1 --fail-fast -- "dart run build_runner clean && dart run build_runner test --delete-conflicting-outputs"
-    select-package:
-      depends-on: build_runner
-      dir-exists: test
+    packageFilters:
+      dependsOn: build_runner
+      dirExists: test
       flutter: false
   test:build-runner-flutter:
     run: melos exec -c 1 --fail-fast -- "flutter pub run build_runner clean && flutter pub run build_runner build --delete-conflicting-outputs && flutter test"
-    select-package:
-      depends-on: build_runner
-      dir-exists: test
+    packageFilters:
+      dependsOn: build_runner
+      dirExists: test
       flutter: true
