@@ -17,8 +17,7 @@ class ComponentGraphResolver {
   final SummaryReader _reader;
 
   /// To prevent rereading the same summaries, we cache them here.
-  final Map<SymbolPath, LibrarySummary> _summaryCache =
-      <SymbolPath, LibrarySummary>{};
+  final Map<SymbolPath, LibrarySummary> _summaryCache = <SymbolPath, LibrarySummary>{};
 
   /// Create a new resolver that uses a [SummaryReader].
   ComponentGraphResolver(this._reader, this._componentSummary) {
@@ -80,9 +79,7 @@ class ComponentGraphResolver {
     // already been built in the dependency tree. We then lookup the specific
     // module summary from the library summary.
     final modulesToLoad = _modules.map<Future<ModuleSummary?>>((module) async {
-      final moduleSummaries =
-          (await _readFromPath(module, requestedBy: _componentSummary.clazz))
-              .modules;
+      final moduleSummaries = (await _readFromPath(module, requestedBy: _componentSummary.clazz)).modules;
 
       final first = moduleSummaries.firstWhereOrNull(
         (s) => s.clazz == module,
@@ -96,9 +93,7 @@ class ComponentGraphResolver {
       }
       return first;
     });
-    final allModules = (await Future.wait<ModuleSummary?>(modulesToLoad))
-        .whereNotNull()
-        .toList();
+    final allModules = (await Future.wait<ModuleSummary?>(modulesToLoad)).whereNotNull().toList();
 
     final providersByModules = <LookupKey, DependencyProvidedByModule>{};
 
@@ -116,8 +111,7 @@ class ComponentGraphResolver {
       }
     }
 
-    final providersByInjectables =
-        <LookupKey, DependencyProvidedByInjectable>{};
+    final providersByInjectables = <LookupKey, DependencyProvidedByInjectable>{};
     final providersByFactory = <LookupKey, DependencyProvidedByFactory>{};
 
     Future<void> addInjectableIfExists(
@@ -134,8 +128,7 @@ class ComponentGraphResolver {
       if (!key.root.isGlobal) {
         final lib = await _readFromPath(key.root, requestedBy: requestedBy);
 
-        for (final injectable in lib.injectables
-            .where((injectable) => injectable.clazz == key.root)) {
+        for (final injectable in lib.injectables.where((injectable) => injectable.clazz == key.root)) {
           providersByInjectables[key] = DependencyProvidedByInjectable._(
             injectable.constructor.injectedType,
             injectable.constructor.dependencies,
@@ -148,20 +141,17 @@ class ComponentGraphResolver {
           }
         }
 
-        for (final factory
-            in lib.factories.where((factory) => factory.clazz == key.root)) {
+        for (final factory in lib.factories.where((factory) => factory.clazz == key.root)) {
           final injectable = factory.factory.createdType.lookupKey;
           final injectableSummaries =
-              (await _readFromPath(injectable.root, requestedBy: requestedBy))
-                  .assistedInjectables;
+              (await _readFromPath(injectable.root, requestedBy: requestedBy)).assistedInjectables;
           final injectableSummary = injectableSummaries.firstWhereOrNull(
             (s) => s.clazz == injectable.root,
           );
 
           if (injectableSummary != null) {
-            final dependencies = injectableSummary.constructor.dependencies
-                .where((dependency) => !dependency.isAssisted)
-                .toList();
+            final dependencies =
+                injectableSummary.constructor.dependencies.where((dependency) => !dependency.isAssisted).toList();
 
             providersByFactory[key] = DependencyProvidedByFactory._(
               InjectedType(key),
@@ -272,17 +262,12 @@ class ComponentGraphResolver {
         if (hasCycle) {
           final cycle = chain.sublist(chain.indexOf(parent));
           if (cycles.add(Cycle(cycle))) {
-            final formattedCycle = cycle
-                .map((s) => '  (${s.toPrettyString()} from ${s.root.path})')
-                .join('\n');
-            builderContext.rawLogger
-                .severe('Detected dependency cycle:\n$formattedCycle');
+            final formattedCycle = cycle.map((s) => '  (${s.toPrettyString()} from ${s.root.path})').join('\n');
+            builderContext.rawLogger.severe('Detected dependency cycle:\n$formattedCycle');
           }
         } else {
-          final children = mergedDependencies[parent]
-                  ?.dependencies
-                  .map((injectedType) => injectedType.lookupKey) ??
-              const [];
+          final children =
+              mergedDependencies[parent]?.dependencies.map((injectedType) => injectedType.lookupKey) ?? const [];
           for (final child in children) {
             checkForCycles(child);
           }
@@ -309,10 +294,7 @@ class DependencyEdge {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is DependencyEdge &&
-          runtimeType == other.runtimeType &&
-          from == other.from &&
-          to == other.to;
+      other is DependencyEdge && runtimeType == other.runtimeType && from == other.from && to == other.to;
 
   @override
   int get hashCode => from.hashCode ^ to.hashCode;
@@ -360,8 +342,7 @@ class Cycle {
   @override
   bool operator ==(Object other) {
     if (other is Cycle) {
-      return _setEquality.equals(_nodes, other._nodes) &&
-          _setEquality.equals(_edges, other._edges);
+      return _setEquality.equals(_nodes, other._nodes) && _setEquality.equals(_edges, other._edges);
     }
     return false;
   }

@@ -12,9 +12,7 @@ void main() {
 
     test('should generate a valid asset URI for a Dart package', () {
       expect(
-        const SymbolPath('collection', 'lib/collection.dart', 'MapEquality')
-            .toAbsoluteUri()
-            .toString(),
+        const SymbolPath('collection', 'lib/collection.dart', 'MapEquality').toAbsoluteUri().toString(),
         'asset:collection/lib/collection.dart#MapEquality',
       );
     });

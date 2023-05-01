@@ -111,8 +111,7 @@ class _LibraryVisitor extends RecursiveElementVisitor<void> {
 
     if (isInjectable) {
       final singleton = isSingletonClass(element);
-      final asynchronous = hasAsynchronousAnnotation(element) ||
-          element.constructors.any(hasAsynchronousAnnotation);
+      final asynchronous = hasAsynchronousAnnotation(element) || element.constructors.any(hasAsynchronousAnnotation);
       if (asynchronous) {
         throw StateError(
           constructMessage(
@@ -138,8 +137,7 @@ class _LibraryVisitor extends RecursiveElementVisitor<void> {
           ),
         );
       }
-      final asynchronous = hasAsynchronousAnnotation(element) ||
-          element.constructors.any(hasAsynchronousAnnotation);
+      final asynchronous = hasAsynchronousAnnotation(element) || element.constructors.any(hasAsynchronousAnnotation);
       if (asynchronous) {
         throw StateError(
           constructMessage(
@@ -169,16 +167,11 @@ class _LibraryVisitor extends RecursiveElementVisitor<void> {
 
 List<SymbolPath> _extractModules(ClassElement clazz) {
   final annotation = getComponentAnnotation(clazz);
-  final modules =
-      annotation?.computeConstantValue()?.getField('modules')?.toListValue();
+  final modules = annotation?.computeConstantValue()?.getField('modules')?.toListValue();
   if (modules == null) {
     return const <SymbolPath>[];
   }
-  return modules
-      .map((obj) => obj.toTypeValue())
-      .whereNotNull()
-      .map((type) => getSymbolPath(type))
-      .toList();
+  return modules.map((obj) => obj.toTypeValue()).whereNotNull().map((type) => getSymbolPath(type)).toList();
 }
 
 /// Scans a resolved [ClassElement] looking for metadata-annotated members.
@@ -193,8 +186,7 @@ abstract class InjectClassVisitor {
 
   /// Call to start visiting [clazz].
   void visitClass(ClassElement clazz) {
-    for (final supertype
-        in clazz.allSupertypes.where((t) => !t.isDartCoreObject)) {
+    for (final supertype in clazz.allSupertypes.where((t) => !t.isDartCoreObject)) {
       _AnnotatedClassVisitor(this).visitElement(supertype.element);
     }
     _AnnotatedClassVisitor(this).visitClassElement(clazz);
@@ -239,8 +231,7 @@ class _AnnotatedClassVisitor extends GeneralizingElementVisitor<void> {
   // - true, if it is a module and has the `@provides` annotation
   bool _isProvider(ExecutableElement element) {
     if (_classVisitor._isForComponent) {
-      return (hasInjectAnnotation(element) || element.isAbstract) &&
-          !hasProvidesAnnotation(element);
+      return (hasInjectAnnotation(element) || element.isAbstract) && !hasProvidesAnnotation(element);
     } else {
       return hasProvidesAnnotation(element);
     }
@@ -293,12 +284,9 @@ class _AnnotatedClassVisitor extends GeneralizingElementVisitor<void> {
       _classVisitor.visitProvideGetter(
         field,
         singleton,
-        qualifier: hasQualifier(field.getter!)
-            ? extractQualifier(field.getter!)
-            : null,
+        qualifier: hasQualifier(field.getter!) ? extractQualifier(field.getter!) : null,
       );
-    } else if (_classVisitor._isForComponent &&
-        hasProvidesAnnotation(field.getter!)) {
+    } else if (_classVisitor._isForComponent && hasProvidesAnnotation(field.getter!)) {
       throw StateError(
         constructMessage(
           builderContext.buildStep.inputId,
@@ -306,8 +294,7 @@ class _AnnotatedClassVisitor extends GeneralizingElementVisitor<void> {
           '@provides annotation is not supported for components',
         ),
       );
-    } else if (!_classVisitor._isForComponent &&
-        hasInjectAnnotation(field.getter!)) {
+    } else if (!_classVisitor._isForComponent && hasInjectAnnotation(field.getter!)) {
       throw StateError(
         constructMessage(
           builderContext.buildStep.inputId,

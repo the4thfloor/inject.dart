@@ -1,0 +1,6 @@
+# melos_managed_dependency_overrides: inject_annotation,inject_generator
+dependency_overrides:
+  inject_annotation:
+    path: ../../packages/inject_annotation
+  inject_generator:
+    path: ../../packages/inject_generator

@@ -1,4 +1,4 @@
-import 'package:inject/inject.dart';
+import 'package:inject_annotation/inject_annotation.dart';
 
 import 'parameter.inject.dart' as g;
 

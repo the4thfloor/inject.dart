@@ -1,6 +1,6 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'nullability_error_module.dart' as _i1;
-import 'package:inject/inject.dart' as _i2;
+import 'package:inject_annotation/inject_annotation.dart' as _i2;
 
 class ComponentNullability$Component implements _i1.ComponentNullability {
   factory ComponentNullability$Component.create({_i1.BarModule? barModule}) =>

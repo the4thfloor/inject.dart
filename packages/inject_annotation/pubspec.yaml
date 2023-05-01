@@ -1,0 +1,14 @@
+name: inject_annotation
+version: 1.0.0-alpha.1
+description: Compile-time dependency injection for Dart
+repository: https://github.com/ralph-bergmann/inject.dart
+issue_tracker: https://github.com/ralph-bergmann/inject.dart/issues
+
+environment:
+  sdk: '>=2.18.6 <3.0.0'
+
+dependencies:
+  meta: ^1.8.0
+
+dev_dependencies:
+  lints: ^2.0.1

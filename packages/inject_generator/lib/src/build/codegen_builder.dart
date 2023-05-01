@@ -9,7 +9,7 @@ import 'package:build/build.dart';
 import 'package:code_builder/code_builder.dart';
 import 'package:collection/collection.dart';
 import 'package:dart_style/dart_style.dart';
-import 'package:inject/inject.dart';
+import 'package:inject_annotation/inject_annotation.dart';
 import 'package:tuple/tuple.dart';
 
 import '../context.dart';
@@ -24,8 +24,7 @@ import 'abstract_builder.dart';
 class InjectCodegenBuilder extends AbstractInjectBuilder {
   final bool _useScoping;
 
-  const InjectCodegenBuilder({bool useScoping = true})
-      : _useScoping = useScoping;
+  const InjectCodegenBuilder({bool useScoping = true}) : _useScoping = useScoping;
 
   @override
   String get inputExtension => 'summary';
@@ -42,10 +41,8 @@ class InjectCodegenBuilder extends AbstractInjectBuilder {
     // We initially read in our <name>.inject.summary JSON blob, parse it, and
     // use it to generate a "{className}$Component" Dart class for each @component
     // annotation that was processed and put in the summary.
-    final summary = await buildStep
-        .readAsString(buildStep.inputId)
-        .then(jsonDecode)
-        .then((json) => LibrarySummary.fromJson(json));
+    final summary =
+        await buildStep.readAsString(buildStep.inputId).then(jsonDecode).then((json) => LibrarySummary.fromJson(json));
 
     if (summary.components.isEmpty) {
       return null;
@@ -71,8 +68,7 @@ class InjectCodegenBuilder extends AbstractInjectBuilder {
       // graph.debug();
 
       // Add to the file.
-      final tuple =
-          _ComponentBuilder(summary.assetUri, component, graph).build();
+      final tuple = _ComponentBuilder(summary.assetUri, component, graph).build();
 
       target.body.add(tuple.item1);
       dependencies.addAll(tuple.item2);
@@ -84,15 +80,13 @@ class InjectCodegenBuilder extends AbstractInjectBuilder {
       );
 
       if (dependency is DependencyProvidedByFactory) {
-        final builder =
-            _FactoryBuilder(summary.assetUri, dependency, dependencies);
+        final builder = _FactoryBuilder(summary.assetUri, dependency, dependencies);
         target.body.add(builder.build());
       }
     }
 
-    final emitter = _useScoping
-        ? DartEmitter.scoped(useNullSafetySyntax: true)
-        : DartEmitter(useNullSafetySyntax: true);
+    final emitter =
+        _useScoping ? DartEmitter.scoped(useNullSafetySyntax: true) : DartEmitter(useNullSafetySyntax: true);
     return DartFormatter().format(
       target.build().accept(emitter).toString(),
     );
@@ -254,32 +248,26 @@ class _ComponentBuilder {
             ..name = paramName
             ..named = true
             ..required = !moduleSummary.hasDefaultConstructor
-            ..type = moduleSummary.hasDefaultConstructor
-                ? moduleType.toNullable()
-                : moduleType,
+            ..type = moduleSummary.hasDefaultConstructor ? moduleType.toNullable() : moduleType,
         ),
       );
 
       if (moduleSummary.hasDefaultConstructor) {
-        invokeExpressions
-            .add(refer(paramName).ifNullThen(moduleType.newInstance(const [])));
+        invokeExpressions.add(refer(paramName).ifNullThen(moduleType.newInstance(const [])));
       } else {
         invokeExpressions.add(refer(paramName).expression);
       }
-      moduleVariables[symbolPath] =
-          _Variable(name: paramName, type: moduleType);
+      moduleVariables[symbolPath] = _Variable(name: paramName, type: moduleType);
     }
 
-    factoryConstructor.body =
-        concreteComponentType.newInstanceNamed('_', invokeExpressions).code;
+    factoryConstructor.body = concreteComponentType.newInstanceNamed('_', invokeExpressions).code;
   }
 
   void _generateInitializeMethod() {
     final body = BlockBuilder();
 
     for (final dependency in _orderedDependencies) {
-      final providerClassName =
-          _providerClassName(dependency.injectedType.lookupKey);
+      final providerClassName = _providerClassName(dependency.injectedType.lookupKey);
       final fieldName = providerClassName.decapitalize();
       fields.add(
         FieldBuilder()
@@ -294,20 +282,17 @@ class _ComponentBuilder {
       final arguments = <Expression>[];
       final seen = <LookupKey>[];
 
-      for (final injected
-          in dependency.dependencies.where((dep) => !dep.isAssisted)) {
+      for (final injected in dependency.dependencies.where((dep) => !dep.isAssisted)) {
         if (seen.contains(injected.lookupKey)) {
           continue;
         }
         seen.add(injected.lookupKey);
 
-        arguments
-            .add(refer(_providerClassName(injected.lookupKey).decapitalize()));
+        arguments.add(refer(_providerClassName(injected.lookupKey).decapitalize()));
       }
 
       if (dependency is DependencyProvidedByModule) {
-        arguments
-            .add(refer('_${dependency.moduleClass.symbol.decapitalize()}'));
+        arguments.add(refer('_${dependency.moduleClass.symbol.decapitalize()}'));
       }
       body.statements.add(
         refer(fieldName)
@@ -330,8 +315,7 @@ class _ComponentBuilder {
   void _generateComponentProviders() {
     for (final provider in graph.providers) {
       final resolved = _orderedDependencies.firstWhereOrNull(
-        (element) =>
-            element.injectedType.lookupKey == provider.injectedType.lookupKey,
+        (element) => element.injectedType.lookupKey == provider.injectedType.lookupKey,
       );
       if (resolved == null) {
         throw _UnresolvedDependencyForComponentError(
@@ -352,8 +336,8 @@ class _ComponentBuilder {
 
       // Factories are never asynchronous themselves,
       // even if their create method is asynchronous.
-      final asynchronous = resolved is! DependencyProvidedByFactory &&
-          provider.injectedType.asynchronous(_orderedDependencies);
+      final asynchronous =
+          resolved is! DependencyProvidedByFactory && provider.injectedType.asynchronous(_orderedDependencies);
 
       final returnType = _referenceForType(
         libraryUri,
@@ -361,11 +345,8 @@ class _ComponentBuilder {
         asFuture: asynchronous,
       );
 
-      final providerClassName =
-          _providerClassName(provider.injectedType.lookupKey).decapitalize();
-      final ref = provider.injectedType.isProvider
-          ? refer(providerClassName)
-          : refer('$providerClassName.get()');
+      final providerClassName = _providerClassName(provider.injectedType.lookupKey).decapitalize();
+      final ref = provider.injectedType.isProvider ? refer(providerClassName) : refer('$providerClassName.get()');
 
       final method = MethodBuilder()
         ..name = provider.methodName
@@ -456,8 +437,7 @@ class _ProviderBuilder {
     }
     asynchronous = asynchronous || dependency.injectedType.isAsynchronous;
 
-    var providerType =
-        _referenceForKey(libraryUri, dependency.injectedType.lookupKey);
+    var providerType = _referenceForKey(libraryUri, dependency.injectedType.lookupKey);
     if (dependency.injectedType.isNullable) {
       providerType = providerType.toNullable();
     }
@@ -486,8 +466,7 @@ class _ProviderBuilder {
   // goes through all dependencies to add them as field and constructor parameter.
   void _generateConstructor() {
     final seen = <LookupKey>[];
-    for (final injected
-        in dependency.dependencies.where((dep) => !dep.isAssisted)) {
+    for (final injected in dependency.dependencies.where((dep) => !dep.isAssisted)) {
       final resolved = dependencies.firstWhereOrNull(
         (element) => element.injectedType.lookupKey == injected.lookupKey,
       );
@@ -576,15 +555,13 @@ class _ProviderBuilder {
       final injectAsynchronously = injected.asynchronous(dependencies);
       asynchronous = injectAsynchronously || asynchronous;
       if (injected.isNamed) {
-        namedArguments[injected.name!] =
-            injectAsynchronously ? ref.awaited : ref;
+        namedArguments[injected.name!] = injectAsynchronously ? ref.awaited : ref;
       } else {
         positionalArguments.add(injectAsynchronously ? ref.awaited : ref);
       }
     }
 
-    var provider = refer('$moduleFieldName.${dep.methodName}')
-        .call(positionalArguments, namedArguments);
+    var provider = refer('$moduleFieldName.${dep.methodName}').call(positionalArguments, namedArguments);
     if (dep.injectedType.isAsynchronous) {
       provider = provider.awaited;
     }
@@ -623,15 +600,13 @@ class _ProviderBuilder {
       final injectAsynchronously = injected.asynchronous(dependencies);
       asynchronous = injectAsynchronously || asynchronous;
       if (injected.isNamed) {
-        namedArguments[injected.name!] =
-            injectAsynchronously ? ref.awaited : ref;
+        namedArguments[injected.name!] = injectAsynchronously ? ref.awaited : ref;
       } else {
         positionalArguments.add(injectAsynchronously ? ref.awaited : ref);
       }
     }
 
-    var provider = _reference(libraryUri, dep.injectedType.lookupKey.root)
-        .call(positionalArguments, namedArguments);
+    var provider = _reference(libraryUri, dep.injectedType.lookupKey.root).call(positionalArguments, namedArguments);
     if (isSingleton) {
       provider = refer(singletonFieldName).assignNullAware(provider);
     }
@@ -700,8 +675,7 @@ class _FactoryBuilder {
     DependencyProvidedByFactory dependency,
     Set<ResolvedDependency> dependencies,
   ) {
-    final factoryClassName =
-        _factoryClassName(dependency.injectedType.lookupKey);
+    final factoryClassName = _factoryClassName(dependency.injectedType.lookupKey);
     final isAsynchronous = dependency.asynchronous(dependencies);
     return _FactoryBuilder._(
       libraryUri,
@@ -748,8 +722,7 @@ class _FactoryBuilder {
       seen.add(injected.lookupKey);
 
       final isAssisted = injected.isAssisted;
-      final providerFieldName =
-          _providerClassName(injected.lookupKey).decapitalize();
+      final providerFieldName = _providerClassName(injected.lookupKey).decapitalize();
 
       //
       // add not assisted dependencies as constructor parameter
@@ -840,8 +813,7 @@ class _FactoryBuilder {
     }
 
     // generate the body of the create method
-    createMethod.body =
-        createdType.call(positionalArguments, namedArguments).code;
+    createMethod.body = createdType.call(positionalArguments, namedArguments).code;
 
     return Class(
       (b) => b
@@ -854,11 +826,9 @@ class _FactoryBuilder {
   }
 }
 
-String _providerClassName(LookupKey key) =>
-    '_${key.toClassName().capitalize()}\$Provider';
+String _providerClassName(LookupKey key) => '_${key.toClassName().capitalize()}\$Provider';
 
-String _factoryClassName(LookupKey key) =>
-    '_${key.toClassName().capitalize()}\$Factory';
+String _factoryClassName(LookupKey key) => '_${key.toClassName().capitalize()}\$Factory';
 
 TypeReference _referenceForType(
   Uri libraryUri,
@@ -888,15 +858,12 @@ TypeReference _referenceForKey(Uri libraryUri, LookupKey key) {
 
   return (ref.toBuilder()
         ..types.addAll(
-          typeArguments
-              .map((typeArgument) => _reference(libraryUri, typeArgument))
-              .toList(),
+          typeArguments.map((typeArgument) => _reference(libraryUri, typeArgument)).toList(),
         ))
       .build();
 }
 
-TypeReference _reference(Uri libraryUri, SymbolPath symbolPath) =>
-    TypeReference(
+TypeReference _reference(Uri libraryUri, SymbolPath symbolPath) => TypeReference(
       (b) => b
         ..symbol = symbolPath.symbol
         ..url = symbolPath.toDartUri(relativeTo: libraryUri).toString(),
@@ -949,14 +916,14 @@ extension _TypeReferenceExtension on TypeReference {
   }
 
   TypeReference toProvider() {
-    if (symbol == 'Provider' && url == 'package:inject/inject.dart') {
+    if (symbol == 'Provider' && url == 'package:inject_annotation/inject_annotation.dart') {
       return this;
     }
 
     return TypeReference(
       (b) => b
         ..symbol = 'Provider'
-        ..url = 'package:inject/inject.dart'
+        ..url = 'package:inject_annotation/inject_annotation.dart'
         ..types.add(this),
     );
   }
@@ -997,8 +964,8 @@ void _logNullabilityMismatchDependency({
     resolvedSymbolPath = resolved.injectedType.lookupKey.root;
   }
 
-  builderContext.rawLogger.severe(
-      '''Could not find a way to provide "$dependencyClassName" which is injected in "${requestedBy.symbol}".
+  builderContext.rawLogger
+      .severe('''Could not find a way to provide "$dependencyClassName" which is injected in "${requestedBy.symbol}".
 
 The injected type was found, but the provided type is nullable, while the injected type is not.
 

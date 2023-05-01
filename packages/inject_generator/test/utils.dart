@@ -18,19 +18,16 @@ Matcher logRecord(Level level, String message) {
 
 class SummaryTestBed extends _TestBed {
   @override
-  SummaryTestBed({required super.inputAssetId})
-      : super(builder: const InjectSummaryBuilder());
+  SummaryTestBed({required super.inputAssetId}) : super(builder: const InjectSummaryBuilder());
 }
 
 class CodegenTestBed extends _TestBed {
   @override
-  CodegenTestBed({required super.inputAssetId, required super.input})
-      : super(builder: const InjectCodegenBuilder());
+  CodegenTestBed({required super.inputAssetId, required super.input}) : super(builder: const InjectCodegenBuilder());
 
   /// Compare the generated code with the code in the file.
   Future<void> compare() async {
-    final reader =
-        await PackageAssetReader.currentIsolate(rootPackage: rootPackage);
+    final reader = await PackageAssetReader.currentIsolate(rootPackage: rootPackage);
     final content = await reader.readAsString(genFiles.keys.first);
     expect(genFiles.length, 1);
     expect(genFiles.values.first, content);
@@ -61,8 +58,7 @@ class _TestBed {
   Map<AssetId, String> get genFiles => _writer.genFiles;
 
   /// Generated stuff as String keyed by their paths
-  Map<AssetId, String> get content =>
-      _writer.assets.map((key, value) => MapEntry(key, utf8.decode(value)));
+  Map<AssetId, String> get content => _writer.assets.map((key, value) => MapEntry(key, utf8.decode(value)));
 
   /// Verifies that [logRecords] contains a message with the desired [level] and
   /// [message].
@@ -74,10 +70,7 @@ class _TestBed {
   /// that match [message].
   void expectLogRecordCount(Level level, String message, int expectedCount) {
     final matcher = logRecord(level, message);
-    final count = logRecords
-        .map((record) => matcher.matches(record, {}))
-        .where((matches) => matches)
-        .length;
+    final count = logRecords.map((record) => matcher.matches(record, {})).where((matches) => matches).length;
     expect(
       count,
       expectedCount,
@@ -97,8 +90,7 @@ class _TestBed {
 
   /// Runs the [InjectSummaryBuilder].
   Future<void> run() async {
-    final reader =
-        await PackageAssetReader.currentIsolate(rootPackage: rootPackage);
+    final reader = await PackageAssetReader.currentIsolate(rootPackage: rootPackage);
 
     final content = input ?? await reader.readAsString(inputAssetId);
     await testBuilder(
@@ -127,9 +119,7 @@ class _LogRecordMatcher extends Matcher {
 
   @override
   bool matches(item, Map matchState) {
-    return item is LogRecord &&
-        item.level == level &&
-        item.message.contains(message);
+    return item is LogRecord && item.level == level && item.message.contains(message);
   }
 }
 

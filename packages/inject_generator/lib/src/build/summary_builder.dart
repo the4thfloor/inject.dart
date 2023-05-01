@@ -169,8 +169,7 @@ class _SummaryBuilderVisitor extends InjectLibraryVisitor {
   @override
   void visitAssistedInjectable(ClassElement clazz) {
     final classIsAnnotated = hasAssistedInjectAnnotation(clazz);
-    final annotatedConstructors =
-        clazz.constructors.where(hasAssistedInjectAnnotation);
+    final annotatedConstructors = clazz.constructors.where(hasAssistedInjectAnnotation);
 
     if (classIsAnnotated && annotatedConstructors.isNotEmpty) {
       throw StateError(
@@ -501,8 +500,7 @@ void _checkReturnType(
   Element returnTypeElement,
 ) {
   if (returnTypeElement.kind == ElementKind.DYNAMIC ||
-      returnTypeElement is TypeDefiningElement &&
-          returnTypeElement.kind == ElementKind.DYNAMIC) {
+      returnTypeElement is TypeDefiningElement && returnTypeElement.kind == ElementKind.DYNAMIC) {
     throw StateError(
       constructMessage(
         builderContext.buildStep.inputId,
@@ -585,8 +583,5 @@ String _librarySummaryToJson(LibrarySummary library) {
 extension _ClassElement on ClassElement {
   /// true if it has no constructor or a default constructor
   bool hasDefaultConstructor() =>
-      constructors.isEmpty ||
-      constructors
-          .where((constructor) => !constructor.isDefaultConstructor)
-          .isEmpty;
+      constructors.isEmpty || constructors.where((constructor) => !constructor.isDefaultConstructor).isEmpty;
 }

@@ -34,8 +34,7 @@ class ComponentSummary {
 
   const ComponentSummary._(this.clazz, this.modules, this.providers);
 
-  factory ComponentSummary.fromJson(Map<String, dynamic> json) =>
-      _$ComponentSummaryFromJson(json);
+  factory ComponentSummary.fromJson(Map<String, dynamic> json) => _$ComponentSummaryFromJson(json);
 
   Map<String, dynamic> toJson() => _$ComponentSummaryToJson(this);
 }

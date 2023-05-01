@@ -4,7 +4,7 @@
 
 library inject.example.coffee;
 
-import 'package:inject/inject.dart';
+import 'package:inject_annotation/inject_annotation.dart';
 
 import 'coffee_app.inject.dart' as g;
 import 'src/coffee_maker.dart';

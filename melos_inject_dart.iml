@@ -6,6 +6,9 @@
       <excludeFolder url="file://$MODULE_DIR$/examples/flutter_skeleton/.dart_tool" />
       <excludeFolder url="file://$MODULE_DIR$/examples/flutter_skeleton/.pub" />
       <excludeFolder url="file://$MODULE_DIR$/examples/flutter_skeleton/build" />
+      <excludeFolder url="file://$MODULE_DIR$/.dart_tool" />
+      <excludeFolder url="file://$MODULE_DIR$/.pub" />
+      <excludeFolder url="file://$MODULE_DIR$/build" />
     </content>
     <orderEntry type="sourceFolder" forTests="false" />
   </component>

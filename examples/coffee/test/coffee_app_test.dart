@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:inject/inject.dart';
+import 'package:inject_annotation/inject_annotation.dart';
 import 'package:inject_example_coffee/src/coffee_maker.dart';
 import 'package:inject_example_coffee/src/drip_coffee_module.dart';
 import 'package:inject_example_coffee/src/electric_heater.dart';

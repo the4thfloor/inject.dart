@@ -38,8 +38,7 @@ class ModuleSummary {
 
   const ModuleSummary._(this.clazz, this.hasDefaultConstructor, this.providers);
 
-  factory ModuleSummary.fromJson(Map<String, dynamic> json) =>
-      _$ModuleSummaryFromJson(json);
+  factory ModuleSummary.fromJson(Map<String, dynamic> json) => _$ModuleSummaryFromJson(json);
 
   Map<String, dynamic> toJson() => _$ModuleSummaryToJson(this);
 }

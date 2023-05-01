@@ -19,8 +19,7 @@ class InjectableSummary {
   /// about the constructor annotated with `@Inject()`.
   const InjectableSummary(this.clazz, this.constructor);
 
-  factory InjectableSummary.fromJson(Map<String, dynamic> json) =>
-      _$InjectableSummaryFromJson(json);
+  factory InjectableSummary.fromJson(Map<String, dynamic> json) => _$InjectableSummaryFromJson(json);
 
   Map<String, dynamic> toJson() => _$InjectableSummaryToJson(this);
 }

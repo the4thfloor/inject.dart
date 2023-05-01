@@ -22,18 +22,9 @@ void main() {
     test('equality', () {
       expect(
         {
-          'only lookupKey': [
-            InjectedType(lookupKey1),
-            InjectedType(lookupKey1)
-          ],
-          'different lookupKey': [
-            InjectedType(lookupKey2),
-            InjectedType(lookupKey2)
-          ],
-          'with isProvider': [
-            InjectedType(lookupKey1, isProvider: true),
-            InjectedType(lookupKey1, isProvider: true)
-          ],
+          'only lookupKey': [InjectedType(lookupKey1), InjectedType(lookupKey1)],
+          'different lookupKey': [InjectedType(lookupKey2), InjectedType(lookupKey2)],
+          'with isProvider': [InjectedType(lookupKey1, isProvider: true), InjectedType(lookupKey1, isProvider: true)],
         },
         areEqualityGroups,
       );

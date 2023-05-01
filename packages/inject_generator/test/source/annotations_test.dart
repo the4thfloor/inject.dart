@@ -125,8 +125,7 @@ void main() {
     });
 
     test('module method with async provider', () async {
-      const testFilePath =
-          'test/source/data/module_method_with_async_provider.dart';
+      const testFilePath = 'test/source/data/module_method_with_async_provider.dart';
       final testAssetId = AssetId(rootPackage, testFilePath);
       final stb = SummaryTestBed(inputAssetId: testAssetId);
       await stb.run();
