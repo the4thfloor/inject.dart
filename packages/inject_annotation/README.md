@@ -1,32 +1,93 @@
-# `package:inject`
+# Compile-time Dependency Injection for Dart and Flutter
 
-[![Build Status](https://travis-ci.org/google/inject.dart.svg?branch=master)](https://travis-ci.org/google/inject.dart)
-
-Compile-time dependency injection for Dart and Flutter, similar to [Dagger][].
-
-[Dagger]: https://google.github.io/dagger/
-
-**NOTE**: This is _not_ an official Google or Dart team project.
-
-Example code TBD.
+Compile-time dependency injection is a technique for managing the dependencies of an application at compile-time rather
+than at runtime. This provides several benefits, including improved performance, reduced code size, and better
+compile-time error checking. In Dart and Flutter, compile-time dependency injection is implemented using the `@inject`
+and `@provides` annotations, along with the `Component` and `Module` classes.
 
 ## Getting Started
 
-TBD.
+### The `Component`
+
+To use compile-time dependency injection in your Dart or Flutter application, you need to create a `Component` class.
+This is an abstract class annotated with `@component` or `@Component([])` if you also have modules.
+
+Inside the `Component`, you can define methods that return instances of the classes you need (
+e.g., `Repository get repository` in the example below).
+
+```dart
+@component
+abstract class MainComponent {
+  static const create = g.MainComponent$Component.create;
+
+  @inject
+  Repository get repository;
+}
+```
+
+### `@inject`ing Types
+
+To add a type to the dependency graph, you annotate its class with `@inject`. For example:
+
+```dart
+@inject
+class Repository {
+  const Repository(this.apiClient);
+
+  final FakeApiClient apiClient;
+
+  Future<String> getGreeting({required String name}) => apiClient.getGreeting(name: name);
+}
+```
+
+Note that you cannot add the `@inject` annotation to classes from 3rd party libraries.
+
+### Modules
+
+Modules are classes annotated with `@module`. There, you can define dependencies with the `@provides` annotation.
+
+Methods annotated with `@provides` tell how to provide an instance of a class. Function parameters are the dependencies
+of this type.
+
+```dart
+@module
+class ApiModule {
+  @provides
+  @singleton
+  FakeApiClient apiClient() => FakeApiClient();
+}
+```
+
+You can then include the module in your `Component`:
+
+```dart
+@component([ApiModule])
+abstract class MainComponent {
+  static const create = g.MainComponent$Component.create;
+
+  @inject
+  Repository get repository;
+}
+```
+
+### `@singleton`
+
+The `@singleton` annotation is used to indicate that only one instance of the provided type should be created and shared
+across the application. This can help improve performance and reduce memory usage by avoiding unnecessary object
+creation.
+
+To use `@singleton`, simply add it as an annotation to the method that provides the instance:
+
+```dart
+@module
+class ApiModule {
+  @provides
+  @singleton
+  FakeApiClient apiClient() => FakeApiClient();
+}
+```
 
 ## FAQ
-
-* [Why is the issue tracker disabled?](#why-is-the-issue-tracker-disabled)
-* [What do you mean by compile-time?](#what-do-you-mean-by-compile-time)
-* [Can I use this with Flutter](#can-i-use-this-with-flutter)
-* [Can I use this with AngularDart?](#can-i-use-this-with-angulardart)
-* [Can I use this with server-side Dart?](#can-i-use-this-with-server-side-dart)
-
-### Why is the issue tracker disabled?
-
-This library is currently offered _as-is_ (developer preview) as it is
-open-sourced from an internal repository inside Google. As such we are not able
-to act on bugs or feature requests at this time.
 
 ### What do you mean by compile-time?
 
@@ -36,22 +97,3 @@ configuration (such as reflection with `dart:mirrors`). This provides the best
 experience in terms of code-size and performance (it's nearly identical to hand
 written code) and allows us to provide compile-time errors and warnings instead
 of relying on runtime.
-
-### Can I use this with Flutter?
-
-_Yes_, `package:inject` is framework and platform agnostic, and works perfectly
-well with Flutter or any other framework. We'll be releasing more
-documentation and samples of using this package with `flutter` in the future.
-
-### Can I use this with AngularDart?
-
-While technically, _yes_ (`package:inject` is framework and platform agnostic),
-the existing dependency injection framework in AngularDart is better suited for
-the idioms of that framework. We welcome experimentation and new ideas, though!
-
-### Can I use this with server-side Dart?
-
-_Yes_, `package:inject` is framework and platform agnostic, and works perfectly
-well with any server-side Dart framework. You may want to consult your specific
-framework though - they might already have a preferred dependency injection
-pattern.
