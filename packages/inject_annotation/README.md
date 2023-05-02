@@ -7,6 +7,32 @@ and `@provides` annotations, along with the `Component` and `Module` classes.
 
 ## Getting Started
 
+### Adding the Dependency
+
+To use this library in your Dart or Flutter project, you need to add it as a dependency in your `pubspec.yaml` file:
+
+```shell
+// dart
+$ dart pub add inject_annotation
+$ dart pub add inject_generator build_runner --dev
+
+// flutter
+$ flutter pub add inject_annotation
+$ flutter pub add inject_generator build_runner --dev
+```
+
+### Generating the Code
+
+To generate the code, you need to run the build runner:
+
+```shell
+// dart
+$ dart run build_runner build
+
+// flutter
+$ flutter pub run build_runner build
+```
+
 ### The `Component`
 
 To use compile-time dependency injection in your Dart or Flutter application, you need to create a `Component` class.
