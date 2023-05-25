@@ -16,14 +16,12 @@ Future<E> runInContext<E>(BuildStep buildStep, Future<E> Function() fn) {
   final completer = Completer<E>();
 
   Chain.capture(
-    () {
-      return runZoned(
-        () async {
-          completer.complete(await fn());
-        },
-        zoneValues: {#builderContext: BuilderContext._(buildStep)},
-      );
-    },
+    () => runZoned(
+      () async {
+        completer.complete(await fn());
+      },
+      zoneValues: {#builderContext: BuilderContext._(buildStep)},
+    ),
     onError: (e, chain) {
       completer.completeError(e, chain.terse);
     },

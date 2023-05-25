@@ -23,9 +23,8 @@ class InjectSummaryBuilder extends AbstractInjectBuilder {
   const InjectSummaryBuilder();
 
   @override
-  Future<String?> buildOutput(BuildStep buildStep) {
-    return runInContext<String?>(buildStep, () => _buildInContext(buildStep));
-  }
+  Future<String?> buildOutput(BuildStep buildStep) =>
+      runInContext<String?>(buildStep, () => _buildInContext(buildStep));
 
   Future<String?> _buildInContext(BuildStep buildStep) async {
     final resolver = buildStep.resolver;
@@ -576,9 +575,7 @@ ProviderSummary _createConstructorProviderSummary(
   );
 }
 
-String _librarySummaryToJson(LibrarySummary library) {
-  return const JsonEncoder.withIndent('  ').convert(library);
-}
+String _librarySummaryToJson(LibrarySummary library) => const JsonEncoder.withIndent('  ').convert(library);
 
 extension _ClassElement on ClassElement {
   /// true if it has no constructor or a default constructor

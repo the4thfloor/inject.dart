@@ -39,16 +39,15 @@ class LibrarySummary {
     List<InjectableSummary> injectables = const [],
     List<InjectableSummary> assistedInjectables = const [],
     List<FactorySummary> factories = const [],
-  }) {
-    return LibrarySummary._(
-      assetUri,
-      components,
-      modules,
-      injectables,
-      assistedInjectables,
-      factories,
-    );
-  }
+  }) =>
+      LibrarySummary._(
+        assetUri,
+        components,
+        modules,
+        injectables,
+        assistedInjectables,
+        factories,
+      );
 
   const LibrarySummary._(
     this.assetUri,

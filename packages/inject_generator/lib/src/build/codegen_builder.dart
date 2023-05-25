@@ -33,9 +33,8 @@ class InjectCodegenBuilder extends AbstractInjectBuilder {
   String get outputExtension => 'dart';
 
   @override
-  Future<String?> buildOutput(BuildStep buildStep) {
-    return runInContext<String?>(buildStep, () => _buildInContext(buildStep));
-  }
+  Future<String?> buildOutput(BuildStep buildStep) =>
+      runInContext<String?>(buildStep, () => _buildInContext(buildStep));
 
   Future<String?> _buildInContext(BuildStep buildStep) async {
     // We initially read in our <name>.inject.summary JSON blob, parse it, and
@@ -100,12 +99,8 @@ class _AssetSummaryReader implements SummaryReader {
   const _AssetSummaryReader(this._buildStep);
 
   @override
-  Future<LibrarySummary> read(String package, String path) {
-    return _buildStep
-        .readAsString(AssetId(package, path))
-        .then(jsonDecode)
-        .then((json) => LibrarySummary.fromJson(json));
-  }
+  Future<LibrarySummary> read(String package, String path) =>
+      _buildStep.readAsString(AssetId(package, path)).then(jsonDecode).then((json) => LibrarySummary.fromJson(json));
 }
 
 class _Variable {
@@ -404,13 +399,12 @@ class _ProviderBuilder {
     Uri libraryUri,
     ResolvedDependency dependency,
     Set<ResolvedDependency> dependencies,
-  ) {
-    return _ProviderBuilder._(
-      libraryUri,
-      dependency,
-      dependencies,
-    );
-  }
+  ) =>
+      _ProviderBuilder._(
+        libraryUri,
+        dependency,
+        dependencies,
+      );
 
   _ProviderBuilder._(
     this.libraryUri,
@@ -889,14 +883,13 @@ extension _ResolvedDependencyExtension on ResolvedDependency {
 }
 
 extension _InjectedTypeExtension on InjectedType {
-  bool asynchronous(Iterable<ResolvedDependency> dependencies) {
-    return dependencies
-            .firstWhereOrNull(
-              (element) => lookupKey == element.injectedType.lookupKey,
-            )
-            ?.asynchronous(dependencies) ??
-        false;
-  }
+  bool asynchronous(Iterable<ResolvedDependency> dependencies) =>
+      dependencies
+          .firstWhereOrNull(
+            (element) => lookupKey == element.injectedType.lookupKey,
+          )
+          ?.asynchronous(dependencies) ??
+      false;
 }
 
 extension _TypeReferenceExtension on TypeReference {
@@ -1001,8 +994,7 @@ class _UnresolvedDependencyForComponentError extends Error {
         pathToInjected = injected.root.toAbsoluteUri().removeFragment();
 
   @override
-  String toString() {
-    return '''Could not find a way to provide "$dependencyClassName" for component "$componentClassName".
+  String toString() => '''Could not find a way to provide "$dependencyClassName" for component "$componentClassName".
 
 To fix this, check that at least one of the following is true:
 
@@ -1019,7 +1011,6 @@ These classes were found at the following paths:
 - Injected class "$dependencyClassName": $pathToInjected}.
 
 ''';
-  }
 }
 
 /// Error for a dependency that can not be resolved.
@@ -1038,8 +1029,7 @@ class _UnresolvedDependencyForProviderError extends Error {
         pathToInjected = injected.root.toAbsoluteUri().removeFragment();
 
   @override
-  String toString() {
-    return '''Could not find a way to provide "$dependencyClassName" for class "$requestedByClassName".
+  String toString() => '''Could not find a way to provide "$dependencyClassName" for class "$requestedByClassName".
 
 To fix this, check that at least one of the following is true:
 
@@ -1056,7 +1046,6 @@ These classes were found at the following paths:
 - Injected class "$dependencyClassName": $pathToInjected}.
 
 ''';
-  }
 }
 
 /// Error for a dependency that can not be resolved.
@@ -1080,8 +1069,8 @@ class _UnresolvedDependencyForFactoryError extends Error {
         pathToInjected = injected.root.toAbsoluteUri().removeFragment();
 
   @override
-  String toString() {
-    return '''Could not find a way to provide "$dependencyClassName" for class "$requestedByClassName" created by factory "$factoryClassName".
+  String toString() =>
+      '''Could not find a way to provide "$dependencyClassName" for class "$requestedByClassName" created by factory "$factoryClassName".
 
 To fix this, check that at least one of the following is true:
 
@@ -1100,5 +1089,4 @@ These classes were found at the following paths:
 - Injected class "$dependencyClassName": $pathToInjected}.
 
 ''';
-  }
 }

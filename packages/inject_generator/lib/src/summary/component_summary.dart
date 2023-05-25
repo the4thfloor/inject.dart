@@ -24,13 +24,12 @@ class ComponentSummary {
     SymbolPath clazz,
     List<SymbolPath> modules,
     Iterable<ProviderSummary> providers,
-  ) {
-    return ComponentSummary._(
-      clazz,
-      List<SymbolPath>.unmodifiable(modules),
-      List<ProviderSummary>.unmodifiable(providers),
-    );
-  }
+  ) =>
+      ComponentSummary._(
+        clazz,
+        List<SymbolPath>.unmodifiable(modules),
+        List<ProviderSummary>.unmodifiable(providers),
+      );
 
   const ComponentSummary._(this.clazz, this.modules, this.providers);
 

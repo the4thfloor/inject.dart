@@ -39,14 +39,13 @@ class ProviderSummary {
     ProviderKind kind,
     InjectedType injectedType, {
     Iterable<InjectedType> dependencies = const [],
-  }) {
-    return ProviderSummary._(
-      name,
-      kind,
-      injectedType,
-      List<InjectedType>.unmodifiable(dependencies),
-    );
-  }
+  }) =>
+      ProviderSummary._(
+        name,
+        kind,
+        injectedType,
+        List<InjectedType>.unmodifiable(dependencies),
+      );
 
   const ProviderSummary._(
     this.name,

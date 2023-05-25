@@ -12,9 +12,7 @@ import 'package:test/test.dart';
 const rootPackage = 'inject_generator';
 
 /// Matches a [LogRecord] on its [level] and [message].
-Matcher logRecord(Level level, String message) {
-  return _LogRecordMatcher(level, message);
-}
+Matcher logRecord(Level level, String message) => _LogRecordMatcher(level, message);
 
 class SummaryTestBed extends _TestBed {
   @override
@@ -118,9 +116,7 @@ class _LogRecordMatcher extends Matcher {
   }
 
   @override
-  bool matches(item, Map matchState) {
-    return item is LogRecord && item.level == level && item.message.contains(message);
-  }
+  bool matches(item, Map matchState) => item is LogRecord && item.level == level && item.message.contains(message);
 }
 
 class _TestingAssetWriter extends InMemoryAssetWriter {

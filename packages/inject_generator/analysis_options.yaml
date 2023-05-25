@@ -28,8 +28,10 @@ linter:
     - omit_local_variable_types
     - prefer_const_constructors
     - prefer_const_declarations
+    - prefer_expression_function_bodies
     - prefer_final_in_for_each
     - prefer_final_locals
+    - prefer_foreach
     - prefer_int_literals
     - prefer_null_aware_method_calls
     - prefer_relative_imports

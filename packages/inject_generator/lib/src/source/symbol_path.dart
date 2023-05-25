@@ -53,9 +53,8 @@ class SymbolPath implements Comparable<SymbolPath> {
   static const String _dartPackage = 'dart';
 
   /// An alias to `new SymbolPath.fromAbsoluteUri(Uri.parse(...))`.
-  static SymbolPath parseAbsoluteUri(String assetUri, [String? symbolName]) {
-    return SymbolPath.fromAbsoluteUri(Uri.parse(assetUri), symbolName);
-  }
+  static SymbolPath parseAbsoluteUri(String assetUri, [String? symbolName]) =>
+      SymbolPath.fromAbsoluteUri(Uri.parse(assetUri), symbolName);
 
   /// Name of the package containing the Dart source code.
   ///
@@ -236,7 +235,5 @@ class SymbolPath implements Comparable<SymbolPath> {
   Map<String, dynamic> toJson() => _$SymbolPathToJson(this);
 
   @override
-  String toString() {
-    return 'SymbolPath{package: $package, path: $path, symbol: $symbol}';
-  }
+  String toString() => 'SymbolPath{package: $package, path: $path, symbol: $symbol}';
 }

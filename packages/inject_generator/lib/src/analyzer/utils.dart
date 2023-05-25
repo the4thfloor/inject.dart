@@ -75,9 +75,8 @@ DartType _reducedType(DartType type, String? name) {
   return _reducedType(providedType, name);
 }
 
-bool _hasAnnotation(Element element, SymbolPath annotationSymbol) {
-  return _getAnnotation(element, annotationSymbol, orElse: () => null) != null;
-}
+bool _hasAnnotation(Element element, SymbolPath annotationSymbol) =>
+    _getAnnotation(element, annotationSymbol, orElse: () => null) != null;
 
 ElementAnnotation? _getAnnotation(
   Element element,
