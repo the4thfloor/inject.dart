@@ -524,9 +524,9 @@ class _ProviderBuilder {
       fields.add(
         FieldBuilder()
           ..name = singletonFieldName
-          ..type = _reference(
+          ..type = _referenceForKey(
             libraryUri,
-            dep.injectedType.lookupKey.root,
+            dep.injectedType.lookupKey,
           ).toNullable(),
       );
     }
@@ -583,9 +583,9 @@ class _ProviderBuilder {
       fields.add(
         FieldBuilder()
           ..name = singletonFieldName
-          ..type = _reference(
+          ..type = _referenceForKey(
             libraryUri,
-            dep.injectedType.lookupKey.root,
+            dep.injectedType.lookupKey,
           ).toNullable(),
       );
     }
@@ -606,7 +606,7 @@ class _ProviderBuilder {
       }
     }
 
-    var provider = _reference(libraryUri, dep.injectedType.lookupKey.root).call(positionalArguments, namedArguments);
+    var provider = _referenceForKey(libraryUri, dep.injectedType.lookupKey).call(positionalArguments, namedArguments);
     if (isSingleton) {
       provider = refer(singletonFieldName).assignNullAware(provider);
     }
@@ -623,9 +623,9 @@ class _ProviderBuilder {
     fields.add(
       FieldBuilder()
         ..name = fieldName
-        ..type = _reference(
+        ..type = _referenceForKey(
           libraryUri,
-          dep.injectedType.lookupKey.root,
+          dep.injectedType.lookupKey,
         ).toNullable(),
     );
 

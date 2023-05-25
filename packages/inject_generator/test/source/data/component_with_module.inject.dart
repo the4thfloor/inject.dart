@@ -3,30 +3,33 @@ import 'component_with_module.dart' as _i1;
 import 'package:inject_annotation/inject_annotation.dart' as _i2;
 
 class ComponentWithModule$Component implements _i1.ComponentWithModule {
-  factory ComponentWithModule$Component.create({_i1.BarModule? barModule}) =>
-      ComponentWithModule$Component._(barModule ?? _i1.BarModule());
+  factory ComponentWithModule$Component.create(
+          {_i1.StoreModule? storeModule}) =>
+      ComponentWithModule$Component._(storeModule ?? _i1.StoreModule());
 
-  ComponentWithModule$Component._(this._barModule) {
+  ComponentWithModule$Component._(this._storeModule) {
     _initialize();
   }
 
-  final _i1.BarModule _barModule;
+  final _i1.StoreModule _storeModule;
 
-  late final _Bar$Provider _bar$Provider;
+  late final _StoreAppState$Provider _storeAppState$Provider;
 
   void _initialize() {
-    _bar$Provider = _Bar$Provider(_barModule);
+    _storeAppState$Provider = _StoreAppState$Provider(_storeModule);
   }
 
   @override
-  _i1.Bar get bar => _bar$Provider.get();
+  _i1.Store<_i1.AppState> get store => _storeAppState$Provider.get();
 }
 
-class _Bar$Provider implements _i2.Provider<_i1.Bar> {
-  const _Bar$Provider(this._module);
+class _StoreAppState$Provider implements _i2.Provider<_i1.Store<_i1.AppState>> {
+  _StoreAppState$Provider(this._module);
 
-  final _i1.BarModule _module;
+  final _i1.StoreModule _module;
+
+  _i1.Store<_i1.AppState>? _singleton;
 
   @override
-  _i1.Bar get() => _module.getBar();
+  _i1.Store<_i1.AppState> get() => _singleton ??= _module.provideStore();
 }

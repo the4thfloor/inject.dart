@@ -49,6 +49,8 @@ class LookupKey {
     return '$qualifierString${root.symbol}$typeArgumentsString';
   }
 
+  /// A representation of the dart Symbol of this type to be used in generated code as class name.
+  /// For example, for the type `@qualifier A<B, C>`, this will be `ABC`.
   String toClassName() {
     final qualifierString = qualifier != null ? qualifier!.symbol : '';
     final typeArgumentsString = typeArguments?.map((e) => e.symbol.capitalize()).join() ?? '';
@@ -80,9 +82,4 @@ class LookupKey {
 
   @override
   int get hashCode => root.hashCode ^ qualifier.hashCode ^ _listEquality.hash(typeArguments);
-
-  @override
-  String toString() {
-    return 'LookupKey{${toPrettyString()}';
-  }
 }

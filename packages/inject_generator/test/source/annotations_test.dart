@@ -72,10 +72,18 @@ void main() {
         const SymbolPath(rootPackage, testFilePath, 'ComponentWithModule'),
       );
       expect(component.providers.length, 1);
-      expect(component.providers[0].name, 'bar');
+      expect(component.providers[0].name, 'store');
       expect(
         component.providers[0].injectedType.lookupKey.root,
-        const SymbolPath(rootPackage, testFilePath, 'Bar'),
+        const SymbolPath(rootPackage, testFilePath, 'Store'),
+      );
+      expect(
+        component.providers[0].injectedType.lookupKey.toPrettyString(),
+        'Store<AppState>',
+      );
+      expect(
+        component.providers[0].injectedType.lookupKey.toClassName(),
+        'StoreAppState',
       );
 
       expect(summary.injectables.length, 0);
