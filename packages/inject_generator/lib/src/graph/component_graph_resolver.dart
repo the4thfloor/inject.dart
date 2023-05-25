@@ -266,11 +266,10 @@ class ComponentGraphResolver {
             builderContext.rawLogger.severe('Detected dependency cycle:\n$formattedCycle');
           }
         } else {
-          final children =
-              mergedDependencies[parent]?.dependencies.map((injectedType) => injectedType.lookupKey) ?? const [];
-          for (final child in children) {
-            checkForCycles(child);
-          }
+          mergedDependencies[parent]
+              ?.dependencies
+              .map((injectedType) => injectedType.lookupKey)
+              .forEach(checkForCycles);
         }
         chain.removeLast();
       }

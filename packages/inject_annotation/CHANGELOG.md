@@ -1,7 +1,12 @@
-## 1.0.0-alpha.2 - 2023-05-01
+## 1.0.0-alpha.3
 
-Improve documentation
+- Improve pubspec description
+- Update sdk constraints
 
-## 1.0.0-alpha.1 - 2023-05-01
+## 1.0.0-alpha.2
 
-Initial release
+- Improve documentation
+
+## 1.0.0-alpha.1
+
+- Initial release

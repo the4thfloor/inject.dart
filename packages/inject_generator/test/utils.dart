@@ -80,11 +80,7 @@ class _TestBed {
   /// Prints recorded log messages to standard output.
   ///
   /// This method is meant to be used for debugging tests.
-  void printLog() {
-    for (final record in logRecords) {
-      print(record);
-    }
-  }
+  void printLog() => logRecords.forEach(print);
 
   /// Runs the [InjectSummaryBuilder].
   Future<void> run() async {

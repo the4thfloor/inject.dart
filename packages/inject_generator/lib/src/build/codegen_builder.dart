@@ -192,9 +192,7 @@ class _ComponentBuilder {
 
   /// Builds a concrete implementation of the given component interface.
   Tuple2<Class, Set<ResolvedDependency>> build() {
-    for (final dependency in graph.mergedDependencies.values) {
-      _collectDependencies(dependency);
-    }
+    graph.mergedDependencies.values.forEach(_collectDependencies);
     _generateConstructor();
     _generateInitializeMethod();
     _generateComponentProviders();
