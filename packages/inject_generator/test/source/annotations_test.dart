@@ -34,14 +34,10 @@ void main() {
         const SymbolPath(rootPackage, testFilePath, 'Bar'),
       );
 
-      expect(summary.injectables.length, 2);
+      expect(summary.injectables.length, 1);
       expect(
         summary.injectables[0].clazz,
         const SymbolPath(rootPackage, testFilePath, 'Bar'),
-      );
-      expect(
-        summary.injectables[1].clazz,
-        const SymbolPath(rootPackage, testFilePath, 'Foo'),
       );
 
       final asset = stb.content.entries.first;
@@ -72,18 +68,10 @@ void main() {
         const SymbolPath(rootPackage, testFilePath, 'ComponentWithModule'),
       );
       expect(component.providers.length, 1);
-      expect(component.providers[0].name, 'store');
+      expect(component.providers[0].name, 'bar');
       expect(
         component.providers[0].injectedType.lookupKey.root,
-        const SymbolPath(rootPackage, testFilePath, 'Store'),
-      );
-      expect(
-        component.providers[0].injectedType.lookupKey.toPrettyString(),
-        'Store<AppState>',
-      );
-      expect(
-        component.providers[0].injectedType.lookupKey.toClassName(),
-        'StoreAppState',
+        const SymbolPath(rootPackage, testFilePath, 'Bar'),
       );
 
       expect(summary.injectables.length, 0);
@@ -132,8 +120,8 @@ void main() {
       tb.printLog();
     });
 
-    test('module method with async provider', () async {
-      const testFilePath = 'test/source/data/module_method_with_async_provider.dart';
+    test('module', () async {
+      const testFilePath = 'test/source/data/module.dart';
       final testAssetId = AssetId(rootPackage, testFilePath);
       final stb = SummaryTestBed(inputAssetId: testAssetId);
       await stb.run();
@@ -150,15 +138,30 @@ void main() {
       final module = summary.modules[0];
       expect(
         module.clazz,
-        const SymbolPath(rootPackage, testFilePath, 'BarModule'),
+        const SymbolPath(rootPackage, testFilePath, 'MainModule'),
       );
-      expect(module.providers.length, 1);
-      expect(module.providers[0].name, 'getBar');
+
+      expect(module.providers.length, 3);
+
+      expect(module.providers[0].name, 'provideAddition');
       expect(
         module.providers[0].injectedType.lookupKey.root,
+        const SymbolPath(rootPackage, testFilePath, 'Addition'),
+      );
+
+      expect(module.providers[1].name, 'provideFoo');
+      expect(
+        module.providers[1].injectedType.lookupKey.root,
+        const SymbolPath(rootPackage, testFilePath, 'Foo'),
+      );
+      expect(module.providers[1].injectedType.isSingleton, true);
+
+      expect(module.providers[2].name, 'provideBar');
+      expect(
+        module.providers[2].injectedType.lookupKey.root,
         const SymbolPath(rootPackage, testFilePath, 'Bar'),
       );
-      expect(module.providers[0].injectedType.isAsynchronous, true);
+      expect(module.providers[2].injectedType.isAsynchronous, true);
 
       final asset = stb.content.entries.first;
       final ctb = CodegenTestBed(inputAssetId: asset.key, input: asset.value);

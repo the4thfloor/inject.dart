@@ -6,7 +6,6 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:analyzer/dart/element/element.dart';
-import 'package:analyzer/dart/element/type.dart';
 import 'package:build/build.dart';
 import 'package:collection/collection.dart';
 
@@ -352,12 +351,11 @@ class _FactorySummaryVisitor extends FactoryClassVisitor {
       );
     }
 
-    final returnType = method.returnType;
-    _checkReturnType(method, returnType.element!);
+    _checkReturnType(method);
 
     final summary = FactoryMethodSummary(
       method.name,
-      getInjectedType(returnType, assisted: true),
+      getInjectedType(method.returnType, assisted: true),
       method.parameters
           .map((p) {
             if (p.type.isDynamic) {
@@ -395,12 +393,7 @@ class _ProviderSummaryVisitor extends InjectClassVisitor {
   _ProviderSummaryVisitor(super.isForComponent);
 
   @override
-  void visitProvideMethod(
-    MethodElement method,
-    bool singleton,
-    bool asynchronous, {
-    SymbolPath? qualifier,
-  }) {
+  void visitProvideMethod(MethodElement method, bool singleton, bool asynchronous, {SymbolPath? qualifier}) {
     if (isForComponent && !method.isAbstract) {
       throw StateError(
         constructMessage(
@@ -420,25 +413,12 @@ class _ProviderSummaryVisitor extends InjectClassVisitor {
       );
     }
 
-    final returnType = method.returnType;
-    _checkReturnType(method, returnType.element!);
-
-    if (!isForComponent && returnType is FunctionType) {
-      throw StateError(
-        constructMessage(
-            builderContext.buildStep.inputId,
-            method,
-            'Modules are not allowed to provide a function type () -> Type. '
-            'The inject library prohibits this to avoid confusion '
-            'with injecting providers of injectable types. '
-            'Your provider method will not be used.'),
-      );
-    }
+    _checkReturnType(method);
 
     final summary = ProviderSummary(
       method.name,
       ProviderKind.method,
-      getInjectedType(returnType, qualifier: qualifier, singleton: singleton),
+      getInjectedType(method.returnType, qualifier: qualifier, singleton: singleton),
       dependencies: method.parameters.map((p) {
         if (isForComponent) {
           throw StateError(
@@ -477,12 +457,8 @@ class _ProviderSummaryVisitor extends InjectClassVisitor {
   }
 
   @override
-  void visitProvideGetter(
-    FieldElement field,
-    bool singleton, {
-    SymbolPath? qualifier,
-  }) {
-    _checkReturnType(field.getter!, field.getter!.returnType.element!);
+  void visitProvideGetter(FieldElement field, bool singleton, {SymbolPath? qualifier}) {
+    _checkReturnType(field.getter!);
     final returnType = field.getter!.returnType;
     final summary = ProviderSummary(
       field.name,
@@ -494,16 +470,16 @@ class _ProviderSummaryVisitor extends InjectClassVisitor {
   }
 }
 
-void _checkReturnType(
-  ExecutableElement executableElement,
-  Element returnTypeElement,
-) {
-  if (returnTypeElement.kind == ElementKind.DYNAMIC ||
+void _checkReturnType(ExecutableElement element) {
+  final returnType = element.returnType;
+  final returnTypeElement = returnType.element;
+
+  if (returnTypeElement?.kind == ElementKind.DYNAMIC ||
       returnTypeElement is TypeDefiningElement && returnTypeElement.kind == ElementKind.DYNAMIC) {
     throw StateError(
       constructMessage(
         builderContext.buildStep.inputId,
-        executableElement,
+        element,
         'return type resolved to dynamic. This can happen when the '
         'return type is not specified, when it is specified as `dynamic`, or '
         'when the return type failed to resolve to a proper type due to a '

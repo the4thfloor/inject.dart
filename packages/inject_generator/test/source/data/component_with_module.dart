@@ -2,24 +2,20 @@ import 'package:inject_annotation/inject_annotation.dart';
 
 import 'component_with_module.inject.dart' as g;
 
-@Component([StoreModule])
+@Component([BarModule])
 abstract class ComponentWithModule {
   static const create = g.ComponentWithModule$Component.create;
 
-  Store<AppState> get store;
+  Bar get bar;
 }
 
 @module
-class StoreModule {
+class BarModule {
   @provides
   @singleton
-  Store<AppState> provideStore() => Store<AppState>(AppState());
+  Bar provideBar() => Bar();
 }
 
-class Store<T> {
-  const Store(this.state);
-
-  final T state;
+class Bar {
+  String get foo => 'foo';
 }
-
-class AppState {}

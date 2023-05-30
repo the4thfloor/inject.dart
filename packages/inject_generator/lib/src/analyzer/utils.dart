@@ -15,18 +15,12 @@ import '../source/symbol_path.dart';
 
 /// Constructs a serializable path to [type].
 SymbolPath getSymbolPath(DartType type) {
-  final element = type.element!;
-
-  // if (element is TypeDefiningElement && element.kind == ElementKind.DYNAMIC) {
   if (type.isDynamic) {
     throw ArgumentError('Dynamic element type not supported. This is a '
         'package:inject bug. Please report it.');
   }
 
-  return SymbolPath.fromAbsoluteUri(
-    element.library!.source.uri,
-    typeNameOf(type),
-  );
+  return SymbolPath.fromAbsoluteUri(_uriOf(type), typeNameOf(type));
 }
 
 /// Constructs a [InjectedType] from a [DartType].
@@ -50,6 +44,20 @@ InjectedType getInjectedType(
       isAsynchronous: type.isDartAsyncFuture,
       isAssisted: assisted,
     );
+
+Uri _uriOf(DartType type) {
+  final aliasElement = type.alias?.element;
+  if (aliasElement != null) {
+    return aliasElement.librarySource.uri;
+  }
+  if (type is InterfaceType) {
+    return type.element.librarySource.uri;
+  }
+  if (type is TypeParameterType) {
+    return type.element.librarySource!.uri;
+  }
+  throw UnimplementedError('(${type.runtimeType}) $type');
+}
 
 // Removing [Provider] and [Feature] and use its type argument.
 //
@@ -233,7 +241,7 @@ ElementAnnotation? getComponentAnnotation(Element e) => _getAnnotation(e, Symbol
 /// [hasAssistedInjectAnnotation].
 ElementAnnotation? getAssistedInjectAnnotation(Element e) => _getAnnotation(e, SymbolPath.assistedInject);
 
-extension IsNullable on DartType {
+extension DartTypeExtensions on DartType {
   bool get isNullable => nullabilitySuffix == NullabilitySuffix.question;
 
   bool get isProvider =>
