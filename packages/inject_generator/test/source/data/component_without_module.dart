@@ -14,8 +14,3 @@ abstract class ComponentWithoutModule {
 class Bar {
   String get foo => 'foo';
 }
-
-class Foo {
-  @inject
-  const Foo();
-}
