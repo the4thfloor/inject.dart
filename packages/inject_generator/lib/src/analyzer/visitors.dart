@@ -176,13 +176,11 @@ List<SymbolPath> _extractModules(ClassElement clazz) {
 
 /// Scans a resolved [ClassElement] looking for metadata-annotated members.
 abstract class InjectClassVisitor {
-  final bool _isForComponent;
+  /// Whether we are collecting providers for an component class or a module class.
+  final bool isForComponent;
 
   /// Constructor.
-  const InjectClassVisitor(this._isForComponent);
-
-  /// Whether we are collecting providers for an component class or a module class.
-  bool get isForComponent => _isForComponent;
+  const InjectClassVisitor(this.isForComponent);
 
   /// Call to start visiting [clazz].
   void visitClass(ClassElement clazz) {
@@ -230,7 +228,7 @@ class _AnnotatedClassVisitor extends GeneralizingElementVisitor<void> {
   //   unlike modules, the `@inject` annotation is optional in components
   // - true, if it is a module and has the `@provides` annotation
   bool _isProvider(ExecutableElement element) {
-    if (_classVisitor._isForComponent) {
+    if (_classVisitor.isForComponent) {
       return (hasInjectAnnotation(element) || element.isAbstract) && !hasProvidesAnnotation(element);
     } else {
       return hasProvidesAnnotation(element);
@@ -248,7 +246,7 @@ class _AnnotatedClassVisitor extends GeneralizingElementVisitor<void> {
         asynchronous,
         qualifier: hasQualifier(method) ? extractQualifier(method) : null,
       );
-    } else if (_classVisitor._isForComponent && hasProvidesAnnotation(method)) {
+    } else if (_classVisitor.isForComponent && hasProvidesAnnotation(method)) {
       throw StateError(
         constructMessage(
           builderContext.buildStep.inputId,
@@ -256,7 +254,7 @@ class _AnnotatedClassVisitor extends GeneralizingElementVisitor<void> {
           '@provides annotation is not supported for components',
         ),
       );
-    } else if (!_classVisitor._isForComponent && hasInjectAnnotation(method)) {
+    } else if (!_classVisitor.isForComponent && hasInjectAnnotation(method)) {
       throw StateError(
         constructMessage(
           builderContext.buildStep.inputId,
@@ -286,7 +284,7 @@ class _AnnotatedClassVisitor extends GeneralizingElementVisitor<void> {
         singleton,
         qualifier: hasQualifier(field.getter!) ? extractQualifier(field.getter!) : null,
       );
-    } else if (_classVisitor._isForComponent && hasProvidesAnnotation(field.getter!)) {
+    } else if (_classVisitor.isForComponent && hasProvidesAnnotation(field.getter!)) {
       throw StateError(
         constructMessage(
           builderContext.buildStep.inputId,
@@ -294,7 +292,7 @@ class _AnnotatedClassVisitor extends GeneralizingElementVisitor<void> {
           '@provides annotation is not supported for components',
         ),
       );
-    } else if (!_classVisitor._isForComponent && hasInjectAnnotation(field.getter!)) {
+    } else if (!_classVisitor.isForComponent && hasInjectAnnotation(field.getter!)) {
       throw StateError(
         constructMessage(
           builderContext.buildStep.inputId,

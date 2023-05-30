@@ -15,48 +15,75 @@ import '../source/symbol_path.dart';
 
 /// Constructs a serializable path to [type].
 SymbolPath getSymbolPath(DartType type) {
-  if (type.isDynamic) {
+  if (type is DynamicType) {
     throw ArgumentError('Dynamic element type not supported. This is a '
         'package:inject bug. Please report it.');
   }
 
-  return SymbolPath.fromAbsoluteUri(_uriOf(type), typeNameOf(type));
+  return SymbolPath.fromAbsoluteUri(type.uri, typeNameOf(type));
 }
 
 /// Constructs a [InjectedType] from a [DartType].
 InjectedType getInjectedType(
   DartType type, {
+  List<LibraryElement>? importedLibraries,
   String? name,
   SymbolPath? qualifier,
   bool? required,
   bool? named,
   bool? singleton,
   bool? assisted,
-}) =>
-    InjectedType(
-      LookupKey.fromDartType(_reducedType(type, name), qualifier: qualifier),
-      name: name,
-      isNullable: type.isNullable,
-      isRequired: required,
-      isNamed: named,
-      isProvider: type.isProvider,
-      isSingleton: singleton,
-      isAsynchronous: type.isDartAsyncFuture,
-      isAssisted: assisted,
-    );
+}) {
+  if (importedLibraries != null) {
+    final import = _importUri(type, importedLibraries);
+    print('injected type: ${type.name} - import: $import');
+  }
 
-Uri _uriOf(DartType type) {
-  final aliasElement = type.alias?.element;
-  if (aliasElement != null) {
-    return aliasElement.librarySource.uri;
+  return InjectedType(
+    LookupKey.fromDartType(_reducedType(type, name), qualifier: qualifier),
+    name: name,
+    isNullable: type.isNullable,
+    isRequired: required,
+    isNamed: named,
+    isProvider: type.isProvider,
+    isSingleton: singleton,
+    isAsynchronous: type.isDartAsyncFuture,
+    isAssisted: assisted,
+  );
+}
+
+Uri? _importUri(DartType type, List<LibraryElement> importedLibraries) {
+  final visited = <Uri>[];
+
+  bool foo(LibraryElement lib) {
+    if (visited.contains(lib.librarySource.uri)) {
+      return false;
+    }
+    visited.add(lib.librarySource.uri);
+
+    final importExports = [lib, ...lib.importedLibraries, ...lib.exportedLibraries];
+    final import = importExports.firstWhereOrNull((element) => element.source.uri == type.uri);
+    if (import != null) {
+      return true;
+    }
+
+    for (final importExport in importExports) {
+      if (foo(importExport)) {
+        return true;
+      }
+    }
+
+    return false;
   }
-  if (type is InterfaceType) {
-    return type.element.librarySource.uri;
+
+  for (final imported in importedLibraries) {
+    final found = foo(imported);
+    if (found) {
+      return imported.librarySource.uri;
+    }
   }
-  if (type is TypeParameterType) {
-    return type.element.librarySource!.uri;
-  }
-  throw UnimplementedError('(${type.runtimeType}) $type');
+
+  return null;
 }
 
 // Removing [Provider] and [Feature] and use its type argument.
@@ -77,7 +104,7 @@ DartType _reducedType(DartType type, String? name) {
   }
 
   final providedType = (type).typeArguments.firstOrNull;
-  if (providedType == null || providedType.isDynamic) {
+  if (providedType == null || providedType is DynamicType) {
     throw 'Generic type for `${type.getDisplayString(withNullability: false)} $name` not specified.';
   }
   return _reducedType(providedType, name);
@@ -247,4 +274,19 @@ extension DartTypeExtensions on DartType {
   bool get isProvider =>
       element?.name == 'Provider' &&
       element?.library?.source.uri == Uri.parse('package:inject_annotation/src/api/provider.dart');
+
+  Uri get uri {
+    final dartType = this;
+    final aliasElement = dartType.alias?.element;
+    if (aliasElement != null) {
+      return aliasElement.librarySource.uri;
+    }
+    if (dartType is InterfaceType) {
+      return dartType.element.librarySource.uri;
+    }
+    if (dartType is TypeParameterType) {
+      return dartType.element.librarySource!.uri;
+    }
+    throw UnimplementedError('(${dartType.runtimeType}) $dartType');
+  }
 }

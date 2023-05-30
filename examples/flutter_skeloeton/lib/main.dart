@@ -6,7 +6,7 @@ import 'src/app.dart';
 import 'src/settings/settings_controller.dart';
 
 void main() async {
-  final mainComponent = g.MainComponent$Component.create();
+  final mainComponent = MainComponent.create();
   final myApp = await mainComponent.myAppFactory.create();
   runApp(myApp);
 }

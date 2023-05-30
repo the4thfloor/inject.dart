@@ -30,12 +30,15 @@ class InjectSummaryBuilder extends AbstractInjectBuilder {
     LibrarySummary summary;
     if (await resolver.isLibrary(buildStep.inputId)) {
       final lib = await buildStep.inputLibrary;
+      final importedLibraries = lib.importedLibraries;
       final components = <ComponentSummary>[];
       final modules = <ModuleSummary>[];
       final injectables = <InjectableSummary>[];
       final assistedInjectables = <InjectableSummary>[];
       final factories = <FactorySummary>[];
       _SummaryBuilderVisitor(
+        lib,
+        importedLibraries,
         components,
         modules,
         injectables,
@@ -87,6 +90,8 @@ class InjectSummaryBuilder extends AbstractInjectBuilder {
 }
 
 class _SummaryBuilderVisitor extends InjectLibraryVisitor {
+  final LibraryElement _lib;
+  final List<LibraryElement> _importedLibraries;
   final List<ComponentSummary> _components;
   final List<ModuleSummary> _modules;
   final List<InjectableSummary> _injectables;
@@ -94,6 +99,8 @@ class _SummaryBuilderVisitor extends InjectLibraryVisitor {
   final List<FactorySummary> _factories;
 
   const _SummaryBuilderVisitor(
+    this._lib,
+    this._importedLibraries,
     this._components,
     this._modules,
     this._injectables,
@@ -143,6 +150,7 @@ class _SummaryBuilderVisitor extends InjectLibraryVisitor {
       // Use the explicitly annotated constructor.
       constructorSummary = _createConstructorProviderSummary(
         annotatedConstructors.single,
+        _importedLibraries,
         singleton,
         false,
       );
@@ -151,6 +159,7 @@ class _SummaryBuilderVisitor extends InjectLibraryVisitor {
         // This is the case of a default or an only constructor.
         constructorSummary = _createConstructorProviderSummary(
           clazz.constructors.single,
+          _importedLibraries,
           singleton,
           false,
         );
@@ -206,6 +215,7 @@ class _SummaryBuilderVisitor extends InjectLibraryVisitor {
       // Use the explicitly annotated constructor.
       constructorSummary = _createConstructorProviderSummary(
         annotatedConstructors.single,
+        _importedLibraries,
         false,
         true,
       );
@@ -214,6 +224,7 @@ class _SummaryBuilderVisitor extends InjectLibraryVisitor {
         // This is the case of a default or an only constructor.
         constructorSummary = _createConstructorProviderSummary(
           clazz.constructors.single,
+          _importedLibraries,
           false,
           true,
         );
@@ -242,7 +253,9 @@ class _SummaryBuilderVisitor extends InjectLibraryVisitor {
       );
     }
 
-    final visitor = _FactorySummaryVisitor()..visitClass(clazz);
+    final visitor = _FactorySummaryVisitor(
+      _importedLibraries,
+    )..visitClass(clazz);
     if (visitor._factories.isEmpty) {
       throw StateError(
         constructMessage(
@@ -275,7 +288,10 @@ class _SummaryBuilderVisitor extends InjectLibraryVisitor {
 
   @override
   void visitComponent(ClassElement clazz, List<SymbolPath> modules) {
-    final visitor = _ProviderSummaryVisitor(true)..visitClass(clazz);
+    final visitor = _ProviderSummaryVisitor(
+      true,
+      _importedLibraries,
+    )..visitClass(clazz);
     if (visitor._providers.isEmpty) {
       throw StateError(
         constructMessage(
@@ -295,7 +311,10 @@ class _SummaryBuilderVisitor extends InjectLibraryVisitor {
 
   @override
   void visitModule(ClassElement clazz) {
-    final visitor = _ProviderSummaryVisitor(false)..visitClass(clazz);
+    final visitor = _ProviderSummaryVisitor(
+      false,
+      _importedLibraries,
+    )..visitClass(clazz);
     if (visitor._providers.isEmpty) {
       throw StateError(
         constructMessage(
@@ -329,6 +348,9 @@ class _SummaryBuilderVisitor extends InjectLibraryVisitor {
 
 class _FactorySummaryVisitor extends FactoryClassVisitor {
   final List<FactoryMethodSummary> _factories = <FactoryMethodSummary>[];
+  final List<LibraryElement> _importedLibraries;
+
+  _FactorySummaryVisitor(this._importedLibraries);
 
   @override
   void visitFactoryMethod(MethodElement method) {
@@ -355,7 +377,7 @@ class _FactorySummaryVisitor extends FactoryClassVisitor {
 
     final summary = FactoryMethodSummary(
       method.name,
-      getInjectedType(method.returnType, assisted: true),
+      getInjectedType(method.returnType, importedLibraries: _importedLibraries, assisted: true),
       method.parameters
           .map((p) {
             if (p.type.isDynamic) {
@@ -374,6 +396,7 @@ class _FactorySummaryVisitor extends FactoryClassVisitor {
 
             return getInjectedType(
               p.type,
+              importedLibraries: _importedLibraries,
               name: p.name,
               required: p.isRequired,
               named: p.isNamed,
@@ -388,9 +411,11 @@ class _FactorySummaryVisitor extends FactoryClassVisitor {
 }
 
 class _ProviderSummaryVisitor extends InjectClassVisitor {
+  final List<LibraryElement> _importedLibraries;
+
   final List<ProviderSummary> _providers = <ProviderSummary>[];
 
-  _ProviderSummaryVisitor(super.isForComponent);
+  _ProviderSummaryVisitor(super.isForComponent, this._importedLibraries);
 
   @override
   void visitProvideMethod(MethodElement method, bool singleton, bool asynchronous, {SymbolPath? qualifier}) {
@@ -418,7 +443,12 @@ class _ProviderSummaryVisitor extends InjectClassVisitor {
     final summary = ProviderSummary(
       method.name,
       ProviderKind.method,
-      getInjectedType(method.returnType, qualifier: qualifier, singleton: singleton),
+      getInjectedType(
+        method.returnType,
+        importedLibraries: _importedLibraries,
+        qualifier: qualifier,
+        singleton: singleton,
+      ),
       dependencies: method.parameters.map((p) {
         if (isForComponent) {
           throw StateError(
@@ -445,6 +475,7 @@ class _ProviderSummaryVisitor extends InjectClassVisitor {
 
         return getInjectedType(
           p.type,
+          importedLibraries: _importedLibraries,
           name: p.name,
           qualifier: hasQualifier(p) ? extractQualifier(p) : null,
           required: p.isRequired,
@@ -463,7 +494,7 @@ class _ProviderSummaryVisitor extends InjectClassVisitor {
     final summary = ProviderSummary(
       field.name,
       ProviderKind.getter,
-      getInjectedType(returnType, qualifier: qualifier, singleton: singleton),
+      getInjectedType(returnType, importedLibraries: _importedLibraries, qualifier: qualifier, singleton: singleton),
       dependencies: const [],
     );
     _providers.add(summary);
@@ -492,6 +523,7 @@ void _checkReturnType(ExecutableElement element) {
 
 ProviderSummary _createConstructorProviderSummary(
   ConstructorElement element,
+  List<LibraryElement> importedLibraries,
   bool singleton,
   bool assisted,
 ) {
@@ -501,6 +533,7 @@ ProviderSummary _createConstructorProviderSummary(
     ProviderKind.constructor,
     getInjectedType(
       returnType,
+      importedLibraries: importedLibraries,
       singleton: singleton,
       assisted: assisted,
     ),
@@ -541,6 +574,7 @@ ProviderSummary _createConstructorProviderSummary(
 
       return getInjectedType(
         p.type,
+        importedLibraries: importedLibraries,
         name: p.name,
         qualifier: qualifier,
         required: p.isRequired,
@@ -553,7 +587,8 @@ ProviderSummary _createConstructorProviderSummary(
 
 String _librarySummaryToJson(LibrarySummary library) => const JsonEncoder.withIndent('  ').convert(library);
 
-extension _ClassElement on ClassElement {
+
+extension _ClassElementExtension on ClassElement {
   /// true if it has no constructor or a default constructor
   bool hasDefaultConstructor() =>
       constructors.isEmpty || constructors.where((constructor) => !constructor.isDefaultConstructor).isEmpty;
