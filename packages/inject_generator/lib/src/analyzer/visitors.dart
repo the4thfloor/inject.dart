@@ -171,7 +171,7 @@ List<SymbolPath> _extractModules(ClassElement clazz) {
   if (modules == null) {
     return const <SymbolPath>[];
   }
-  return modules.map((obj) => obj.toTypeValue()).whereNotNull().map((type) => getSymbolPath(type)).toList();
+  return modules.map((obj) => obj.toTypeValue()).whereNotNull().map(getSymbolPath).toList();
 }
 
 /// Scans a resolved [ClassElement] looking for metadata-annotated members.
