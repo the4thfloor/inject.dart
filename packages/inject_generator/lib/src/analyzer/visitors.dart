@@ -58,7 +58,7 @@ abstract class InjectLibraryVisitor {
 class _LibraryVisitor extends RecursiveElementVisitor<void> {
   final InjectLibraryVisitor _injectLibraryVisitor;
 
-  _LibraryVisitor(this._injectLibraryVisitor);
+  const _LibraryVisitor(this._injectLibraryVisitor);
 
   @override
   void visitClassElement(ClassElement element) {
