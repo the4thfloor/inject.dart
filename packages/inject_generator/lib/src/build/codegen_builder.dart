@@ -10,7 +10,6 @@ import 'package:code_builder/code_builder.dart';
 import 'package:collection/collection.dart';
 import 'package:dart_style/dart_style.dart';
 import 'package:inject_annotation/inject_annotation.dart';
-import 'package:tuple/tuple.dart';
 
 import '../context.dart';
 import '../graph.dart';
@@ -40,8 +39,7 @@ class InjectCodegenBuilder extends AbstractInjectBuilder {
     // We initially read in our <name>.inject.summary JSON blob, parse it, and
     // use it to generate a "{className}$Component" Dart class for each @component
     // annotation that was processed and put in the summary.
-    final summary =
-        await buildStep.readAsString(buildStep.inputId).then(jsonDecode).then((json) => LibrarySummary.fromJson(json));
+    final summary = await buildStep.readAsString(buildStep.inputId).then(jsonDecode).then(LibrarySummary.fromJson);
 
     if (summary.components.isEmpty) {
       return null;
@@ -67,10 +65,10 @@ class InjectCodegenBuilder extends AbstractInjectBuilder {
       // graph.debug();
 
       // Add to the file.
-      final tuple = _ComponentBuilder(summary.assetUri, component, graph).build();
+      final (clazz, resolvedDependency) = _ComponentBuilder(summary.assetUri, component, graph).build();
 
-      target.body.add(tuple.item1);
-      dependencies.addAll(tuple.item2);
+      target.body.add(clazz);
+      dependencies.addAll(resolvedDependency);
     }
 
     for (final dependency in dependencies) {
@@ -100,7 +98,7 @@ class _AssetSummaryReader implements SummaryReader {
 
   @override
   Future<LibrarySummary> read(String package, String path) =>
-      _buildStep.readAsString(AssetId(package, path)).then(jsonDecode).then((json) => LibrarySummary.fromJson(json));
+      _buildStep.readAsString(AssetId(package, path)).then(jsonDecode).then(LibrarySummary.fromJson);
 }
 
 class _Variable {
@@ -191,7 +189,7 @@ class _ComponentBuilder {
   );
 
   /// Builds a concrete implementation of the given component interface.
-  Tuple2<Class, Set<ResolvedDependency>> build() {
+  (Class, Set<ResolvedDependency>) build() {
     graph.mergedDependencies.values.forEach(_collectDependencies);
     _generateConstructor();
     _generateInitializeMethod();
@@ -204,7 +202,7 @@ class _ComponentBuilder {
         ..constructors.addAll([factoryConstructor.build(), constructor.build()])
         ..methods.addAll(methods.map((b) => b.build())),
     );
-    return Tuple2(clazz, _orderedDependencies);
+    return (clazz, _orderedDependencies);
   }
 
   // generates the factory and the private constructor.
@@ -413,20 +411,12 @@ class _ProviderBuilder {
   Class build() {
     _generateConstructor();
 
-    var asynchronous = false;
-    if (dependency is DependencyProvidedByModule) {
-      asynchronous = _buildProvidedByModule(
-        dependency as DependencyProvidedByModule,
-      );
-    } else if (dependency is DependencyProvidedByInjectable) {
-      asynchronous = _buildProvidedByInjectable(
-        dependency as DependencyProvidedByInjectable,
-      );
-    } else if (dependency is DependencyProvidedByFactory) {
-      asynchronous = _buildProvidedByFactory(
-        dependency as DependencyProvidedByFactory,
-      );
-    }
+    var asynchronous = switch (dependency) {
+      DependencyProvidedByModule() => _buildProvidedByModule(dependency as DependencyProvidedByModule),
+      DependencyProvidedByInjectable() => _buildProvidedByInjectable(dependency as DependencyProvidedByInjectable),
+      DependencyProvidedByFactory() => _buildProvidedByFactory(dependency as DependencyProvidedByFactory),
+    };
+
     asynchronous = asynchronous || dependency.injectedType.isAsynchronous;
 
     var providerType = _referenceForKey(libraryUri, dependency.injectedType.lookupKey);
@@ -625,7 +615,7 @@ class _ProviderBuilder {
         .where((dep) => !dep.isAssisted)
         .map((dep) => _providerClassName(dep.lookupKey))
         .map((dep) => dep.decapitalize())
-        .map((fieldName) => refer(fieldName))
+        .map(refer)
         .toSet()
         .toList();
     methodBuilder.body = refer(fieldName)

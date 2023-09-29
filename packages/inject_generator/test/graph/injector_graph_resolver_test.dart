@@ -39,7 +39,7 @@ void main() {
                 ],
               ),
             ],
-          )
+          ),
         });
       });
 
@@ -55,7 +55,7 @@ void main() {
               'getFoo',
               ProviderKind.method,
               foo,
-            )
+            ),
           ],
         );
         final resolver = ComponentGraphResolver(reader!, componentSummary);

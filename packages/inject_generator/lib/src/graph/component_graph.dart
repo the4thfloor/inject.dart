@@ -21,7 +21,7 @@ class ComponentProvider {
 }
 
 /// A dependency resolved to a concrete provider.
-abstract class ResolvedDependency {
+sealed class ResolvedDependency {
   /// The type this provides.
   final InjectedType injectedType;
 

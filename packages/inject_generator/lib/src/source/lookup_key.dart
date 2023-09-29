@@ -37,7 +37,7 @@ class LookupKey {
         getSymbolPath(type),
         qualifier: qualifier,
         typeArguments: type is ParameterizedType && type.typeArguments.isNotEmpty
-            ? type.typeArguments.map((typeArgument) => getSymbolPath(typeArgument)).toList()
+            ? type.typeArguments.map(getSymbolPath).toList()
             : null,
       );
 

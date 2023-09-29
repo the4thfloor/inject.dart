@@ -33,6 +33,6 @@ abstract class AbstractInjectBuilder implements Builder {
 
   @override
   Map<String, List<String>> get buildExtensions => {
-        '.$inputExtension': ['.$outputExtension']
+        '.$inputExtension': ['.$outputExtension'],
       };
 }

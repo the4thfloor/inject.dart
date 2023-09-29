@@ -58,7 +58,7 @@ abstract class InjectLibraryVisitor {
 class _LibraryVisitor extends RecursiveElementVisitor<void> {
   final InjectLibraryVisitor _injectLibraryVisitor;
 
-  _LibraryVisitor(this._injectLibraryVisitor);
+  const _LibraryVisitor(this._injectLibraryVisitor);
 
   @override
   void visitClassElement(ClassElement element) {
@@ -171,7 +171,7 @@ List<SymbolPath> _extractModules(ClassElement clazz) {
   if (modules == null) {
     return const <SymbolPath>[];
   }
-  return modules.map((obj) => obj.toTypeValue()).whereNotNull().map((type) => getSymbolPath(type)).toList();
+  return modules.map((obj) => obj.toTypeValue()).whereNotNull().map(getSymbolPath).toList();
 }
 
 /// Scans a resolved [ClassElement] looking for metadata-annotated members.
