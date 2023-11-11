@@ -19,6 +19,8 @@ class ParameterComponent$Component implements _i1.ParameterComponent {
 
   late final _Inject4Factory$Provider _inject4Factory$Provider;
 
+  late final _Inject5Factory$Provider _inject5Factory$Provider;
+
   late final _Inject3$Provider _inject3$Provider;
 
   late final _Inject2$Provider _inject2$Provider;
@@ -27,7 +29,11 @@ class ParameterComponent$Component implements _i1.ParameterComponent {
     _dependency1$Provider = _Dependency1$Provider();
     _inject1$Provider = _Inject1$Provider(_dependency1$Provider);
     _inject4Factory$Provider = _Inject4Factory$Provider(_dependency1$Provider);
-    _inject3$Provider = _Inject3$Provider(_inject4Factory$Provider);
+    _inject5Factory$Provider = _Inject5Factory$Provider();
+    _inject3$Provider = _Inject3$Provider(
+      _inject4Factory$Provider,
+      _inject5Factory$Provider,
+    );
     _inject2$Provider = _Inject2$Provider(
       _dependency1$Provider,
       _inject2Module,
@@ -67,11 +73,11 @@ class _Inject4Factory$Provider implements _i2.Provider<_i1.Inject4Factory> {
 
   final _Dependency1$Provider _dependency1$Provider;
 
-  _i1.Inject4Factory? _factory;
+  late final _i1.Inject4Factory _factory =
+      _Inject4Factory$Factory(_dependency1$Provider);
 
   @override
-  _i1.Inject4Factory get() =>
-      _factory ??= _Inject4Factory$Factory(_dependency1$Provider);
+  _i1.Inject4Factory get() => _factory;
 }
 
 class _Inject4Factory$Factory implements _i1.Inject4Factory {
@@ -88,13 +94,37 @@ class _Inject4Factory$Factory implements _i1.Inject4Factory {
       );
 }
 
+class _Inject5Factory$Provider implements _i2.Provider<_i1.Inject5Factory> {
+  _Inject5Factory$Provider();
+
+  late final _i1.Inject5Factory _factory = const _Inject5Factory$Factory();
+
+  @override
+  _i1.Inject5Factory get() => _factory;
+}
+
+class _Inject5Factory$Factory implements _i1.Inject5Factory {
+  const _Inject5Factory$Factory();
+
+  @override
+  _i1.Inject5 create(_i1.Dependency2 foo) => _i1.Inject5(foo);
+}
+
 class _Inject3$Provider implements _i2.Provider<_i1.Inject3> {
-  const _Inject3$Provider(this._inject4Factory$Provider);
+  const _Inject3$Provider(
+    this._inject4Factory$Provider,
+    this._inject5Factory$Provider,
+  );
 
   final _Inject4Factory$Provider _inject4Factory$Provider;
 
+  final _Inject5Factory$Provider _inject5Factory$Provider;
+
   @override
-  _i1.Inject3 get() => _i1.Inject3(_inject4Factory$Provider.get());
+  _i1.Inject3 get() => _i1.Inject3(
+        _inject4Factory$Provider.get(),
+        _inject5Factory$Provider.get(),
+      );
 }
 
 class _Inject2$Provider implements _i2.Provider<_i1.Inject2> {

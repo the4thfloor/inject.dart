@@ -42,9 +42,11 @@ void main() {
         injectables[1].clazz,
         const SymbolPath(rootPackage, testFilePath, 'Inject3'),
       );
-      expect(injectables[1].constructor.dependencies.length, 1);
+      expect(injectables[1].constructor.dependencies.length, 2);
       expect(injectables[1].constructor.dependencies[0].name, 'factory');
       expect(injectables[1].constructor.dependencies[0].isRequired, true);
+      expect(injectables[1].constructor.dependencies[1].name, 'factory2');
+      expect(injectables[1].constructor.dependencies[1].isRequired, true);
 
       expect(
         injectables[2].clazz,
@@ -74,12 +76,17 @@ void main() {
       expect(moduleProvider.dependencies[2].isNamed, true);
 
       final factories = summary.factories;
-      expect(factories.length, 1);
+      expect(factories.length, 2);
 
       expect(
         factories[0].clazz,
         const SymbolPath(rootPackage, testFilePath, 'Inject4Factory'),
       );
+      expect(
+        factories[1].clazz,
+        const SymbolPath(rootPackage, testFilePath, 'Inject5Factory'),
+      );
+
       expect(
         factories[0].factory.createdType.lookupKey.root,
         const SymbolPath(rootPackage, testFilePath, 'Inject4'),

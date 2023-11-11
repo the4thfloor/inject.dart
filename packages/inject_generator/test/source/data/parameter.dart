@@ -51,8 +51,9 @@ class Inject2Module {
 @inject
 class Inject3 {
   final Inject4Factory factory;
+  final Inject5Factory factory2;
 
-  Inject3(this.factory);
+  const Inject3(this.factory, this.factory2);
 }
 
 @assistedInject
@@ -68,6 +69,18 @@ class Inject4 {
 @assistedFactory
 abstract class Inject4Factory {
   Inject4 create(Dependency2 foo);
+}
+
+@assistedInject
+class Inject5 {
+  final Dependency2 foo;
+
+  const Inject5(@assisted this.foo);
+}
+
+@assistedFactory
+abstract class Inject5Factory {
+  Inject5 create(Dependency2 foo);
 }
 
 @inject

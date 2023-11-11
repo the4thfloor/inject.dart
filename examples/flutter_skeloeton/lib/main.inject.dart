@@ -70,11 +70,11 @@ class _MyAppFactory$Provider implements _i4.Provider<_i3.MyAppFactory> {
 
   final _SettingsController$Provider _settingsController$Provider;
 
-  _i3.MyAppFactory? _factory;
+  late final _i3.MyAppFactory _factory =
+      _MyAppFactory$Factory(_settingsController$Provider);
 
   @override
-  _i3.MyAppFactory get() =>
-      _factory ??= _MyAppFactory$Factory(_settingsController$Provider);
+  _i3.MyAppFactory get() => _factory;
 }
 
 class _MyAppFactory$Factory implements _i3.MyAppFactory {

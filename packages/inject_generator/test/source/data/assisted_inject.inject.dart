@@ -45,11 +45,11 @@ class _AnnotatedClassFactory$Provider
 
   final _Foo$Provider _foo$Provider;
 
-  _i1.AnnotatedClassFactory? _factory;
+  late final _i1.AnnotatedClassFactory _factory =
+      _AnnotatedClassFactory$Factory(_foo$Provider);
 
   @override
-  _i1.AnnotatedClassFactory get() =>
-      _factory ??= _AnnotatedClassFactory$Factory(_foo$Provider);
+  _i1.AnnotatedClassFactory get() => _factory;
 }
 
 class _AnnotatedClassFactory$Factory implements _i1.AnnotatedClassFactory {
@@ -70,11 +70,11 @@ class _AnnotatedConstructorFactory$Provider
 
   final _Foo$Provider _foo$Provider;
 
-  _i1.AnnotatedConstructorFactory? _factory;
+  late final _i1.AnnotatedConstructorFactory _factory =
+      _AnnotatedConstructorFactory$Factory(_foo$Provider);
 
   @override
-  _i1.AnnotatedConstructorFactory get() =>
-      _factory ??= _AnnotatedConstructorFactory$Factory(_foo$Provider);
+  _i1.AnnotatedConstructorFactory get() => _factory;
 }
 
 class _AnnotatedConstructorFactory$Factory

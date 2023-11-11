@@ -602,14 +602,6 @@ class _ProviderBuilder {
     constructor.constant = false;
 
     const fieldName = '_factory';
-    fields.add(
-      FieldBuilder()
-        ..name = fieldName
-        ..type = _referenceForKey(
-          libraryUri,
-          dep.injectedType.lookupKey,
-        ).toNullable(),
-    );
 
     final params = dep.dependencies
         .where((dep) => !dep.isAssisted)
@@ -618,11 +610,19 @@ class _ProviderBuilder {
         .map(refer)
         .toSet()
         .toList();
-    methodBuilder.body = refer(fieldName)
-        .assignNullAware(
-          refer(_factoryClassName(dep.injectedType.lookupKey)).call(params),
-        )
-        .code;
+
+    fields.add(
+      FieldBuilder()
+        ..name = fieldName
+        ..late = true
+        ..modifier = FieldModifier.final$
+        ..type = _referenceForKey(libraryUri, dep.injectedType.lookupKey)
+        ..assignment = params.isEmpty
+            ? refer(_factoryClassName(dep.injectedType.lookupKey)).constInstance([]).code
+            : refer(_factoryClassName(dep.injectedType.lookupKey)).newInstance(params).code,
+    );
+
+    methodBuilder.body = refer(fieldName).code;
 
     return false;
   }
@@ -669,7 +669,7 @@ class _FactoryBuilder {
     );
   }
 
-  _FactoryBuilder._(
+  const _FactoryBuilder._(
     this.libraryUri,
     this.dependency,
     this.dependencies,
@@ -774,7 +774,7 @@ class _FactoryBuilder {
 
       final isProvider = injected.isProvider;
       final isAsynchronous = injected.asynchronous(dependencies);
-      Expression argRef;
+      final Expression argRef;
       if (isAssisted) {
         argRef = refer(injected.name!);
       } else {
