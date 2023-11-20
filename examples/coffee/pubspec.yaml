@@ -2,14 +2,14 @@ name: inject_example_coffee
 description: A simple example of using package:inject
 
 environment:
-  sdk: '>=3.0.0 <4.0.0'
+  sdk: '>=3.2.0 <4.0.0'
 
 dependencies:
   inject_annotation: ^1.0.0-alpha.3
 
 dev_dependencies:
   build_runner: ^2.4.6
-  build_test: ^2.2.0
-  lints: ^2.1.1
-  test: ^1.24.6
+  build_test: ^2.2.1
+  lints: ^3.0.0
+  test: ^1.24.9
   inject_generator: ^1.0.0-alpha.2

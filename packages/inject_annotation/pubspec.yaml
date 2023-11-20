@@ -5,10 +5,10 @@ repository: https://github.com/ralph-bergmann/inject.dart
 issue_tracker: https://github.com/ralph-bergmann/inject.dart/issues
 
 environment:
-  sdk: '>=3.0.0 <4.0.0'
+  sdk: '>=3.2.0 <4.0.0'
 
 dependencies:
-  meta: ^1.9.1
+  meta: ^1.10.0
 
 dev_dependencies:
-  lints: ^2.1.1
+  lints: ^3.0.0
