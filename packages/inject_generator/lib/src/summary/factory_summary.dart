@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-part of inject.src.summary;
+part of '../summary.dart';
 
 /// Result of analyzing a `@AssistedFactory()` annotated-class.
 @JsonSerializable()

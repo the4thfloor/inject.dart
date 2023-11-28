@@ -15,7 +15,7 @@ import '../source/symbol_path.dart';
 
 /// Constructs a serializable path to [type].
 SymbolPath getSymbolPath(DartType type) {
-  if (type.isDynamic) {
+  if (type is DynamicType) {
     throw ArgumentError('Dynamic element type not supported. This is a '
         'package:inject bug. Please report it.');
   }
@@ -79,7 +79,7 @@ DartType _reducedType(DartType type, String? name) {
   }
 
   final providedType = (type).typeArguments.firstOrNull;
-  if (providedType == null || providedType.isDynamic) {
+  if (providedType == null || providedType is DynamicType) {
     throw 'Generic type for `${type.getDisplayString(withNullability: false)} $name` not specified.';
   }
   return _reducedType(providedType, name);

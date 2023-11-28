@@ -6,6 +6,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:analyzer/dart/element/element.dart';
+import 'package:analyzer/dart/element/type.dart';
 import 'package:build/build.dart';
 import 'package:collection/collection.dart';
 
@@ -366,7 +367,7 @@ class _FactorySummaryVisitor extends FactoryClassVisitor {
       getInjectedType(method.returnType, isAssisted: true),
       method.parameters
           .map((p) {
-            if (p.type.isDynamic) {
+            if (p.type is DynamicType) {
               throw StateError(
                 constructMessage(
                     builderContext.buildStep.inputId,
@@ -436,7 +437,7 @@ class _ProviderSummaryVisitor extends InjectClassVisitor {
               'component methods cannot have parameters',
             ),
           );
-        } else if (p.type.isDynamic) {
+        } else if (p.type is DynamicType) {
           throw StateError(
             constructMessage(
               builderContext.buildStep.inputId,
@@ -534,7 +535,7 @@ ProviderSummary _createConstructorProviderSummary(
         }
       }
 
-      if (p.type.isDynamic) {
+      if (p.type is DynamicType) {
         throw StateError(
           constructMessage(
             builderContext.buildStep.inputId,

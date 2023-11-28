@@ -2,7 +2,7 @@ import 'package:inject_annotation/inject_annotation.dart';
 
 import 'main.inject.dart' as g;
 
-void main() {
+Future<void> main() async {
   /// Create an instance of the [MainComponent] to access the dependency graph.
   final mainComponent = g.MainComponent$Component.create();
 

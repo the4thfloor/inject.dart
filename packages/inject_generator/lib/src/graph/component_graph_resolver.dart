@@ -1,7 +1,7 @@
 // Copyright (c) 2016, the Dart project authors.  Please see the AUTHORS file
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
-part of inject.src.graph;
+part of '../graph.dart';
 
 /// Assists code generation by doing compile-time analysis of an `@Component`.
 ///
@@ -119,7 +119,7 @@ class ComponentGraphResolver {
       required SymbolPath requestedBy,
     }) async {
       final isSeen = providersByModules.containsKey(key) ||
-          providersByFactory.containsKey(factory) ||
+          providersByFactory.containsKey(key) ||
           providersByInjectables.containsKey(key);
       if (isSeen) {
         return;
