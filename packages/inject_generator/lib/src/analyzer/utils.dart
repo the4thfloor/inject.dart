@@ -28,21 +28,23 @@ InjectedType getInjectedType(
   DartType type, {
   String? name,
   SymbolPath? qualifier,
-  bool? required,
-  bool? named,
-  bool? singleton,
-  bool? assisted,
+  bool? isRequired,
+  bool? isNamed,
+  bool? isSingleton,
+  bool? isAssisted,
+  bool? isConst,
 }) =>
     InjectedType(
       LookupKey.fromDartType(_reducedType(type, name), qualifier: qualifier),
       name: name,
       isNullable: type.isNullable,
-      isRequired: required,
-      isNamed: named,
+      isRequired: isRequired,
+      isNamed: isNamed,
       isProvider: type.isProvider,
-      isSingleton: singleton,
+      isSingleton: isSingleton,
       isAsynchronous: type.isDartAsyncFuture,
-      isAssisted: assisted,
+      isAssisted: isAssisted,
+      isConst: isConst,
     );
 
 Uri _uriOf(DartType type) {

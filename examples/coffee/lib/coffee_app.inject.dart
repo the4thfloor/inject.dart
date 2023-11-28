@@ -63,6 +63,7 @@ class Coffee$Component implements _i1.Coffee {
   @override
   _i3.Provider<_i4.Future<_i5.Thermosiphon>> get thermosiphon =>
       _thermosiphon$Provider;
+
   @override
   _i4.Future<_i6.CoffeeMaker> getCoffeeMaker() => _coffeeMaker$Provider.get();
 }

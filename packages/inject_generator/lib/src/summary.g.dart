@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of inject.src.summary;
+part of 'summary.dart';
 
 // **************************************************************************
 // JsonSerializableGenerator

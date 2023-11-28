@@ -22,6 +22,7 @@ InjectedType _$InjectedTypeFromJson(Map<String, dynamic> json) =>
           isSingleton: $checkedConvert('isSingleton', (v) => v as bool?),
           isAsynchronous: $checkedConvert('isAsynchronous', (v) => v as bool?),
           isAssisted: $checkedConvert('isAssisted', (v) => v as bool?),
+          isConst: $checkedConvert('isConst', (v) => v as bool?),
         );
         return val;
       },
@@ -38,4 +39,5 @@ Map<String, dynamic> _$InjectedTypeToJson(InjectedType instance) =>
       'isSingleton': instance.isSingleton,
       'isAsynchronous': instance.isAsynchronous,
       'isAssisted': instance.isAssisted,
+      'isConst': instance.isConst,
     };

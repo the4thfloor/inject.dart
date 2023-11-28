@@ -14,6 +14,17 @@ scripts:
   format:
     exec: dart format -l 120 .
 
+  pubupgrade:
+    run: melos run pubupgrade:dart && melos run pubupgrade:flutter
+  pubupgrade:dart:
+    run: melos exec -c 1 --fail-fast -- "dart pub upgrade"
+    packageFilters:
+      flutter: false
+  pubupgrade:flutter:
+    run: melos exec -c 1 --fail-fast -- "flutter pub upgrade"
+    packageFilters:
+      flutter: true
+
   build:
     run: melos run build:dart && melos run build:flutter
   build:dart:

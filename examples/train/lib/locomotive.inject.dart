@@ -51,6 +51,7 @@ class TrainServices$Component implements _i1.TrainServices {
 
   @override
   _i2.BikeRack get bikeRack => _bikeRack$Provider.get();
+
   @override
   _i3.Kitchen get kitchen => _kitchen$Provider.get();
 }

@@ -43,6 +43,9 @@ class InjectedType {
   /// Return `true` if it is annotated with [assistedInject]
   final bool isAssisted;
 
+  /// Return `true` if its constructor is a const constructor
+  final bool isConst;
+
   factory InjectedType(
     LookupKey lookupKey, {
     String? name,
@@ -53,6 +56,7 @@ class InjectedType {
     bool? isSingleton,
     bool? isAsynchronous,
     bool? isAssisted,
+    bool? isConst,
   }) =>
       InjectedType._(
         lookupKey: lookupKey,
@@ -64,6 +68,7 @@ class InjectedType {
         isSingleton: isSingleton ?? false,
         isAsynchronous: isAsynchronous ?? false,
         isAssisted: isAssisted ?? false,
+        isConst: isConst ?? false,
       );
 
   const InjectedType._({
@@ -76,6 +81,7 @@ class InjectedType {
     required this.isSingleton,
     required this.isAsynchronous,
     required this.isAssisted,
+    required this.isConst,
   });
 
   factory InjectedType.fromJson(Map<String, dynamic> json) => _$InjectedTypeFromJson(json);
@@ -95,7 +101,8 @@ class InjectedType {
           isProvider == other.isProvider &&
           isSingleton == other.isSingleton &&
           isAsynchronous == other.isAsynchronous &&
-          isAssisted == other.isAssisted;
+          isAssisted == other.isAssisted &&
+          isConst == other.isConst;
 
   @override
   int get hashCode =>
@@ -107,5 +114,6 @@ class InjectedType {
       isProvider.hashCode ^
       isSingleton.hashCode ^
       isAsynchronous.hashCode ^
-      isAssisted.hashCode;
+      isAssisted.hashCode ^
+      isConst.hashCode;
 }

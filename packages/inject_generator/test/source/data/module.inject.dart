@@ -30,8 +30,10 @@ class MainComponent$Component implements _i1.MainComponent {
 
   @override
   _i1.Addition get add => _addition$Provider.get();
+
   @override
   _i1.Foo get foo => _foo$Provider.get();
+
   @override
   _i2.Future<_i1.Bar> get bar => _bar$Provider.get();
 }

@@ -42,8 +42,10 @@ class ParameterComponent$Component implements _i1.ParameterComponent {
 
   @override
   _i1.Inject1 get bar => _inject1$Provider.get();
+
   @override
   _i1.Inject2 get bar2 => _inject2$Provider.get();
+
   @override
   _i1.Inject3 get bar4 => _inject3$Provider.get();
 }

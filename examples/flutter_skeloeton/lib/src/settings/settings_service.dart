@@ -9,6 +9,8 @@ import 'package:inject_annotation/inject_annotation.dart';
 @inject
 @singleton
 class SettingsService {
+  const SettingsService();
+
   /// Loads the User's preferred ThemeMode from local or remote storage.
   Future<ThemeMode> themeMode() async => ThemeMode.system;
 

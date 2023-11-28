@@ -44,7 +44,7 @@ class _SettingsService$Provider implements _i4.Provider<_i5.SettingsService> {
   _i5.SettingsService? _singleton;
 
   @override
-  _i5.SettingsService get() => _singleton ??= _i5.SettingsService();
+  _i5.SettingsService get() => _singleton ??= const _i5.SettingsService();
 }
 
 class _SettingsController$Provider

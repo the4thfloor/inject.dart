@@ -27,6 +27,7 @@ class Component$Component implements _i1.Component {
   @override
   _i1.AnnotatedClassFactory get annotatedClassFactory =>
       _annotatedClassFactory$Provider.get();
+
   @override
   _i1.AnnotatedConstructorFactory get annotatedConstructorFactory =>
       _annotatedConstructorFactory$Provider.get();

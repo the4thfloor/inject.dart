@@ -141,18 +141,22 @@ class _SummaryBuilderVisitor extends InjectLibraryVisitor {
     ProviderSummary? constructorSummary;
     if (annotatedConstructors.length == 1) {
       // Use the explicitly annotated constructor.
+      final constructor = annotatedConstructors.single;
       constructorSummary = _createConstructorProviderSummary(
-        annotatedConstructors.single,
+        constructor,
         singleton,
         false,
+        constructor.isConst,
       );
     } else if (classIsAnnotated) {
       if (clazz.constructors.length <= 1) {
         // This is the case of a default or an only constructor.
+        final constructor = clazz.constructors.single;
         constructorSummary = _createConstructorProviderSummary(
-          clazz.constructors.single,
+          constructor,
           singleton,
           false,
+          constructor.isConst,
         );
       }
     }
@@ -204,18 +208,22 @@ class _SummaryBuilderVisitor extends InjectLibraryVisitor {
     ProviderSummary? constructorSummary;
     if (annotatedConstructors.length == 1) {
       // Use the explicitly annotated constructor.
+      final constructor = annotatedConstructors.single;
       constructorSummary = _createConstructorProviderSummary(
-        annotatedConstructors.single,
+        constructor,
         false,
         true,
+        constructor.isConst,
       );
     } else if (classIsAnnotated) {
       if (clazz.constructors.length <= 1) {
         // This is the case of a default or an only constructor.
+        final constructor = clazz.constructors.single;
         constructorSummary = _createConstructorProviderSummary(
-          clazz.constructors.single,
+          constructor,
           false,
           true,
+          constructor.isConst,
         );
       }
     }
@@ -355,7 +363,7 @@ class _FactorySummaryVisitor extends FactoryClassVisitor {
 
     final summary = FactoryMethodSummary(
       method.name,
-      getInjectedType(method.returnType, assisted: true),
+      getInjectedType(method.returnType, isAssisted: true),
       method.parameters
           .map((p) {
             if (p.type.isDynamic) {
@@ -375,8 +383,8 @@ class _FactorySummaryVisitor extends FactoryClassVisitor {
             return getInjectedType(
               p.type,
               name: p.name,
-              required: p.isRequired,
-              named: p.isNamed,
+              isRequired: p.isRequired,
+              isNamed: p.isNamed,
               qualifier: hasQualifier(p) ? extractQualifier(p) : null,
             );
           })
@@ -418,7 +426,7 @@ class _ProviderSummaryVisitor extends InjectClassVisitor {
     final summary = ProviderSummary(
       method.name,
       ProviderKind.method,
-      getInjectedType(method.returnType, qualifier: qualifier, singleton: singleton),
+      getInjectedType(method.returnType, qualifier: qualifier, isSingleton: singleton),
       dependencies: method.parameters.map((p) {
         if (isForComponent) {
           throw StateError(
@@ -447,9 +455,9 @@ class _ProviderSummaryVisitor extends InjectClassVisitor {
           p.type,
           name: p.name,
           qualifier: hasQualifier(p) ? extractQualifier(p) : null,
-          required: p.isRequired,
-          named: p.isNamed,
-          assisted: hasAssistedAnnotation(p),
+          isRequired: p.isRequired,
+          isNamed: p.isNamed,
+          isAssisted: hasAssistedAnnotation(p),
         );
       }).whereNotNull(),
     );
@@ -463,7 +471,7 @@ class _ProviderSummaryVisitor extends InjectClassVisitor {
     final summary = ProviderSummary(
       field.name,
       ProviderKind.getter,
-      getInjectedType(returnType, qualifier: qualifier, singleton: singleton),
+      getInjectedType(returnType, qualifier: qualifier, isSingleton: singleton),
       dependencies: const [],
     );
     _providers.add(summary);
@@ -492,8 +500,9 @@ void _checkReturnType(ExecutableElement element) {
 
 ProviderSummary _createConstructorProviderSummary(
   ConstructorElement element,
-  bool singleton,
-  bool assisted,
+  bool isSingleton,
+  bool isAssisted,
+  bool isConst,
 ) {
   final returnType = element.enclosingElement.thisType;
   return ProviderSummary(
@@ -501,8 +510,9 @@ ProviderSummary _createConstructorProviderSummary(
     ProviderKind.constructor,
     getInjectedType(
       returnType,
-      singleton: singleton,
-      assisted: assisted,
+      isSingleton: isSingleton,
+      isAssisted: isAssisted,
+      isConst: isConst,
     ),
     dependencies: element.parameters.map((p) {
       SymbolPath? qualifier;
@@ -543,9 +553,9 @@ ProviderSummary _createConstructorProviderSummary(
         p.type,
         name: p.name,
         qualifier: qualifier,
-        required: p.isRequired,
-        named: p.isNamed,
-        assisted: hasAssistedAnnotation(p),
+        isRequired: p.isRequired,
+        isNamed: p.isNamed,
+        isAssisted: hasAssistedAnnotation(p),
       );
     }).whereNotNull(),
   );

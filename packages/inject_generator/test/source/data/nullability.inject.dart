@@ -30,8 +30,10 @@ class ComponentNullability$Component implements _i1.ComponentNullability {
 
   @override
   _i1.FooBar get fooBar => _fooBar$Provider.get();
+
   @override
   _i1.Foo get foo => _foo$Provider.get();
+
   @override
   _i1.Bar? get bar => _bar$Provider.get();
 }

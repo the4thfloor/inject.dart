@@ -29,8 +29,10 @@ class ComponentWithModule$Component implements _i1.ComponentWithModule {
 
   @override
   _i1.Foo get foo => _foo$Provider.get();
+
   @override
   _i1.Foo2 get foo2 => _foo2$Provider.get();
+
   @override
   _i1.Bar get bar => _bar$Provider.get();
 }
@@ -50,7 +52,7 @@ class _Foo2$Provider implements _i2.Provider<_i1.Foo2> {
   _i1.Foo2? _singleton;
 
   @override
-  _i1.Foo2 get() => _singleton ??= _i1.Foo2();
+  _i1.Foo2 get() => _singleton ??= const _i1.Foo2();
 }
 
 class _Bar$Provider implements _i2.Provider<_i1.Bar> {
