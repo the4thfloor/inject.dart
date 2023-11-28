@@ -1,3 +1,8 @@
+## 1.0.0-alpha.4
+
+- update to Dart 3
+- use late final or const in generated code where possible
+
 ## 1.0.0-alpha.3
 
 - Add support for injecting methods
