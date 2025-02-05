@@ -29,7 +29,9 @@ flutter:
   uses-material-design: true
 
   # Enable generation of localized Strings from arb files.
-  generate: true
+  # Disabled because it is not working in pub workspaces:
+  # https://github.com/flutter/flutter/issues/160151
+  # generate: true
 
   assets:
     # Add assets from the images directory to the application.
