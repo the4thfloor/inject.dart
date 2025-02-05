@@ -20,3 +20,57 @@ melos:
   ide:
     intellij:
       enabled: false
+  scripts:
+    analyze:
+      exec: dart analyze .
+
+    fix:
+      exec: dart fix --apply
+
+    format:
+      exec: dart format -l 120 .
+
+    pubupgrade:
+      run: melos run pubupgrade:dart && melos run pubupgrade:flutter
+    pubupgrade:dart:
+      run: melos exec -c 1 --fail-fast -- "dart pub upgrade"
+      packageFilters:
+        flutter: false
+    pubupgrade:flutter:
+      run: melos exec -c 1 --fail-fast -- "flutter pub upgrade"
+      packageFilters:
+        flutter: true
+
+    build:
+      run: melos run build:dart && melos run build:flutter
+    build:dart:
+      run: melos exec -c 1 --fail-fast -- "dart run build_runner clean && dart run build_runner build --delete-conflicting-outputs"
+      packageFilters:
+        dependsOn: build_runner
+        flutter: false
+    build:flutter:
+      run: melos exec -c 1 --fail-fast -- "flutter pub run build_runner clean && flutter pub run build_runner build --delete-conflicting-outputs"
+      packageFilters:
+        dependsOn: build_runner
+        flutter: true
+    
+    test:
+      run: melos run test:plain --no-select && melos run test:build-runner-dart --no-select && melos run test:build-runner-flutter --no-select
+    test:plain:
+      run: melos exec -c 1 --fail-fast -- "dart test"
+      packageFilters:
+        noDependsOn: build_runner
+        dirExists: test
+        flutter: false
+    test:build-runner-dart:
+      run: melos exec -c 1 --fail-fast -- "dart run build_runner clean && dart run build_runner test --delete-conflicting-outputs"
+      packageFilters:
+        dependsOn: build_runner
+        dirExists: test
+        flutter: false
+    test:build-runner-flutter:
+      run: melos exec -c 1 --fail-fast -- "flutter pub run build_runner clean && flutter pub run build_runner build --delete-conflicting-outputs && flutter test"
+      packageFilters:
+        dependsOn: build_runner
+        dirExists: test
+        flutter: true
