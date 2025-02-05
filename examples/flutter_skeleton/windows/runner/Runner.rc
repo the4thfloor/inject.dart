@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "com.example" "\0"
-            VALUE "FileDescription", "flutter_skeloeton" "\0"
+            VALUE "FileDescription", "flutter_skeleton" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "flutter_skeloeton" "\0"
+            VALUE "InternalName", "flutter_skeleton" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2023 com.example. All rights reserved." "\0"
-            VALUE "OriginalFilename", "flutter_skeloeton.exe" "\0"
-            VALUE "ProductName", "flutter_skeloeton" "\0"
+            VALUE "OriginalFilename", "flutter_skeleton.exe" "\0"
+            VALUE "ProductName", "flutter_skeleton" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

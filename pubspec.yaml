@@ -53,7 +53,7 @@ melos:
       packageFilters:
         dependsOn: build_runner
         flutter: true
-    
+
     test:
       run: melos run test:plain --no-select && melos run test:build-runner-dart --no-select && melos run test:build-runner-flutter --no-select
     test:plain:

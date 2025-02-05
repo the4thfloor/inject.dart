@@ -1,4 +1,4 @@
-# flutter_skeloeton
+# flutter_skeleton
 
 A new Flutter project.
 
