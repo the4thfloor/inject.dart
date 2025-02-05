@@ -2,7 +2,8 @@ name: inject_example_coffee
 description: A simple example of using package:inject
 
 environment:
-  sdk: '>=3.2.0 <4.0.0'
+  sdk: ^3.6.0
+resolution: workspace
 
 dependencies:
   inject_annotation: ^1.0.0-alpha.3
