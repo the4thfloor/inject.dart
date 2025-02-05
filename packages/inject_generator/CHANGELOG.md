@@ -1,3 +1,8 @@
+## 1.0.0-alpha.5
+
+- update to Dart 3.6.0
+- update dependencies
+
 ## 1.0.0-alpha.4
 
 - update to Dart 3
