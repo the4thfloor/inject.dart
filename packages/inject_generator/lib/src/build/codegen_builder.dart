@@ -10,6 +10,7 @@ import 'package:code_builder/code_builder.dart';
 import 'package:collection/collection.dart';
 import 'package:dart_style/dart_style.dart';
 import 'package:inject_annotation/inject_annotation.dart';
+import 'package:pub_semver/pub_semver.dart';
 
 import '../context.dart';
 import '../graph.dart';
@@ -90,7 +91,7 @@ class InjectCodegenBuilder extends AbstractInjectBuilder {
 
     final emitter =
         _useScoping ? DartEmitter.scoped(useNullSafetySyntax: true) : DartEmitter(useNullSafetySyntax: true);
-    return DartFormatter().format(
+    return DartFormatter(languageVersion: Version.parse('3.6.0')).format(
       target.build().accept(emitter).toString(),
     );
   }

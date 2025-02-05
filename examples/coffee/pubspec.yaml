@@ -9,8 +9,8 @@ dependencies:
   inject_annotation: ^1.0.0-alpha.3
 
 dev_dependencies:
-  build_runner: ^2.4.6
-  build_test: ^2.2.1
-  lints: ^3.0.0
+  build_runner: ^2.4.14
+  build_test: ^2.2.3
+  lints: ^5.1.1
   test: ^1.24.9
-  inject_generator: ^1.0.0-alpha.2
+  inject_generator: ^1.0.0-alpha.4
