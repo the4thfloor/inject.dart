@@ -849,7 +849,7 @@ TypeReference _referenceForKey(Uri libraryUri, LookupKey key) {
 
   return (ref.toBuilder()
         ..types.addAll(
-          typeArguments.map((typeArgument) => _reference(libraryUri, typeArgument)).toList(),
+          typeArguments.map((typeArgument) => _referenceForKey(libraryUri, typeArgument)).toList(),
         ))
       .build();
 }

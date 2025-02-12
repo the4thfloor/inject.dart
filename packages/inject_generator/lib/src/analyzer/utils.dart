@@ -16,8 +16,12 @@ import '../source/symbol_path.dart';
 /// Constructs a serializable path to [type].
 SymbolPath getSymbolPath(DartType type) {
   if (type is DynamicType) {
-    throw ArgumentError('Dynamic element type not supported. This is a '
-        'package:inject bug. Please report it.');
+    return const SymbolPath.global('dynamic');
+  }
+
+  // Support for type parameters.
+  if (type is TypeParameterType) {
+    return SymbolPath.global(type.element.name);
   }
 
   return SymbolPath.fromAbsoluteUri(_uriOf(type), typeNameOf(type));

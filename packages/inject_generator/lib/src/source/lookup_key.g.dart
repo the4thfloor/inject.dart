@@ -21,7 +21,7 @@ LookupKey _$LookupKeyFromJson(Map<String, dynamic> json) => $checkedCreate(
           typeArguments: $checkedConvert(
               'typeArguments',
               (v) => (v as List<dynamic>?)
-                  ?.map((e) => SymbolPath.fromJson(e as Map<String, dynamic>))
+                  ?.map((e) => LookupKey.fromJson(e as Map<String, dynamic>))
                   .toList()),
         );
         return val;
