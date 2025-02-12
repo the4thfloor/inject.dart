@@ -1,3 +1,8 @@
+## 1.0.0-alpha.6
+
+- Improve LookupKey.fromDartType to support more DartTypes
+- fix melos scripts
+
 ## 1.0.0-alpha.5
 
 - update to Dart 3.6.0
