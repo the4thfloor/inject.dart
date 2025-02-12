@@ -44,12 +44,12 @@ melos:
     build:
       run: melos run build:dart && melos run build:flutter
     build:dart:
-      run: melos exec -c 1 --fail-fast -- "dart run build_runner clean && dart run build_runner build --delete-conflicting-outputs"
+      run: melos exec -c 1 --fail-fast -- "dart run build_runner clean && dart run build_runner build -d"
       packageFilters:
         dependsOn: build_runner
         flutter: false
     build:flutter:
-      run: melos exec -c 1 --fail-fast -- "flutter pub run build_runner clean && flutter pub run build_runner build --delete-conflicting-outputs"
+      run: melos exec -c 1 --fail-fast -- "flutter pub run build_runner clean && flutter pub run build_runner build -d"
       packageFilters:
         dependsOn: build_runner
         flutter: true
@@ -63,13 +63,13 @@ melos:
         dirExists: test
         flutter: false
     test:build-runner-dart:
-      run: melos exec -c 1 --fail-fast -- "dart run build_runner clean && dart run build_runner test --delete-conflicting-outputs"
+      run: melos exec -c 1 --fail-fast -- "dart run build_runner clean && dart run build_runner test -d"
       packageFilters:
         dependsOn: build_runner
         dirExists: test
         flutter: false
     test:build-runner-flutter:
-      run: melos exec -c 1 --fail-fast -- "flutter pub run build_runner clean && flutter pub run build_runner build --delete-conflicting-outputs && flutter test"
+      run: melos exec -c 1 --fail-fast -- "dart run build_runner clean && dart run build_runner build -d && flutter test"
       packageFilters:
         dependsOn: build_runner
         dirExists: test
