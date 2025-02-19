@@ -1,3 +1,9 @@
+## 1.0.0-alpha.7
+
+- improve code generator 
+
+  skip Dart files which don't import `package:inject_annotation`
+
 ## 1.0.0-alpha.6
 
 - Improve LookupKey.fromDartType to support more DartTypes
