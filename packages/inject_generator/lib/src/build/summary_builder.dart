@@ -28,37 +28,8 @@ class InjectSummaryBuilder extends AbstractInjectBuilder {
 
   Future<String?> _buildInContext(BuildStep buildStep) async {
     final resolver = buildStep.resolver;
-    LibrarySummary summary;
-    if (await resolver.isLibrary(buildStep.inputId)) {
-      final lib = await buildStep.inputLibrary;
-      final components = <ComponentSummary>[];
-      final modules = <ModuleSummary>[];
-      final injectables = <InjectableSummary>[];
-      final assistedInjectables = <InjectableSummary>[];
-      final factories = <FactorySummary>[];
-      _SummaryBuilderVisitor(
-        components,
-        modules,
-        injectables,
-        assistedInjectables,
-        factories,
-      ).visitLibrary(lib);
-      if (components.isEmpty &&
-          modules.isEmpty &&
-          injectables.isEmpty &&
-          assistedInjectables.isEmpty &&
-          factories.isEmpty) {
-        return null;
-      }
-      summary = LibrarySummary(
-        SymbolPath.toAssetUri(lib.source.uri),
-        components: components,
-        modules: modules,
-        injectables: injectables,
-        assistedInjectables: assistedInjectables,
-        factories: factories,
-      );
-    } else {
+    final isLibrary = await resolver.isLibrary(buildStep.inputId);
+    if (!isLibrary) {
       final contents = await buildStep.readAsString(buildStep.inputId);
       if (contents.contains(RegExp(r'part\s+of'))) {
         builderContext.rawLogger.info(
@@ -70,13 +41,41 @@ class InjectSummaryBuilder extends AbstractInjectBuilder {
           'file is a valid Dart library.',
         );
       }
-      summary = LibrarySummary(
-        Uri(
-          scheme: 'asset',
-          path: '${buildStep.inputId.package}/${buildStep.inputId.path}',
-        ),
-      );
+      return null;
     }
+
+    final lib = await buildStep.inputLibrary;
+    if (!_hasInjectImports(lib)) {
+      return null;
+    }
+
+    final components = <ComponentSummary>[];
+    final modules = <ModuleSummary>[];
+    final injectables = <InjectableSummary>[];
+    final assistedInjectables = <InjectableSummary>[];
+    final factories = <FactorySummary>[];
+    _SummaryBuilderVisitor(
+      components,
+      modules,
+      injectables,
+      assistedInjectables,
+      factories,
+    ).visitLibrary(lib);
+    if (components.isEmpty &&
+        modules.isEmpty &&
+        injectables.isEmpty &&
+        assistedInjectables.isEmpty &&
+        factories.isEmpty) {
+      return null;
+    }
+    final summary = LibrarySummary(
+      SymbolPath.toAssetUri(lib.source.uri),
+      components: components,
+      modules: modules,
+      injectables: injectables,
+      assistedInjectables: assistedInjectables,
+      factories: factories,
+    );
     return _librarySummaryToJson(summary);
   }
 
@@ -85,6 +84,24 @@ class InjectSummaryBuilder extends AbstractInjectBuilder {
 
   @override
   String get outputExtension => 'inject.summary';
+
+  bool _hasInjectImports(LibraryElement library) => library.nonCoreImports.any((import) {
+        final uri = import.importedLibrary?.source.uri;
+        return uri?.toString() == 'package:inject_annotation/inject_annotation.dart';
+      });
+}
+
+extension NonCoreImports on LibraryElement {
+  Iterable<LibraryImportElement> get nonCoreImports => library.libraryImports.where((element) {
+        final lib = element.importedLibrary;
+        if (lib == null) {
+          return false;
+        }
+
+        return !lib.isDartAsync && //
+            !lib.isDartCore &&
+            !lib.isInSdk;
+      });
 }
 
 class _SummaryBuilderVisitor extends InjectLibraryVisitor {

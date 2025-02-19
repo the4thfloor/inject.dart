@@ -10,7 +10,7 @@ builders:
   generate_builder:
     import: "package:inject_generator/inject_generator.dart"
     builder_factories: [ "generateBuilder" ]
-    build_extensions: { ".dart": [ ".inject.dart" ] }
+    build_extensions: { ".summary": [ ".inject.dart" ] }
     auto_apply: dependents
     build_to: source
 #targets:
